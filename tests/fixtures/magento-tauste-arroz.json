@@ -1,0 +1,49 @@
+{
+  "_note": "Names, SKUs and prices captured from tauste.com.br/graphql on 2026-10-19. The url_key, stock_status, regular_price and small_image fields follow Magento 2's documented schema and are filled in here with plausible values; they are confirmed against the live response on the first collection run.",
+  "data": {
+    "products": {
+      "total_count": 225,
+      "items": [
+        {
+          "name": "Arroz Tio João Integral Cozinha Fácil com 1kg",
+          "sku": "138033",
+          "url_key": "arroz-tio-joao-integral-cozinha-facil-1kg",
+          "stock_status": "IN_STOCK",
+          "price_range": {
+            "minimum_price": {
+              "final_price": { "value": 11.79 },
+              "regular_price": { "value": 13.49 }
+            }
+          },
+          "small_image": { "url": "https://tauste.com.br/media/catalog/product/1/3/138033.jpg" }
+        },
+        {
+          "name": "Arroz Paganini  Caixa 1000g",
+          "sku": "123124",
+          "url_key": "arroz-paganini-caixa-1000g",
+          "stock_status": "IN_STOCK",
+          "price_range": {
+            "minimum_price": {
+              "final_price": { "value": 28.98 },
+              "regular_price": { "value": 28.98 }
+            }
+          },
+          "small_image": { "url": "https://tauste.com.br/media/catalog/product/1/2/123124.jpg" }
+        },
+        {
+          "name": "Arroz Riviera Pacote 5000g",
+          "sku": "165317",
+          "url_key": "arroz-riviera-pacote-5000g",
+          "stock_status": "OUT_OF_STOCK",
+          "price_range": {
+            "minimum_price": {
+              "final_price": { "value": 21.19 },
+              "regular_price": { "value": 21.19 }
+            }
+          },
+          "small_image": { "url": "https://tauste.com.br/media/catalog/product/1/6/165317.jpg" }
+        }
+      ]
+    }
+  }
+}
