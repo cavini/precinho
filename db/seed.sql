@@ -62,3 +62,7 @@ select 'extra', 'Extra Mercado', 'Extra', r.id,
        'gpa-api', 'api.vendas.gpa.digital', '483', 'ex'
 from regions r where r.slug = 'sao-paulo-sp'
 on conflict (slug) do nothing;
+
+-- Links must point at a shop, not at the account host the collector reads.
+update stores set storefront_host = 'www.oba.com.br'           where slug = 'oba';
+update stores set storefront_host = 'mercado.carrefour.com.br' where slug = 'carrefour';
