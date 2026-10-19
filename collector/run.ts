@@ -64,6 +64,15 @@ type StoreConfigRow = {
 
 const MIN_INTERVAL_MS = 1_200
 
+/**
+ * How many stores to collect at once.
+ *
+ * Four rather than all of them: each one in flight holds a database
+ * connection and its own page of results, and past the point where the
+ * slowest store dominates the run there is nothing left to win.
+ */
+const STORE_CONCURRENCY = 4
+
 async function main(): Promise<void> {
   const env = readCollectorEnv()
   const logger = new StructuredLogger({ level: env.logLevel }).child({ job: 'collector' })
@@ -102,13 +111,19 @@ async function main(): Promise<void> {
 
   logger.info('collector.run_started', { stores: stores.length, terms: BASIC_BASKET.length })
 
-  let storesWithNothing = 0
-
-  for (const store of stores) {
+  // Stores run concurrently because they are different hosts: collecting
+  // Mambo and Atacadao at once adds nothing to either one's load. Within a
+  // store the gateway still paces itself, so concurrency buys wall-clock
+  // time without ever asking any single chain to work harder.
+  //
+  // Bounded rather than unbounded: every store in flight holds a Supabase
+  // connection and a slice of memory, and there is no gain past the point
+  // where the slowest store dominates anyway.
+  const results = await inBatches(stores, STORE_CONCURRENCY, async (store) => {
     const storeLogger = logger.child({ storeId: store.id, slug: store.slug })
 
     const gateway = await buildGateway(store, http, storeLogger)
-    if (!gateway) continue
+    if (!gateway) return { collected: false }
 
     const report = await new CollectStoreOffers({
       gateway,
@@ -120,8 +135,10 @@ async function main(): Promise<void> {
       clock: systemClock,
     }).execute({ terms: BASIC_BASKET })
 
-    if (report.offersWritten === 0) storesWithNothing += 1
-  }
+    return { collected: report.offersWritten > 0 }
+  })
+
+  const storesWithNothing = results.filter((result) => !result.collected).length
 
   logger.info('collector.run_finished', { stores: stores.length, storesWithNothing })
 
@@ -259,3 +276,25 @@ async function resolveRegionToken(
 }
 
 void main()
+
+/**
+ * Runs `work` over every item, at most `size` at a time, preserving order.
+ *
+ * Complexity: O(n) calls in ceil(n / size) waves. Each wave is as slow as
+ * its slowest member, which is the price of not pulling in a dependency for
+ * a pool.
+ */
+async function inBatches<T, R>(
+  items: readonly T[],
+  size: number,
+  work: (item: T) => Promise<R>,
+): Promise<R[]> {
+  const results: R[] = []
+
+  for (let index = 0; index < items.length; index += size) {
+    const wave = items.slice(index, index + size)
+    results.push(...(await Promise.all(wave.map(work))))
+  }
+
+  return results
+}
