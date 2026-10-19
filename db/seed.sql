@@ -54,3 +54,11 @@ select 'paodeacucar', 'Pão de Açúcar', 'Pão de Açúcar', r.id,
        'gpa-api', 'api.vendas.gpa.digital', '461', 'pa'
 from regions r where r.slug = 'sao-paulo-sp'
 on conflict (slug) do nothing;
+
+-- Extra Mercado: the same GPA API under the /ex/ banner, with Extra's own
+-- numeric store rather than Pão de Açúcar's.
+insert into stores (slug, name, chain, region_id, platform, host, region_token, store_view)
+select 'extra', 'Extra Mercado', 'Extra', r.id,
+       'gpa-api', 'api.vendas.gpa.digital', '483', 'ex'
+from regions r where r.slug = 'sao-paulo-sp'
+on conflict (slug) do nothing;
