@@ -196,7 +196,11 @@ export class VtexCatalogGateway implements StoreCatalogGateway, StoreRegionResol
    *
    * Complexity: one request, O(n) over the products returned.
    */
-  async searchCategory(categoryPath: string, from: number, to: number): Promise<CatalogSearchResult> {
+  async searchCategory(
+    categoryPath: string,
+    from: number,
+    to: number,
+  ): Promise<CatalogSearchResult> {
     await this.pace()
 
     const response = await this.http.getJson(

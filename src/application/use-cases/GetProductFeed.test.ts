@@ -263,9 +263,7 @@ describe('GetProductFeed', () => {
       const explicit = await page(useCase, 0)
       if (explicit.status !== 'ok') throw new Error(explicit.status)
 
-      expect(implicit.cards.map((c) => c.productId)).toEqual(
-        explicit.cards.map((c) => c.productId),
-      )
+      expect(implicit.cards.map((c) => c.productId)).toEqual(explicit.cards.map((c) => c.productId))
     })
   })
 

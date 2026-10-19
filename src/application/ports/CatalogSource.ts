@@ -1,4 +1,4 @@
-import type { CatalogProduct } from "./StoreCatalogGateway";
+import type { CatalogProduct } from './StoreCatalogGateway'
 
 /**
  * One unit of a sweep: a search term's results, or a page of a category.
@@ -9,8 +9,8 @@ import type { CatalogProduct } from "./StoreCatalogGateway";
  * throws away everything it had already found.
  */
 export type CatalogPage =
-  | { status: "ok"; label: string; products: readonly CatalogProduct[] }
-  | { status: "failed"; label: string };
+  | { status: 'ok'; label: string; products: readonly CatalogProduct[] }
+  | { status: 'failed'; label: string }
 
 /**
  * Where a collection run gets its products.
@@ -21,9 +21,9 @@ export type CatalogPage =
  * a catalogue should not touch CollectStoreOffers at all.
  */
 export interface CatalogSource {
-  readonly storeId: string;
+  readonly storeId: string
   /** How the catalogue is being read; goes in the run report. */
-  readonly mode: "terms" | "categories";
+  readonly mode: 'terms' | 'categories'
   /** Lazily, because a category sweep is hundreds of requests long. */
-  pages(): AsyncIterable<CatalogPage>;
+  pages(): AsyncIterable<CatalogPage>
 }

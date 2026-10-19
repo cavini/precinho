@@ -253,7 +253,7 @@ export class MagentoCatalogGateway implements StoreCatalogGateway {
       name,
       description:
         typeof (item.short_description as { html?: unknown } | undefined)?.html === 'string'
-          ? ((item.short_description as { html: string }).html)
+          ? (item.short_description as { html: string }).html
           : null,
       brand: null,
       imageUrl:

@@ -1,42 +1,38 @@
-import type { ProductMatcher } from "@/domain/services/ProductMatcher";
-import type { ProductNameParser } from "@/domain/services/ProductNameParser";
-import { Ean } from "@/domain/value-objects/Ean";
-import { Money } from "@/domain/value-objects/Money";
-import type { CatalogProduct } from "@/application/ports/StoreCatalogGateway";
-import type { CatalogSource } from "../ports/CatalogSource";
-import type {
-  CatalogWriter,
-  OfferInsert,
-  ProductUpsert,
-} from "../ports/CatalogWriter";
-import type { Clock } from "../ports/Clock";
-import type { Logger } from "../ports/Logger";
-import type { Metrics } from "../ports/Metrics";
+import type { ProductMatcher } from '@/domain/services/ProductMatcher'
+import type { ProductNameParser } from '@/domain/services/ProductNameParser'
+import { Ean } from '@/domain/value-objects/Ean'
+import { Money } from '@/domain/value-objects/Money'
+import type { CatalogProduct } from '@/application/ports/StoreCatalogGateway'
+import type { CatalogSource } from '../ports/CatalogSource'
+import type { CatalogWriter, OfferInsert, ProductUpsert } from '../ports/CatalogWriter'
+import type { Clock } from '../ports/Clock'
+import type { Logger } from '../ports/Logger'
+import type { Metrics } from '../ports/Metrics'
 
 export type CollectionReport = {
-  storeId: string;
+  storeId: string
   /** Whether the catalogue was read by search term or by category. */
-  mode: "terms" | "categories";
+  mode: 'terms' | 'categories'
   /** Terms tried, or category pages fetched. */
-  unitsAttempted: number;
+  unitsAttempted: number
   /** Units the store would not answer. A run is usually partly failed. */
-  unitsFailed: number;
-  productsSeen: number;
-  productsStored: number;
-  offersWritten: number;
+  unitsFailed: number
+  productsSeen: number
+  productsStored: number
+  offersWritten: number
   /** Why rows were discarded, so a bad run can be explained afterwards. */
-  discarded: { unpriceable: number; unusableEan: number };
-};
+  discarded: { unpriceable: number; unusableEan: number }
+}
 
 export type CollectStoreOffersDeps = {
-  source: CatalogSource;
-  writer: CatalogWriter;
-  nameParser: ProductNameParser;
-  matcher: ProductMatcher;
-  logger: Logger;
-  metrics: Metrics;
-  clock: Clock;
-};
+  source: CatalogSource
+  writer: CatalogWriter
+  nameParser: ProductNameParser
+  matcher: ProductMatcher
+  logger: Logger
+  metrics: Metrics
+  clock: Clock
+}
 
 /**
  * Sweeps one store's catalogue and records what it finds.
@@ -62,9 +58,9 @@ export class CollectStoreOffers {
    * which is what lets one write cover the whole run.
    */
   async execute(): Promise<CollectionReport> {
-    const { source, writer, logger, metrics, clock } = this.deps;
-    const runLogger = logger.child({ storeId: source.storeId });
-    const startedAt = clock.now().getTime();
+    const { source, writer, logger, metrics, clock } = this.deps
+    const runLogger = logger.child({ storeId: source.storeId })
+    const startedAt = clock.now().getTime()
 
     const report: CollectionReport = {
       storeId: source.storeId,
@@ -75,51 +71,49 @@ export class CollectStoreOffers {
       productsStored: 0,
       offersWritten: 0,
       discarded: { unpriceable: 0, unusableEan: 0 },
-    };
+    }
 
     // Keyed by match key so the same product found under two terms is stored
     // once. O(1) per lookup.
-    const products = new Map<string, ProductUpsert>();
-    const pending: Array<{ matchKey: string; product: CatalogProduct }> = [];
+    const products = new Map<string, ProductUpsert>()
+    const pending: Array<{ matchKey: string; product: CatalogProduct }> = []
 
     for await (const page of source.pages()) {
-      report.unitsAttempted += 1;
+      report.unitsAttempted += 1
 
-      if (page.status !== "ok") {
-        report.unitsFailed += 1;
-        metrics.increment("collector.unit_failed", 1, {
+      if (page.status !== 'ok') {
+        report.unitsFailed += 1
+        metrics.increment('collector.unit_failed', 1, {
           storeId: source.storeId,
-        });
-        continue;
+        })
+        continue
       }
 
       for (const found of page.products) {
-        report.productsSeen += 1;
+        report.productsSeen += 1
 
-        const upsert = this.toUpsert(found, report);
-        if (!upsert) continue;
+        const upsert = this.toUpsert(found, report)
+        if (!upsert) continue
 
-        if (!products.has(upsert.matchKey))
-          products.set(upsert.matchKey, upsert);
-        pending.push({ matchKey: upsert.matchKey, product: found });
+        if (!products.has(upsert.matchKey)) products.set(upsert.matchKey, upsert)
+        pending.push({ matchKey: upsert.matchKey, product: found })
       }
     }
 
-    const ids = await writer.upsertProducts([...products.values()]);
-    report.productsStored = ids.size;
+    const ids = await writer.upsertProducts([...products.values()])
+    report.productsStored = ids.size
 
-    const offers = this.toOffers(pending, ids, clock.now());
-    report.offersWritten =
-      offers.length > 0 ? await writer.insertOffers(offers) : 0;
+    const offers = this.toOffers(pending, ids, clock.now())
+    report.offersWritten = offers.length > 0 ? await writer.insertOffers(offers) : 0
 
-    metrics.timing("collector.store_ms", clock.now().getTime() - startedAt, {
+    metrics.timing('collector.store_ms', clock.now().getTime() - startedAt, {
       storeId: source.storeId,
-    });
-    metrics.increment("collector.offers_written", report.offersWritten, {
+    })
+    metrics.increment('collector.offers_written', report.offersWritten, {
       storeId: source.storeId,
-    });
+    })
     // Flattened on purpose: a nested object in a log line is not queryable.
-    runLogger.info("collector.store_finished", {
+    runLogger.info('collector.store_finished', {
       mode: report.mode,
       unitsAttempted: report.unitsAttempted,
       unitsFailed: report.unitsFailed,
@@ -128,34 +122,27 @@ export class CollectStoreOffers {
       offersWritten: report.offersWritten,
       discardedUnpriceable: report.discarded.unpriceable,
       discardedUnusableEan: report.discarded.unusableEan,
-    });
+    })
 
-    return report;
+    return report
   }
 
   /** Null when the row cannot be stored; the reason is counted in the report. */
-  private toUpsert(
-    found: CatalogProduct,
-    report: CollectionReport,
-  ): ProductUpsert | null {
-    const { nameParser, matcher } = this.deps;
+  private toUpsert(found: CatalogProduct, report: CollectionReport): ProductUpsert | null {
+    const { nameParser, matcher } = this.deps
 
-    if (
-      !Number.isFinite(found.priceReais) ||
-      found.priceReais <= 0 ||
-      !found.name
-    ) {
-      report.discarded.unpriceable += 1;
-      return null;
+    if (!Number.isFinite(found.priceReais) || found.priceReais <= 0 || !found.name) {
+      report.discarded.unpriceable += 1
+      return null
     }
 
-    const ean = Ean.tryParse(found.ean);
+    const ean = Ean.tryParse(found.ean)
     // Not a discard: the product is still stored, just not merged across
     // stores. Counted so I can see how much of the catalogue cannot be compared.
-    if (found.ean && !ean) report.discarded.unusableEan += 1;
+    if (found.ean && !ean) report.discarded.unusableEan += 1
 
-    const size = nameParser.extractSize(found.name);
-    const brand = nameParser.normalizeBrand(found.brand);
+    const size = nameParser.extractSize(found.name)
+    const brand = nameParser.normalizeBrand(found.brand)
 
     return {
       matchKey: matcher.keyFor({
@@ -172,7 +159,7 @@ export class CollectStoreOffers {
       sizeUnit: size?.unit ?? null,
       imageUrl: found.imageUrl,
       searchText: nameParser.buildSearchText(found.name, brand),
-    };
+    }
   }
 
   /**
@@ -185,33 +172,30 @@ export class CollectStoreOffers {
     ids: ReadonlyMap<string, string>,
     collectedAt: Date,
   ): OfferInsert[] {
-    const offers = new Map<string, OfferInsert>();
+    const offers = new Map<string, OfferInsert>()
 
     for (const { matchKey, product } of pending) {
-      const productId = ids.get(matchKey);
-      if (!productId || offers.has(productId)) continue;
+      const productId = ids.get(matchKey)
+      if (!productId || offers.has(productId)) continue
 
-      const price = Money.fromReais(product.priceReais);
-      if (price.cents <= 0) continue;
+      const price = Money.fromReais(product.priceReais)
+      if (price.cents <= 0) continue
 
       const listPrice =
-        product.listPriceReais !== null
-          ? Money.fromReais(product.listPriceReais)
-          : null;
+        product.listPriceReais !== null ? Money.fromReais(product.listPriceReais) : null
 
       offers.set(productId, {
         productId,
         storeId: this.deps.source.storeId,
         priceCents: price.cents,
-        listPriceCents:
-          listPrice && listPrice.cents > price.cents ? listPrice.cents : null,
+        listPriceCents: listPrice && listPrice.cents > price.cents ? listPrice.cents : null,
         url: product.url,
         inStock: product.inStock,
         collectedAt,
-      });
+      })
     }
 
-    return [...offers.values()];
+    return [...offers.values()]
   }
 }
 
@@ -221,14 +205,14 @@ export class CollectStoreOffers {
  * paragraph is cut — the listing shows two lines of this, not an essay.
  */
 function trimDescription(raw: string | null): string | null {
-  if (!raw) return null;
+  if (!raw) return null
 
   const text = raw
-    .replace(/<[^>]*>/g, " ")
-    .replace(/&nbsp;/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
 
-  if (text.length < 10) return null;
-  return text.length > 400 ? `${text.slice(0, 400).trimEnd()}…` : text;
+  if (text.length < 10) return null
+  return text.length > 400 ? `${text.slice(0, 400).trimEnd()}…` : text
 }

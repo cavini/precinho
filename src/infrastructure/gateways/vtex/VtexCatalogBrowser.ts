@@ -1,8 +1,4 @@
-import type {
-  CatalogBrowser,
-  CatalogSlice,
-  SweepPlan,
-} from '@/application/ports/CatalogBrowser'
+import type { CatalogBrowser, CatalogSlice, SweepPlan } from '@/application/ports/CatalogBrowser'
 import type { HttpClient } from '@/application/ports/HttpClient'
 import type { Logger } from '@/application/ports/Logger'
 import type { CatalogSearchResult } from '@/application/ports/StoreCatalogGateway'

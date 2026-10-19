@@ -10,7 +10,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "collect": "tsx collector/run.ts",
-    "migrate": "tsx db/migrate.ts"
+    "migrate": "tsx db/migrate.ts",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

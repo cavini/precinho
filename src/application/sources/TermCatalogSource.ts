@@ -1,5 +1,5 @@
-import type { CatalogPage, CatalogSource } from "../ports/CatalogSource";
-import type { StoreCatalogGateway } from "../ports/StoreCatalogGateway";
+import type { CatalogPage, CatalogSource } from '../ports/CatalogSource'
+import type { StoreCatalogGateway } from '../ports/StoreCatalogGateway'
 
 /**
  * Reads a catalogue by asking for a list of words.
@@ -10,7 +10,7 @@ import type { StoreCatalogGateway } from "../ports/StoreCatalogGateway";
  * duplicates rows and terminates early.
  */
 export class TermCatalogSource implements CatalogSource {
-  readonly mode = "terms" as const;
+  readonly mode = 'terms' as const
 
   constructor(
     private readonly gateway: StoreCatalogGateway,
@@ -18,17 +18,17 @@ export class TermCatalogSource implements CatalogSource {
   ) {}
 
   get storeId(): string {
-    return this.gateway.storeId;
+    return this.gateway.storeId
   }
 
   /** Complexity: O(t) requests for t terms. */
   async *pages(): AsyncIterable<CatalogPage> {
     for (const term of this.terms) {
-      const result = await this.gateway.searchTerm(term);
+      const result = await this.gateway.searchTerm(term)
 
-      yield result.status === "ok"
-        ? { status: "ok", label: term, products: result.products }
-        : { status: "failed", label: term };
+      yield result.status === 'ok'
+        ? { status: 'ok', label: term, products: result.products }
+        : { status: 'failed', label: term }
     }
   }
 }
