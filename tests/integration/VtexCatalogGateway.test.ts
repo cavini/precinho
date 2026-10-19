@@ -1,12 +1,13 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import type { HttpJsonResponse } from '@/application/ports/HttpClient'
+
 import { RecordingLogger } from '@/application/testing/RecordingLogger'
 import { ProductNameParser } from '@/domain/services/ProductNameParser'
 import { PostalCode } from '@/domain/value-objects/PostalCode'
 import type { VtexStoreConfig } from '@/infrastructure/gateways/vtex/VtexCatalogGateway'
 import { VtexCatalogGateway } from '@/infrastructure/gateways/vtex/VtexCatalogGateway'
+import type { FakeResponse } from '@/infrastructure/testing/FakeHttpClient'
 import { FakeHttpClient } from '@/infrastructure/testing/FakeHttpClient'
 
 /**
@@ -22,10 +23,7 @@ const MAMBO_COCA_COLA: unknown = JSON.parse(
 const CATALOG = /catalog_system\/pub\/products\/search/
 const REGIONS = /checkout\/pub\/regions/
 
-function build(
-  response: HttpJsonResponse,
-  config: Partial<VtexStoreConfig> = {},
-) {
+function build(response: FakeResponse, config: Partial<VtexStoreConfig> = {}) {
   const http = new FakeHttpClient([{ match: CATALOG, response }])
   const logger = new RecordingLogger()
   const gateway = new VtexCatalogGateway(
@@ -101,7 +99,12 @@ describe('VtexCatalogGateway mapping rules', () => {
         productId: '1',
         productName: 'Sem preço',
         link: 'https://www.mambo.com.br/sem-preco/p',
-        items: [{ ean: '7894900010015', sellers: [{ commertialOffer: { Price: 0, AvailableQuantity: 5 } }] }],
+        items: [
+          {
+            ean: '7894900010015',
+            sellers: [{ commertialOffer: { Price: 0, AvailableQuantity: 5 } }],
+          },
+        ],
       },
     ]
     const { gateway } = build({ status: 'ok', statusCode: 200, body })
@@ -118,7 +121,12 @@ describe('VtexCatalogGateway mapping rules', () => {
         productId: '1',
         productName: 'Esgotado',
         link: 'https://www.mambo.com.br/esgotado/p',
-        items: [{ ean: '7894900010015', sellers: [{ commertialOffer: { Price: 9.9, AvailableQuantity: 0 } }] }],
+        items: [
+          {
+            ean: '7894900010015',
+            sellers: [{ commertialOffer: { Price: 9.9, AvailableQuantity: 0 } }],
+          },
+        ],
       },
     ]
     const { gateway } = build({ status: 'ok', statusCode: 200, body })
@@ -134,19 +142,25 @@ describe('VtexCatalogGateway mapping rules', () => {
         productId: '1',
         productName: 'Promo',
         link: 'https://x.com/p',
-        items: [{ sellers: [{ commertialOffer: { Price: 10, ListPrice: 14.98, AvailableQuantity: 1 } }] }],
+        items: [
+          { sellers: [{ commertialOffer: { Price: 10, ListPrice: 14.98, AvailableQuantity: 1 } }] },
+        ],
       },
       {
         productId: '2',
         productName: 'Sem promo',
         link: 'https://x.com/p2',
-        items: [{ sellers: [{ commertialOffer: { Price: 10, ListPrice: 10, AvailableQuantity: 1 } }] }],
+        items: [
+          { sellers: [{ commertialOffer: { Price: 10, ListPrice: 10, AvailableQuantity: 1 } }] },
+        ],
       },
       {
         productId: '3',
         productName: 'Lista menor que preço',
         link: 'https://x.com/p3',
-        items: [{ sellers: [{ commertialOffer: { Price: 10, ListPrice: 8, AvailableQuantity: 1 } }] }],
+        items: [
+          { sellers: [{ commertialOffer: { Price: 10, ListPrice: 8, AvailableQuantity: 1 } }] },
+        ],
       },
     ]
     const { gateway } = build({ status: 'ok', statusCode: 200, body })
@@ -161,7 +175,11 @@ describe('VtexCatalogGateway mapping rules', () => {
       {},
       { productId: '1', productName: 'No items', link: 'https://x.com/p' },
       { productId: '2', productName: 'No sellers', link: 'https://x.com/p', items: [{}] },
-      { productId: '3', productName: 'No link', items: [{ sellers: [{ commertialOffer: { Price: 5, AvailableQuantity: 1 } }] }] },
+      {
+        productId: '3',
+        productName: 'No link',
+        items: [{ sellers: [{ commertialOffer: { Price: 5, AvailableQuantity: 1 } }] }],
+      },
       null,
       'nonsense',
     ]
@@ -303,7 +321,10 @@ describe('VtexCatalogGateway request assembly', () => {
 
   it('applies the prefix to the region lookup too', async () => {
     const http = new FakeHttpClient([
-      { match: REGIONS, response: { status: 'ok', statusCode: 200, body: [{ id: 'r1', sellers: [] }] } },
+      {
+        match: REGIONS,
+        response: { status: 'ok', statusCode: 200, body: [{ id: 'r1', sellers: [] }] },
+      },
     ])
     const gateway = new VtexCatalogGateway(
       { storeId: 'atacadao', host: 'www.atacadao.com.br', pathPrefix: '/io' },
@@ -419,7 +440,7 @@ describe('VtexCatalogGateway pacing itself', () => {
 })
 
 describe('VtexCatalogGateway resolving a trading area from a CEP', () => {
-  function withRegions(response: HttpJsonResponse) {
+  function withRegions(response: FakeResponse) {
     const http = new FakeHttpClient([{ match: REGIONS, response }])
     const gateway = new VtexCatalogGateway(
       { storeId: 'savegnago', host: 'www.savegnago.com.br' },
@@ -447,7 +468,11 @@ describe('VtexCatalogGateway resolving a trading area from a CEP', () => {
 
   it('copes with an area that names no branch', async () => {
     // Zona Sul answers like this; the token is still usable.
-    const { gateway } = withRegions({ status: 'ok', statusCode: 200, body: [{ id: 'U1cj', sellers: [] }] })
+    const { gateway } = withRegions({
+      status: 'ok',
+      statusCode: 200,
+      body: [{ id: 'U1cj', sellers: [] }],
+    })
 
     const resolved = await gateway.resolveRegion(PostalCode.tryParse('22071900')!)
     expect(resolved?.regionToken).toBe('U1cj')

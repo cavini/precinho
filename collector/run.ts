@@ -32,6 +32,7 @@ import { MagentoCatalogGateway } from '@/infrastructure/gateways/magento/Magento
 import { TendaCatalogGateway } from '@/infrastructure/gateways/tenda/TendaCatalogGateway'
 import { ProductMatcher } from '@/domain/services/ProductMatcher'
 import { ProductNameParser } from '@/domain/services/ProductNameParser'
+import { RequestBudget } from '@/domain/services/RequestBudget'
 import { PostalCode } from '@/domain/value-objects/PostalCode'
 import { readCollectorEnv } from '@/infrastructure/config/env'
 import { VtexCatalogGateway } from '@/infrastructure/gateways/vtex/VtexCatalogGateway'
@@ -58,6 +59,8 @@ type StoreConfigRow = {
   min_interval_ms: number | null
   /** Public domain for product links, when it differs from `host`. */
   storefront_host: string | null
+  /** Requests this store has agreed to receive per day; null is no limit. */
+  daily_request_budget: number | null
   region_token: string | null
   regions: { slug: string; probe_cep: string } | null
 }
@@ -89,7 +92,7 @@ async function main(): Promise<void> {
   const { data, error } = await client
     .from('stores')
     .select(
-      'id, slug, host, platform, sales_channel, path_prefix, store_view, min_interval_ms, storefront_host, region_token, regions(slug, probe_cep)',
+      'id, slug, host, platform, sales_channel, path_prefix, store_view, min_interval_ms, storefront_host, daily_request_budget, region_token, regions(slug, probe_cep)',
     )
     .eq('active', true)
     .order('slug')
@@ -122,7 +125,25 @@ async function main(): Promise<void> {
   const results = await inBatches(stores, STORE_CONCURRENCY, async (store) => {
     const storeLogger = logger.child({ storeId: store.id, slug: store.slug })
 
-    const gateway = await buildGateway(store, http, storeLogger)
+    // A store that capped us gets that cap enforced, counting the whole
+    // day rather than this run — a second run must not win a fresh
+    // allowance.
+    const spentToday = await readSpentToday(client, store.id, storeLogger)
+    const budget =
+      store.daily_request_budget === null
+        ? RequestBudget.unlimited()
+        : RequestBudget.of(store.daily_request_budget, spentToday)
+
+    if (budget.exhausted) {
+      storeLogger.warn('collector.budget_already_spent', {
+        slug: store.slug,
+        spentToday,
+        budget: store.daily_request_budget,
+      })
+      return { collected: false }
+    }
+
+    const gateway = await buildGateway(store, http, storeLogger, budget)
     if (!gateway) return { collected: false }
 
     const report = await new CollectStoreOffers({
@@ -134,6 +155,16 @@ async function main(): Promise<void> {
       metrics,
       clock: systemClock,
     }).execute({ terms: BASIC_BASKET })
+
+    if (store.daily_request_budget !== null) {
+      await writeSpentToday(client, store.id, budget.spent, storeLogger)
+      storeLogger.info('collector.budget_used', {
+        slug: store.slug,
+        spentThisRun: budget.spentThisRun,
+        spentToday: budget.spent,
+        budget: store.daily_request_budget,
+      })
+    }
 
     return { collected: report.offersWritten > 0 }
   })
@@ -158,6 +189,7 @@ async function buildGateway(
   store: StoreConfigRow,
   http: FetchHttpClient,
   logger: Logger,
+  budget: RequestBudget,
 ): Promise<StoreCatalogGateway | null> {
   // One chain's rate limit is no reason to crawl the rest this slowly.
   const minIntervalMs = store.min_interval_ms ?? MIN_INTERVAL_MS
@@ -201,6 +233,7 @@ async function buildGateway(
         storeId: store.id,
         host: store.host,
         storeView: store.store_view ?? undefined,
+        budget,
         minIntervalMs,
       },
       http,
@@ -297,4 +330,45 @@ async function inBatches<T, R>(
   }
 
   return results
+}
+
+/** Requests already spent against this store today, or zero if unknown. */
+async function readSpentToday(
+  client: ReturnType<typeof createWriteClient>,
+  storeId: string,
+  logger: Logger,
+): Promise<number> {
+  const { data, error } = await client
+    .from('store_request_log')
+    .select('requests')
+    .eq('store_id', storeId)
+    .eq('day', today())
+    .maybeSingle()
+
+  if (error) {
+    // Fail closed: an unreadable counter must not be read as "nothing spent
+    // yet" against a store that asked us to go easy.
+    logger.warn('collector.budget_unreadable', { reason: error.message })
+    return Number.POSITIVE_INFINITY
+  }
+
+  return (data as { requests?: number } | null)?.requests ?? 0
+}
+
+async function writeSpentToday(
+  client: ReturnType<typeof createWriteClient>,
+  storeId: string,
+  requests: number,
+  logger: Logger,
+): Promise<void> {
+  const { error } = await client
+    .from('store_request_log')
+    .upsert({ store_id: storeId, day: today(), requests }, { onConflict: 'store_id,day' })
+
+  if (error) logger.error('collector.budget_unwritable', { reason: error.message })
+}
+
+/** The collector's day is UTC, matching the scheduled run. */
+function today(): string {
+  return new Date().toISOString().slice(0, 10)
 }

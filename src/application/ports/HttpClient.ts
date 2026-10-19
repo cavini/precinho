@@ -4,7 +4,20 @@ export type HttpRequestOptions = {
 }
 
 export type HttpJsonResponse =
-  | { status: 'ok'; statusCode: number; body: unknown }
+  | {
+      status: 'ok'
+      statusCode: number
+      body: unknown
+      /**
+       * Lower-cased response headers.
+       *
+       * Some catalogues answer a question in a header rather than the body:
+       * VTEX reports a category's exact size in `resources: 0-0/1856`, which
+       * is what lets a sweep be planned without downloading a single
+       * product.
+       */
+      headers: Readonly<Record<string, string>>
+    }
   /** Reached the server, it said no. */
   | { status: 'http-error'; statusCode: number }
   /** Never got an answer: DNS, TLS, connection reset. */

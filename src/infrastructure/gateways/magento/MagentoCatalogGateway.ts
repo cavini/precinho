@@ -5,6 +5,7 @@ import type {
   CatalogSearchResult,
   StoreCatalogGateway,
 } from '@/application/ports/StoreCatalogGateway'
+import type { RequestBudget } from '@/domain/services/RequestBudget'
 
 export type MagentoStoreConfig = {
   storeId: string
@@ -19,12 +20,27 @@ export type MagentoStoreConfig = {
   /** Suffix Magento appends to product URLs; ".html" on a default install. */
   urlSuffix?: string
   pageSize?: number
+  /**
+   * How many requests this store has agreed to receive today.
+   *
+   * Tauste granted access on condition of twenty a day. Honouring that is
+   * the gateway's job rather than the caller's, because the gateway is the
+   * only place every request has to pass through.
+   */
+  budget?: RequestBudget
   minIntervalMs?: number
   sleep?: (ms: number) => Promise<void>
   nowMs?: () => number
 }
 
-const DEFAULT_PAGE_SIZE = 24
+/**
+ * Larger than the other platforms' default on purpose.
+ *
+ * Where a store caps our daily requests, each one has to carry as much as
+ * it can: twenty requests of 200 products cover a catalogue, twenty of 24
+ * barely scratch it.
+ */
+const DEFAULT_PAGE_SIZE = 200
 const DEFAULT_URL_SUFFIX = '.html'
 const REQUEST_TIMEOUT_MS = 15_000
 
@@ -80,6 +96,17 @@ export class MagentoCatalogGateway implements StoreCatalogGateway {
    * Complexity: one request per term, O(n) over the products returned.
    */
   async searchTerm(term: string): Promise<CatalogSearchResult> {
+    // Checked before pacing: there is no point waiting out an interval to
+    // make a request we are not allowed to make.
+    if (this.config.budget && !this.config.budget.tryConsume()) {
+      this.logger.warn('magento.budget_exhausted', {
+        storeId: this.storeId,
+        term,
+        spentToday: this.config.budget.spent,
+      })
+      return { status: 'unavailable', reason: 'budget-exhausted' }
+    }
+
     await this.pace()
 
     const response = await this.http.getJson(this.queryUrl(term), {

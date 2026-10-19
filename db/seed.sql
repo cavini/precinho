@@ -40,8 +40,9 @@ from (values
   -- Curitiba
   ('festval',          'Festval',          'Festval',          'curitiba-pr',       'vtex-legacy',     'www.festval.com',                           '1',  null,  null),
   ('supermuffato',     'Super Muffato',    'Super Muffato',    'curitiba-pr',       'vtex-legacy',     'www.supermuffato.com.br',                   '1',  null,  null),
-  -- Marília: Magento rather than VTEX, priced per store view. Seeded but
-  -- switched off below — its robots.txt disallows everyone but Googlebot.
+  -- Marília: Magento rather than VTEX, priced per store view. Its
+  -- robots.txt disallows everyone but Googlebot, so it runs only under the
+  -- written permission recorded below, at the rate they asked for.
   ('tauste',           'Tauste',           'Tauste',           'marilia-sp',        'magento-graphql', 'tauste.com.br',                             null, null,  'marilia')
 ) as v (slug, name, chain, region_slug, platform, host, sales_channel, path_prefix, store_view)
 join regions r on r.slug = v.region_slug
@@ -68,6 +69,8 @@ on conflict (slug) do nothing;
 update stores set storefront_host = 'www.oba.com.br'           where slug = 'oba';
 update stores set storefront_host = 'mercado.carrefour.com.br' where slug = 'carrefour';
 
--- Tauste: robots.txt disallows `*` outright, so the row stays inactive
--- until they say otherwise in writing.
-update stores set active = false where slug = 'tauste';
+-- Tauste: their legal department granted access from tauste.com.br on
+-- condition of twenty requests a day, a figure their technical coordinator
+-- set to keep the system stable. The limit is enforced in code rather than
+-- intended — see RequestBudget and store_request_log.
+update stores set active = true, daily_request_budget = 20 where slug = 'tauste';

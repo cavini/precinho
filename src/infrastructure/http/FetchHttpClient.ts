@@ -127,7 +127,12 @@ export class FetchHttpClient implements HttpClient {
       }
 
       try {
-        return { status: 'ok', statusCode: response.status, body: await response.json() }
+        return {
+          status: 'ok',
+          statusCode: response.status,
+          body: await response.json(),
+          headers: toHeaderMap(response.headers),
+        }
       } catch {
         return { status: 'invalid-json' }
       }
@@ -154,4 +159,13 @@ function isAbort(error: unknown): boolean {
 function describe(error: unknown): string {
   if (error instanceof Error) return error.message
   return String(error)
+}
+
+/** Lower-cased, so callers never have to guess at capitalisation. */
+function toHeaderMap(headers: Headers): Record<string, string> {
+  const map: Record<string, string> = {}
+  headers.forEach((value, key) => {
+    map[key.toLowerCase()] = value
+  })
+  return map
 }

@@ -1,11 +1,13 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import type { HttpJsonResponse } from '@/application/ports/HttpClient'
+
 import { RecordingLogger } from '@/application/testing/RecordingLogger'
+import { RequestBudget } from '@/domain/services/RequestBudget'
 import { ProductNameParser } from '@/domain/services/ProductNameParser'
 import { MagentoCatalogGateway } from '@/infrastructure/gateways/magento/MagentoCatalogGateway'
 import type { MagentoStoreConfig } from '@/infrastructure/gateways/magento/MagentoCatalogGateway'
+import type { FakeResponse } from '@/infrastructure/testing/FakeHttpClient'
 import { FakeHttpClient } from '@/infrastructure/testing/FakeHttpClient'
 
 /** Names, SKUs and prices are Tauste's, read on 2026-10-19. */
@@ -15,7 +17,7 @@ const TAUSTE_ARROZ: unknown = JSON.parse(
 
 const GRAPHQL = /\/graphql/
 
-function build(response: HttpJsonResponse, config: Partial<MagentoStoreConfig> = {}) {
+function build(response: FakeResponse, config: Partial<MagentoStoreConfig> = {}) {
   const http = new FakeHttpClient([{ match: GRAPHQL, response }])
   const logger = new RecordingLogger()
   const gateway = new MagentoCatalogGateway(
@@ -137,6 +139,49 @@ describe('MagentoCatalogGateway request assembly', () => {
   })
 })
 
+describe('MagentoCatalogGateway honouring an agreed request limit', () => {
+  it('stops once the allowance for the day is gone', async () => {
+    const budget = RequestBudget.of(2)
+    const { gateway, http } = build(okWithFixture, { budget })
+
+    expect((await gateway.searchTerm('arroz')).status).toBe('ok')
+    expect((await gateway.searchTerm('feijao')).status).toBe('ok')
+
+    const third = await gateway.searchTerm('leite')
+    expect(third).toMatchObject({ status: 'unavailable', reason: 'budget-exhausted' })
+    // The decisive part: the request was never sent.
+    expect(http.requests).toHaveLength(2)
+  })
+
+  it('says so in the log, since a short run would otherwise look like a failure', async () => {
+    const { gateway, logger } = build(okWithFixture, { budget: RequestBudget.of(0) })
+    await gateway.searchTerm('arroz')
+
+    expect(logger.find('magento.budget_exhausted')).toHaveLength(1)
+  })
+
+  it('carries a budget already spent earlier in the day', async () => {
+    const { gateway, http } = build(okWithFixture, { budget: RequestBudget.of(20, 20) })
+
+    expect((await gateway.searchTerm('arroz')).status).toBe('unavailable')
+    expect(http.requests).toEqual([])
+  })
+
+  it('is unlimited when no budget is configured', async () => {
+    const { gateway, http } = build(okWithFixture)
+
+    for (const term of ['a', 'b', 'c', 'd']) await gateway.searchTerm(term)
+    expect(http.requests).toHaveLength(4)
+  })
+
+  it('asks for a large page, because a capped request has to carry more', async () => {
+    const { gateway, http } = build(okWithFixture)
+    await gateway.searchTerm('arroz')
+
+    expect(new URL(http.lastUrl).searchParams.get('query')).toContain('pageSize: 200')
+  })
+})
+
 describe('MagentoCatalogGateway when the store will not answer', () => {
   it('treats a GraphQL error as unavailable, despite the 200', async () => {
     // GraphQL reports failure in the body, so a broken query looks like a
@@ -171,8 +216,17 @@ describe('MagentoCatalogGateway when the store will not answer', () => {
         products: {
           items: [
             { name: 'Sem preço', url_key: 'sem-preco', price_range: { minimum_price: {} } },
-            { name: 'Sem url', sku: 'x', price_range: { minimum_price: { final_price: { value: 5 } } } },
-            { name: 'Boa', url_key: 'boa', stock_status: 'IN_STOCK', price_range: { minimum_price: { final_price: { value: 5 } } } },
+            {
+              name: 'Sem url',
+              sku: 'x',
+              price_range: { minimum_price: { final_price: { value: 5 } } },
+            },
+            {
+              name: 'Boa',
+              url_key: 'boa',
+              stock_status: 'IN_STOCK',
+              price_range: { minimum_price: { final_price: { value: 5 } } },
+            },
           ],
         },
       },

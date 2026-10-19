@@ -28,7 +28,24 @@ describe('FetchHttpClient', () => {
     const { client } = build(async () => jsonResponse({ hello: 'world' }))
     const result = await client.getJson('https://example.com/a')
 
-    expect(result).toEqual({ status: 'ok', statusCode: 200, body: { hello: 'world' } })
+    expect(result).toMatchObject({ status: 'ok', statusCode: 200, body: { hello: 'world' } })
+  })
+
+  it('exposes response headers, lower-cased', async () => {
+    // VTEX reports a category's exact size in a `resources: 0-0/1856`
+    // header, which is what lets a catalogue sweep be planned without
+    // downloading a single product.
+    const { client } = build(
+      async () =>
+        new Response(JSON.stringify([]), {
+          status: 206,
+          headers: { 'Content-Type': 'application/json', Resources: '0-0/1856' },
+        }),
+    )
+
+    const result = await client.getJson('https://example.com/a')
+    if (result.status !== 'ok') throw new Error(result.status)
+    expect(result.headers.resources).toBe('0-0/1856')
   })
 
   it('treats 206 as success, which is what the VTEX catalogue answers', async () => {
