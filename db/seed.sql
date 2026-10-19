@@ -40,7 +40,8 @@ from (values
   -- Curitiba
   ('festval',          'Festval',          'Festval',          'curitiba-pr',       'vtex-legacy',     'www.festval.com',                           '1',  null,  null),
   ('supermuffato',     'Super Muffato',    'Super Muffato',    'curitiba-pr',       'vtex-legacy',     'www.supermuffato.com.br',                   '1',  null,  null),
-  -- Marília: Magento rather than VTEX, priced per store view.
+  -- Marília: Magento rather than VTEX, priced per store view. Seeded but
+  -- switched off below — its robots.txt disallows everyone but Googlebot.
   ('tauste',           'Tauste',           'Tauste',           'marilia-sp',        'magento-graphql', 'tauste.com.br',                             null, null,  'marilia')
 ) as v (slug, name, chain, region_slug, platform, host, sales_channel, path_prefix, store_view)
 join regions r on r.slug = v.region_slug
@@ -66,3 +67,7 @@ on conflict (slug) do nothing;
 -- Links must point at a shop, not at the account host the collector reads.
 update stores set storefront_host = 'www.oba.com.br'           where slug = 'oba';
 update stores set storefront_host = 'mercado.carrefour.com.br' where slug = 'carrefour';
+
+-- Tauste: robots.txt disallows `*` outright, so the row stays inactive
+-- until they say otherwise in writing.
+update stores set active = false where slug = 'tauste';

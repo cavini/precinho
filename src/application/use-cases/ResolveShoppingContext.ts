@@ -112,6 +112,19 @@ export class ResolveShoppingContext {
 
     const stores = await storeRepository.listByRegion(match.region.id)
 
+    // A region can empty out after the fact: a chain gets deactivated, or
+    // its robots.txt turns out to forbid us. Matching the city and then
+    // returning no stores sends the shopper round a loop with nothing
+    // explaining it, so an empty region is simply not coverage.
+    if (stores.length === 0) {
+      logger.info('cep.region_without_stores', {
+        regionSlug: match.region.slug,
+        city: address.city,
+        uf: address.uf,
+      })
+      return this.finish({ status: 'no-coverage', city: address.city, uf: address.uf })
+    }
+
     return this.finish({
       status: 'ok',
       context: {

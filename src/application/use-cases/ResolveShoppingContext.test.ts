@@ -108,6 +108,31 @@ describe('ResolveShoppingContext', () => {
       expect(result.context.region.slug).toBe('sao-paulo-sp')
     })
 
+    it('admits a covered city whose stores have all been switched off', async () => {
+      // A region can empty out — a chain is deactivated, or its robots.txt
+      // turns out to forbid us. Matching the city and then handing back no
+      // stores sends the shopper round a loop with no explanation, so an
+      // empty region is no coverage.
+      const addressLookup = new StubAddressLookup({
+        '17500000': { city: 'Marília', uf: 'SP', neighbourhood: 'Centro' },
+      })
+      const regions = [
+        SAO_PAULO,
+        {
+          id: 'region-marilia',
+          slug: 'marilia-sp',
+          name: 'Marília',
+          city: 'Marília',
+          uf: 'SP',
+          isUfDefault: false,
+        },
+      ]
+      const { useCase } = build({ addressLookup, regions })
+
+      const result = await useCase.execute({ rawPostalCode: '17500000', clientKey: 'ip-hash' })
+      expect(result).toMatchObject({ status: 'no-coverage', city: 'Marília', uf: 'SP' })
+    })
+
     it('admits when a state has no stores at all', async () => {
       const addressLookup = new StubAddressLookup({
         '69000000': { city: 'Manaus', uf: 'AM', neighbourhood: null },
