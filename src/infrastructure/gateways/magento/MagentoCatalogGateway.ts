@@ -1,4 +1,4 @@
-import type { HttpClient } from '@/application/ports/HttpClient'
+import type { HttpClient, HttpJsonResponse } from '@/application/ports/HttpClient'
 import type { Logger } from '@/application/ports/Logger'
 import type {
   CatalogProduct,
@@ -56,7 +56,7 @@ const USER_AGENT = 'precinho-collector/1.0 (+https://github.com/cavini/precinho)
  * cannot be merged across stores on a verified GTIN; they fall back to the
  * approximate matcher.
  */
-const PRODUCT_FIELDS = `
+export const PRODUCT_FIELDS = `
   name
   sku
   url_key
@@ -118,10 +118,20 @@ export class MagentoCatalogGateway implements StoreCatalogGateway {
       },
     })
 
+    return this.toSearchResult(response, term)
+  }
+
+  /**
+   * Maps a catalogue response, whatever asked for it. Keyword search and
+   * category browsing return the same shape.
+   *
+   * Complexity: O(n) over the products returned.
+   */
+  private toSearchResult(response: HttpJsonResponse, asked: string): CatalogSearchResult {
     if (response.status !== 'ok') {
       this.logger.warn('magento.search_failed', {
         storeId: this.storeId,
-        term,
+        term: asked,
         result: response.status,
       })
       return { status: 'unavailable', reason: response.status }
@@ -137,7 +147,7 @@ export class MagentoCatalogGateway implements StoreCatalogGateway {
     if (body?.errors?.length) {
       this.logger.warn('magento.graphql_error', {
         storeId: this.storeId,
-        term,
+        term: asked,
         message: String(body.errors[0]?.message ?? '').slice(0, 200),
       })
       return { status: 'unavailable', reason: 'graphql-error' }
@@ -145,7 +155,7 @@ export class MagentoCatalogGateway implements StoreCatalogGateway {
 
     const items = body?.data?.products?.items
     if (!Array.isArray(items)) {
-      this.logger.warn('magento.unexpected_payload', { storeId: this.storeId, term })
+      this.logger.warn('magento.unexpected_payload', { storeId: this.storeId, term: asked })
       return { status: 'unavailable', reason: 'invalid-json' }
     }
 
@@ -156,12 +166,54 @@ export class MagentoCatalogGateway implements StoreCatalogGateway {
 
     this.logger.debug('magento.search_ok', {
       storeId: this.storeId,
-      term,
+      term: asked,
       received: items.length,
       usable: products.length,
     })
 
     return { status: 'ok', products }
+  }
+
+  /**
+   * One page of a category.
+   *
+   * Magento numbers pages from one and has no offset ceiling, so a category
+   * pages to its end however large it is — unlike VTEX, which refuses an
+   * offset past 2,500.
+   *
+   * Complexity: one request, O(n) over the products returned.
+   */
+  async searchCategory(
+    categoryUid: string,
+    page: number,
+    pageSize: number,
+  ): Promise<CatalogSearchResult> {
+    if (this.config.budget && !this.config.budget.tryConsume()) {
+      this.logger.warn('magento.budget_exhausted', {
+        storeId: this.storeId,
+        category: categoryUid,
+        spentToday: this.config.budget.spent,
+      })
+      return { status: 'unavailable', reason: 'budget-exhausted' }
+    }
+
+    await this.pace()
+
+    const query = `{ products(filter: { category_uid: { eq: ${JSON.stringify(categoryUid)} } }, pageSize: ${pageSize}, currentPage: ${page}) { items { ${PRODUCT_FIELDS} } } }`
+
+    const response = await this.http.getJson(
+      `https://${this.config.host}/graphql?${new URLSearchParams({ query })}`,
+      {
+        timeoutMs: REQUEST_TIMEOUT_MS,
+        headers: {
+          'User-Agent': USER_AGENT,
+          Accept: 'application/json',
+          ...(this.config.storeView ? { Store: this.config.storeView } : {}),
+        },
+      },
+    )
+
+    return this.toSearchResult(response, categoryUid)
   }
 
   /**
