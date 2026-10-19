@@ -130,6 +130,9 @@ export class GpaCatalogGateway implements StoreCatalogGateway {
       // approximate matcher pairs them up.
       ean: null,
       name,
+      // GPA's search rows carry no blurb; the product page has one but
+      // fetching it per product would multiply the run by twenty.
+      description: null,
       brand: typeof item.brand === 'string' && item.brand !== '' ? item.brand : null,
       imageUrl: firstImage(item.productImages),
       url,

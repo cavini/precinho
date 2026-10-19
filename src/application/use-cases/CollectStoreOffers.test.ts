@@ -19,6 +19,7 @@ function aCatalogProduct(overrides: Partial<CatalogProduct> = {}): CatalogProduc
     externalId: 'x1',
     ean: '7894900027013',
     name: 'Refrigerante Coca-Cola 2L',
+    description: 'Refrigerante de cola em garrafa PET de 2 litros.',
     brand: 'COCA-COLA',
     imageUrl: 'https://example.com/a.jpg',
     url: 'https://www.mambo.com.br/coca-2l/p',

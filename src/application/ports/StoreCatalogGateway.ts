@@ -7,6 +7,8 @@ export type CatalogProduct = {
   /** Raw barcode as given; the domain decides whether to trust it. */
   ean: string | null
   name: string
+  /** Store's own blurb. Null when the catalogue publishes none. */
+  description: string | null
   brand: string | null
   imageUrl: string | null
   /** Absolute link to the product page at that store. */

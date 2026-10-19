@@ -5,6 +5,7 @@ export type ProductUpsert = {
   matchKey: string
   gtin14: string | null
   name: string
+  description: string | null
   brand: string | null
   sizeAmount: number | null
   sizeUnit: CanonicalUnit | null

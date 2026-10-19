@@ -39,6 +39,7 @@ export class SupabaseCatalogWriter implements CatalogWriter {
             match_key: product.matchKey,
             gtin14: product.gtin14,
             name: product.name,
+            description: product.description,
             brand: product.brand,
             size_amount: product.sizeAmount,
             size_unit: product.sizeUnit,

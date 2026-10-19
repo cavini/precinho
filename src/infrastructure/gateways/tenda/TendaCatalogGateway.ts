@@ -173,6 +173,9 @@ export class TendaCatalogGateway implements StoreCatalogGateway {
       // raw: verifying the check digit is the domain's job, not ours.
       ean: asString(raw.barcode),
       name,
+      // The search endpoint returns no blurb — the product page has one,
+      // but fetching it per row would multiply a sweep twentyfold.
+      description: null,
       brand: asString(raw.brand),
       imageUrl: asString(raw.thumbnail) ?? firstPhotoUrl(raw.photos),
       url,

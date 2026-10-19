@@ -13,6 +13,8 @@ export type Product = {
   /** Null when the store gave no verifiable barcode. */
   ean: Ean | null
   name: string
+  /** Store's own blurb, trimmed. Null when there is none worth showing. */
+  description: string | null
   brand: string | null
   /** Null when no size could be read from the name. */
   size: Quantity | null

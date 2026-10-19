@@ -80,10 +80,12 @@ export function ResultListSkeleton({ rows = 6 }: { rows?: number }) {
       aria-label="Buscando"
     >
       {Array.from({ length: rows }, (_, index) => (
-        <li key={index} className="flex items-start justify-between gap-4 py-4">
+        <li key={index} className="flex items-start gap-4 py-4">
+          <Bar className="h-20 w-20 shrink-0 rounded-lg" />
           <div className="flex min-w-0 flex-1 flex-col gap-1.5">
             <Bar className="h-4 w-2/3" />
             <Bar className="h-3 w-1/4" />
+            <Bar className="h-3 w-full" />
             <Bar className="h-3 w-2/5" />
           </div>
           <div className="flex shrink-0 flex-col items-end gap-1.5">

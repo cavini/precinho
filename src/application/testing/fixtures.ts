@@ -51,6 +51,7 @@ export function aProduct(overrides: Partial<Product> & { id: string }): Product 
   return {
     ean: null,
     name,
+    description: null,
     brand: null,
     size: null,
     imageUrl: null,
