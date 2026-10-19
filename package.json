@@ -9,7 +9,7 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "collect": "tsx collector/index.ts"
+    "collect": "tsx collector/run.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
