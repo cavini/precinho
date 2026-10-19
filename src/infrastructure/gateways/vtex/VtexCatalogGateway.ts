@@ -189,7 +189,14 @@ export class VtexCatalogGateway implements StoreCatalogGateway, StoreRegionResol
     if (this.config.salesChannel) params.set('sc', this.config.salesChannel)
     if (this.config.regionToken) params.set('regionId', this.config.regionToken)
 
-    return `${this.base}/api/catalog_system/pub/products/search?${params}`
+    // URLSearchParams writes a space as "+", and some VTEX storefronts
+    // answer 400 to that — Mambo rejects "queijo+mussarela" and accepts
+    // "queijo%20mussarela". Safe to rewrite every "+" in the output, because
+    // a literal plus in a value has already been escaped to %2B by then, so
+    // the only ones left are spaces.
+    const query = params.toString().replace(/\+/g, '%20')
+
+    return `${this.base}/api/catalog_system/pub/products/search?${query}`
   }
 
   /** Scheme, host and any mount prefix the storefront puts the API behind. */
