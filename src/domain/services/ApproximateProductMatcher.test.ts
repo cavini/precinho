@@ -98,6 +98,18 @@ describe('ApproximateProductMatcher', () => {
       expect(matcher.compare(a, b).confident).toBe(false)
     })
 
+    it('refuses a pair whose names carry no describing word at all', () => {
+      // Catalogue rows like this exist. Everything in the name is either a
+      // packaging word or the size, so there is nothing left to compare and
+      // the pair must not pass on an empty-set technicality.
+      const a = candidate('a', 'Pacote 5kg', kg(5))
+      const b = candidate('b', 'Caixa 5kg', kg(5))
+
+      const result = matcher.compare(a, b)
+      expect(result.score).toBe(0)
+      expect(result.confident).toBe(false)
+    })
+
     it('refuses two products that only share a category word', () => {
       const a = candidate('a', 'Arroz Camil 1kg', kg(1))
       const b = candidate('b', 'Arroz Prato Fino 1kg', kg(1))
