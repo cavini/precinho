@@ -1,0 +1,11 @@
+
+> precinho@0.1.0 collect
+> tsx collector/run.ts atacadao carrefour festval hortifruti-rj hortifruti-sp mambo naturaldaterra oba samsclub supermuffato zonasul atacadao-taubate carrefour-taubate oba-taubate samsclub-taubate
+
+◇ injected env (6) from .env.local
+◇ injected env (0) from .env
+{"level":"info","message":"collector.run_started","timestamp":"2026-10-19T22:56:53.687Z","job":"collector","stores":15,"terms":422}
+{"level":"info","message":"collector.region_resolved","timestamp":"2026-10-19T22:56:54.310Z","job":"collector","storeId":"175540d3-0c1b-4221-a124-92c2aafd1390","slug":"atacadao-taubate","sellers":5}
+{"level":"info","message":"collector.region_resolved","timestamp":"2026-10-19T22:56:54.335Z","job":"collector","storeId":"7df81aeb-e9c4-4b14-95b0-dada059be97a","slug":"atacadao","sellers":12}
+{"level":"info","message":"collector.region_resolved","timestamp":"2026-10-19T22:56:54.480Z","job":"collector","storeId":"37af778e-dd15-41e6-9658-bad06fb46a3d","slug":"carrefour-taubate","sellers":19}
+{"level":"info","message":"collector.region_resolved","timestamp":"2026-10-19T22:56:54.482Z","job":"collector","storeId":"ee15f7c6-d1f4-48ae-a4b2-a04b2b6cd73f","slug":"carrefour","sellers":35}
