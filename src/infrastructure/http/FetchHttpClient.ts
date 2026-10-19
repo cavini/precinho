@@ -53,14 +53,37 @@ export class FetchHttpClient implements HttpClient {
    * between them.
    */
   async getJson(url: string, options: HttpRequestOptions = {}): Promise<HttpJsonResponse> {
+    return this.send(url, options, undefined, this.maxRetries)
+  }
+
+  /**
+   * Sent once, never retried. Repeating a POST blindly can duplicate a side
+   * effect on somebody else's system, and no catalogue read is worth that.
+   *
+   * Complexity: one request.
+   */
+  async postJson(
+    url: string,
+    body: unknown,
+    options: HttpRequestOptions = {},
+  ): Promise<HttpJsonResponse> {
+    return this.send(url, options, JSON.stringify(body), 0)
+  }
+
+  private async send(
+    url: string,
+    options: HttpRequestOptions,
+    body: string | undefined,
+    maxRetries: number,
+  ): Promise<HttpJsonResponse> {
     let lastResponse: HttpJsonResponse = { status: 'network-error', reason: 'not attempted' }
 
-    for (let attempt = 0; attempt <= this.maxRetries; attempt += 1) {
+    for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
       if (attempt > 0) {
         await this.sleep(this.retryBaseMs * 2 ** (attempt - 1))
       }
 
-      lastResponse = await this.attempt(url, options)
+      lastResponse = await this.attempt(url, options, body)
       if (!isWorthRetrying(lastResponse)) return lastResponse
 
       this.logger.debug('http.retrying', {
@@ -72,20 +95,29 @@ export class FetchHttpClient implements HttpClient {
 
     this.logger.warn('http.gave_up', {
       url,
-      attempts: this.maxRetries + 1,
+      attempts: maxRetries + 1,
       result: lastResponse.status,
     })
     return lastResponse
   }
 
-  private async attempt(url: string, options: HttpRequestOptions): Promise<HttpJsonResponse> {
+  private async attempt(
+    url: string,
+    options: HttpRequestOptions,
+    body?: string,
+  ): Promise<HttpJsonResponse> {
     const timeoutMs = options.timeoutMs ?? this.defaultTimeoutMs
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), timeoutMs)
 
     try {
       const response = await this.fetchImpl(url, {
-        headers: options.headers,
+        method: body === undefined ? 'GET' : 'POST',
+        body,
+        headers:
+          body === undefined
+            ? options.headers
+            : { 'Content-Type': 'application/json', ...options.headers },
         signal: controller.signal,
         redirect: 'follow',
       })

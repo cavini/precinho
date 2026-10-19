@@ -23,6 +23,37 @@ const MULTIPACK = new RegExp(
 const SINGLE_SIZE = new RegExp(String.raw`(${NUMBER})\s*(${UNIT})${NOT_INSIDE_A_WORD}`, 'giu')
 
 /**
+ * Mass and volume spellings only — no count words.
+ *
+ * The distinction matters for the pack guard below: "Caixa 1000g" is a
+ * one-kilo box, so the digits are a size, while "Fardo 12 unidades" is
+ * twelve of something, so they are a count.
+ */
+const MEASURE_UNIT = KNOWN_UNIT_SPELLINGS.filter((spelling) =>
+  /^(kg|g|mg|ml|cl|l|lt|litro|litros)$/.test(spelling),
+).join('|')
+
+/**
+ * A pack written in words: "Pack 6 Galões 1,27l Cada", "Caixa 12 Latas
+ * 350ml", "Fardo 12 Unidades 269ml".
+ *
+ * Wholesale clubs sell these alongside everyone else's single unit, and
+ * reading the per-item size as the package size makes the two look
+ * comparable when they are not.
+ *
+ * The count is capped at two digits and must not be followed by a unit,
+ * which is what keeps "Caixa 1000g" from being read as a thousand boxes.
+ */
+const PACK_COUNT = new RegExp(
+  String.raw`\b(?:pack|fardo|caixa|cx|engradado|c\/)\s*(\d{1,2})\b(?!\s*(?:${MEASURE_UNIT})${NOT_INSIDE_A_WORD})`,
+  'iu',
+)
+
+/** Counts outside this range are not pack sizes. */
+const MIN_PACK = 2
+const MAX_PACK = 48
+
+/**
  * Reads what a store catalogue puts in a product name.
  *
  * Catalogue names are the only size information many stores give, and they
@@ -57,7 +88,7 @@ export class ProductNameParser {
     const sizes = [...text.matchAll(SINGLE_SIZE)]
     if (sizes.length > 0) {
       const [, size, unit] = sizes[sizes.length - 1]
-      return Quantity.fromMeasurement(toNumber(size), unit)
+      return Quantity.fromMeasurement(toNumber(size) * packCount(text), unit)
     }
 
     return null
@@ -103,6 +134,20 @@ export class ProductNameParser {
       })
       .join('')
   }
+}
+
+/**
+ * How many items the package holds when the name says so in words, or 1.
+ *
+ * Complexity: O(n) over the name.
+ */
+function packCount(text: string): number {
+  const match = text.match(PACK_COUNT)
+  if (!match) return 1
+
+  // Always an integer: the pattern matches one or two digits.
+  const count = Number(match[1])
+  return count < MIN_PACK || count > MAX_PACK ? 1 : count
 }
 
 function toNumber(raw: string): number {

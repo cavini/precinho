@@ -2,7 +2,13 @@ import type { Offer } from '@/domain/entities/Offer'
 import type { Product } from '@/domain/entities/Product'
 import type { Region } from '@/domain/entities/Region'
 import type { Store } from '@/domain/entities/Store'
-import type { ProductRepository, ProductSearchHit, SearchCriteria } from '../ports/ProductRepository'
+import type {
+  FeedCriteria,
+  ProductFeedEntry,
+  ProductRepository,
+  ProductSearchHit,
+  SearchCriteria,
+} from '../ports/ProductRepository'
 import type { RegionRepository } from '../ports/RegionRepository'
 import type { StoreRepository } from '../ports/StoreRepository'
 
@@ -56,6 +62,33 @@ export class InMemoryProductRepository implements ProductRepository {
       .sort(byAvailabilityThenName)
 
     return hits.slice(0, criteria.limit)
+  }
+
+  async feed(criteria: FeedCriteria): Promise<readonly ProductFeedEntry[]> {
+    const storeIds = this.storeIdsInRegion(criteria.regionId, criteria.storeIds)
+
+    return this.products
+      .map((product) => {
+        const offers = this.currentOffers(product.id, storeIds)
+          .filter((offer) => offer.inStock)
+          .sort((a, b) => a.price.cents - b.price.cents || a.storeId.localeCompare(b.storeId))
+
+        const spreadCents = offers.length
+          ? offers[offers.length - 1].price.cents - offers[0].price.cents
+          : 0
+
+        return { product, offers, spreadCents }
+      })
+      // One price is not a comparison.
+      .filter((entry) => entry.offers.length > 1)
+      .sort(
+        (a, b) =>
+          Number(b.product.imageUrl !== null) - Number(a.product.imageUrl !== null) ||
+          b.spreadCents - a.spreadCents ||
+          b.offers.length - a.offers.length ||
+          a.product.id.localeCompare(b.product.id),
+      )
+      .slice(0, criteria.limit)
   }
 
   async findById(productId: string): Promise<Product | null> {

@@ -2,6 +2,7 @@ import type { Logger } from '@/application/ports/Logger'
 import type { Metrics } from '@/application/ports/Metrics'
 import type { RateLimiter } from '@/application/ports/RateLimiter'
 import { GetProductDetail } from '@/application/use-cases/GetProductDetail'
+import { GetProductFeed } from '@/application/use-cases/GetProductFeed'
 import { ListRegionStores } from '@/application/use-cases/ListRegionStores'
 import { ResolveShoppingContext } from '@/application/use-cases/ResolveShoppingContext'
 import { SearchProducts } from '@/application/use-cases/SearchProducts'
@@ -35,6 +36,7 @@ export type WebContainer = {
   resolveShoppingContext: ResolveShoppingContext
   searchProducts: SearchProducts
   getProductDetail: GetProductDetail
+  getProductFeed: GetProductFeed
   listRegionStores: ListRegionStores
   logger: Logger
   metrics: Metrics
@@ -95,6 +97,13 @@ export function getWebContainer(): WebContainer {
       logger,
       metrics,
       clock: systemClock,
+    }),
+    getProductFeed: new GetProductFeed({
+      productRepository,
+      storeRepository,
+      rateLimiter: tiered(SEARCH_BUCKET, client, logger),
+      logger,
+      metrics,
     }),
     listRegionStores: new ListRegionStores({ storeRepository, logger }),
     logger,

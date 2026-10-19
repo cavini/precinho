@@ -43,6 +43,41 @@ describe('ProductNameParser', () => {
     expect(parser.extractSize('Cerveja 6x350ml')?.amount).toBe(2.1)
   })
 
+  describe('packs written in words rather than with an x', () => {
+    it('multiplies "Pack 6 ... 1,27l Cada", which wholesale clubs use', () => {
+      // Found in production: Sam's Club sells this six-pack while everyone
+      // else sells the single bottle. Reading it as 1,27L made the feed
+      // compare a pack against a unit and headline a 29 reais saving that
+      // did not exist.
+      expect(parser.extractSize('Água Mineral com Gás Pack 6 Galões 1,27l Cada')).toEqual(
+        Quantity.of(7.62, 'L'),
+      )
+    })
+
+    it('multiplies a case count', () => {
+      expect(parser.extractSize('Refrigerante Caixa 12 Latas 350ml')).toEqual(
+        Quantity.of(4.2, 'L'),
+      )
+      expect(parser.extractSize('Cerveja Fardo 12 Unidades 269ml')).toEqual(
+        Quantity.of(3.228, 'L'),
+      )
+    })
+
+    it('does not read a size as a count', () => {
+      // "Caixa 1000g" is a one-kilo box, not a thousand of something.
+      expect(parser.extractSize('Arroz Paganini Caixa 1000g')).toEqual(Quantity.of(1, 'kg'))
+      expect(parser.extractSize('Leite Caixa 1L')).toEqual(Quantity.of(1, 'L'))
+    })
+
+    it('ignores an implausible count', () => {
+      expect(parser.extractSize('Promo Pack 500 Arroz 1kg')).toEqual(Quantity.of(1, 'kg'))
+    })
+
+    it('still prefers an explicit 6x350ml over a word pack', () => {
+      expect(parser.extractSize('Cerveja Pack 6x350ml')).toEqual(Quantity.of(2.1, 'L'))
+    })
+  })
+
   it('counts a dozen as twelve', () => {
     expect(parser.extractSize('Ovo Branco Grande 1 duzia')).toEqual(Quantity.of(12, 'un'))
   })

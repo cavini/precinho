@@ -1,0 +1,48 @@
+{
+  "totalPages": 48,
+  "totalProducts": 142,
+  "products": [
+    {
+      "id": 41329,
+      "sku": "0791595",
+      "name": "Arroz Agulhinha Tipo 1 CAMIL Pacote 5kg",
+      "brand": "CAMIL",
+      "price": 31.99,
+      "stock": true,
+      "urlDetails": "https://www.paodeacucar.com/produto/41329/arroz-agulhinha-tipo-1-camil-pacote-5kg",
+      "variableWeight": false,
+      "sellerName": "Pão de Açúcar",
+      "productImages": [
+        "/img/uploads/1/224/33031224.jpg"
+      ]
+    },
+    {
+      "id": 31117,
+      "sku": "0154093",
+      "name": "Arroz Agulhinha Tipo 1 Tio João Pacote 1kg",
+      "brand": "TIO JOÃO",
+      "price": 8.29,
+      "stock": true,
+      "urlDetails": "https://www.paodeacucar.com/produto/31117/arroz-agulhinha-tipo-1-tio-joao-pacote-1kg",
+      "variableWeight": false,
+      "sellerName": "Pão de Açúcar",
+      "productImages": [
+        "/img/uploads/1/789/33024789.png"
+      ]
+    },
+    {
+      "id": 107050,
+      "sku": "6009199",
+      "name": "Arroz Branco Tipo 1 Qualitá Pacote 5kg",
+      "brand": "QUALITÁ",
+      "price": 22.99,
+      "stock": true,
+      "urlDetails": "https://www.paodeacucar.com/produto/107050/arroz-branco-tipo-1-qualita-pacote-5kg",
+      "variableWeight": false,
+      "sellerName": "Pão de Açúcar",
+      "productImages": [
+        "/img/uploads/1/12/33065012.png"
+      ]
+    }
+  ]
+}
