@@ -197,6 +197,70 @@ describe('VtexCatalogGateway when a store will not answer', () => {
   })
 })
 
+describe('VtexCatalogGateway product links', () => {
+  it('rewrites a link onto the public storefront', async () => {
+    // Reading through the account host makes VTEX return links on that
+    // host, and visiting one redirects to an admin login. Oba shipped 1,317
+    // offers whose "ver na loja" went nowhere a shopper could use.
+    const { gateway } = build(okWithFixture, {
+      host: 'obahortifruti.vtexcommercestable.com.br',
+      storefrontHost: 'www.oba.com.br',
+    })
+
+    const result = await gateway.searchTerm('arroz')
+    if (result.status !== 'ok') throw new Error(result.reason)
+
+    expect(result.products[0].url).toMatch(/^https:\/\/www\.oba\.com\.br\//)
+    expect(result.products[0].url).not.toContain('vtexcommercestable')
+  })
+
+  it('keeps the path and query exactly as given', async () => {
+    const body = [
+      {
+        productId: '1',
+        productName: 'Produto',
+        link: 'https://conta.vtexcommercestable.com.br/arroz-camil-1kg/p?sc=2',
+        items: [{ sellers: [{ commertialOffer: { Price: 9.9, AvailableQuantity: 1 } }] }],
+      },
+    ]
+    const { gateway } = build(
+      { status: 'ok', statusCode: 200, body },
+      { host: 'conta.vtexcommercestable.com.br', storefrontHost: 'www.loja.com.br' },
+    )
+
+    const result = await gateway.searchTerm('arroz')
+    if (result.status !== 'ok') throw new Error(result.reason)
+    expect(result.products[0].url).toBe('https://www.loja.com.br/arroz-camil-1kg/p?sc=2')
+  })
+
+  it('leaves the link alone when no storefront is configured', async () => {
+    const { gateway } = build(okWithFixture)
+    const result = await gateway.searchTerm('arroz')
+
+    if (result.status !== 'ok') throw new Error(result.reason)
+    expect(result.products[0].url).toMatch(/^https:\/\/www\.mambo\.com\.br\//)
+  })
+
+  it('drops a row whose link cannot be parsed rather than storing a broken one', async () => {
+    const body = [
+      {
+        productId: '1',
+        productName: 'Produto',
+        link: 'nao-e-uma-url',
+        items: [{ sellers: [{ commertialOffer: { Price: 9.9, AvailableQuantity: 1 } }] }],
+      },
+    ]
+    const { gateway } = build(
+      { status: 'ok', statusCode: 200, body },
+      { storefrontHost: 'www.loja.com.br' },
+    )
+
+    const result = await gateway.searchTerm('arroz')
+    if (result.status !== 'ok') throw new Error(result.reason)
+    expect(result.products).toEqual([])
+  })
+})
+
 describe('VtexCatalogGateway request assembly', () => {
   it('asks for a page of products', async () => {
     const { gateway, http } = build(okWithFixture, { pageSize: 10 })

@@ -20,6 +20,15 @@ export type VtexStoreConfig = {
    */
   host: string
   /**
+   * Public domain to build product links on.
+   *
+   * Reading through an account host makes VTEX return links on that host,
+   * and those redirect a shopper to an admin login. The link is the whole
+   * point of the comparison, so when the two differ this is the one that
+   * reaches a shop.
+   */
+  storefrontHost?: string
+  /**
    * Some storefronts mount the catalogue API under a prefix — Atacadão
    * serves it at /io/api/catalog_system/... — so the store row carries the
    * prefix instead of the code special-casing a chain.
@@ -127,7 +136,7 @@ export class VtexCatalogGateway implements StoreCatalogGateway, StoreRegionResol
     }
 
     const products = response.body.flatMap((raw) => {
-      const mapped = toCatalogProduct(raw)
+      const mapped = toCatalogProduct(raw, this.config.storefrontHost)
       return mapped ? [mapped] : []
     })
 
@@ -213,7 +222,7 @@ export class VtexCatalogGateway implements StoreCatalogGateway, StoreRegionResol
  * VTEX reports an unpriced or unlisted item as Price 0 rather than omitting
  * it, so a zero price is a row to drop, not a free product.
  */
-function toCatalogProduct(raw: unknown): CatalogProduct | null {
+function toCatalogProduct(raw: unknown, storefrontHost?: string): CatalogProduct | null {
   if (!isRecord(raw)) return null
 
   const item = firstOf(raw.items)
@@ -228,7 +237,7 @@ function toCatalogProduct(raw: unknown): CatalogProduct | null {
   const price = asNumber(offer.Price)
   if (price === null || price <= 0) return null
 
-  const url = asString(raw.link)
+  const url = publicUrl(asString(raw.link), storefrontHost)
   if (!url) return null
 
   const listPrice = asNumber(offer.ListPrice) ?? asNumber(offer.PriceWithoutDiscount)
@@ -248,6 +257,28 @@ function toCatalogProduct(raw: unknown): CatalogProduct | null {
     // Only a list price above the selling price is a promotion.
     listPriceReais: listPrice !== null && listPrice > price ? listPrice : null,
     inStock: available > 0,
+  }
+}
+
+/**
+ * Moves a link onto the public storefront, keeping path and query intact.
+ *
+ * Returns null for anything unparseable, so a row with a broken link is
+ * dropped rather than stored — Offer would refuse it later anyway, and
+ * failing here keeps the reason close to the cause.
+ *
+ * Complexity: O(n) in the URL length.
+ */
+function publicUrl(link: string | null, storefrontHost?: string): string | null {
+  if (!link) return null
+  if (!storefrontHost) return link
+
+  try {
+    const parsed = new URL(link)
+    parsed.host = storefrontHost
+    return parsed.toString()
+  } catch {
+    return null
   }
 }
 

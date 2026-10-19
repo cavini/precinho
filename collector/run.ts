@@ -56,6 +56,8 @@ type StoreConfigRow = {
   store_view: string | null
   /** Per-store request gap; null takes the collector default. */
   min_interval_ms: number | null
+  /** Public domain for product links, when it differs from `host`. */
+  storefront_host: string | null
   region_token: string | null
   regions: { slug: string; probe_cep: string } | null
 }
@@ -78,7 +80,7 @@ async function main(): Promise<void> {
   const { data, error } = await client
     .from('stores')
     .select(
-      'id, slug, host, platform, sales_channel, path_prefix, store_view, min_interval_ms, region_token, regions(slug, probe_cep)',
+      'id, slug, host, platform, sales_channel, path_prefix, store_view, min_interval_ms, storefront_host, region_token, regions(slug, probe_cep)',
     )
     .eq('active', true)
     .order('slug')
@@ -202,6 +204,7 @@ async function buildGateway(
       {
         storeId: store.id,
         host: store.host,
+        storefrontHost: store.storefront_host ?? undefined,
         pathPrefix: store.path_prefix ?? undefined,
         salesChannel: store.sales_channel ?? undefined,
         regionToken,
