@@ -10,8 +10,21 @@ import type { PostalCode } from '@/domain/value-objects/PostalCode'
 
 export type VtexStoreConfig = {
   storeId: string
-  /** e.g. "www.mambo.com.br" */
+  /**
+   * e.g. "www.mambo.com.br".
+   *
+   * May also be the chain's VTEX account host
+   * ("<account>.vtexcommercestable.com.br"), which serves the same public
+   * catalogue without the storefront's custom routing in front of it. The
+   * account name is visible in any asset URL as "<account>.vtexassets.com".
+   */
   host: string
+  /**
+   * Some storefronts mount the catalogue API under a prefix — Atacadão
+   * serves it at /io/api/catalog_system/... — so the store row carries the
+   * prefix instead of the code special-casing a chain.
+   */
+  pathPrefix?: string
   /** VTEX sales channel; stores that use more than one need it pinned. */
   salesChannel?: string
   /**
@@ -137,7 +150,7 @@ export class VtexCatalogGateway implements StoreCatalogGateway, StoreRegionResol
     postalCode: PostalCode,
   ): Promise<{ regionToken: string; sellerIds: readonly string[] } | null> {
     const url =
-      `https://${this.config.host}/api/checkout/pub/regions` +
+      `${this.base}/api/checkout/pub/regions` +
       `?country=BRA&postalCode=${postalCode.digits}` +
       `&sc=${encodeURIComponent(this.config.salesChannel ?? '1')}`
 
@@ -176,7 +189,12 @@ export class VtexCatalogGateway implements StoreCatalogGateway, StoreRegionResol
     if (this.config.salesChannel) params.set('sc', this.config.salesChannel)
     if (this.config.regionToken) params.set('regionId', this.config.regionToken)
 
-    return `https://${this.config.host}/api/catalog_system/pub/products/search?${params}`
+    return `${this.base}/api/catalog_system/pub/products/search?${params}`
+  }
+
+  /** Scheme, host and any mount prefix the storefront puts the API behind. */
+  private get base(): string {
+    return `https://${this.config.host}${this.config.pathPrefix ?? ''}`
   }
 }
 

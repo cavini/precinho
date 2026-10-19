@@ -217,6 +217,40 @@ describe('VtexCatalogGateway request assembly', () => {
     expect(http.lastUrl).toContain('regionId=v2.ABC')
   })
 
+  it('mounts the catalogue under a prefix when the storefront does', async () => {
+    // Atacadão serves the same API at /io/api/catalog_system/..., so the
+    // store row carries the prefix instead of the code knowing the chain.
+    const { gateway, http } = build(okWithFixture, { pathPrefix: '/io' })
+    await gateway.searchTerm('arroz')
+
+    expect(http.lastUrl).toContain('/io/api/catalog_system/pub/products/search')
+  })
+
+  it('reads a chain through its VTEX account host', async () => {
+    const { gateway, http } = build(okWithFixture, {
+      host: 'carrefourbrfood.vtexcommercestable.com.br',
+    })
+    await gateway.searchTerm('arroz')
+
+    expect(http.lastUrl).toMatch(
+      /^https:\/\/carrefourbrfood\.vtexcommercestable\.com\.br\/api\/catalog_system\//,
+    )
+  })
+
+  it('applies the prefix to the region lookup too', async () => {
+    const http = new FakeHttpClient([
+      { match: REGIONS, response: { status: 'ok', statusCode: 200, body: [{ id: 'r1', sellers: [] }] } },
+    ])
+    const gateway = new VtexCatalogGateway(
+      { storeId: 'atacadao', host: 'www.atacadao.com.br', pathPrefix: '/io' },
+      http,
+      new RecordingLogger(),
+    )
+
+    await gateway.resolveRegion(PostalCode.tryParse('01310100')!)
+    expect(http.lastUrl).toContain('/io/api/checkout/pub/regions')
+  })
+
   it('escapes a search term instead of pasting it into the url', async () => {
     const { gateway, http } = build(okWithFixture)
     await gateway.searchTerm('leite & cia 100%')

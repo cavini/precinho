@@ -36,6 +36,8 @@ type StoreConfigRow = {
   host: string
   platform: string
   sales_channel: string | null
+  /** Mount point for the catalogue API when it is not at the host root. */
+  path_prefix: string | null
   region_token: string | null
   regions: { slug: string; probe_cep: string } | null
 }
@@ -57,7 +59,9 @@ async function main(): Promise<void> {
 
   const { data, error } = await client
     .from('stores')
-    .select('id, slug, host, platform, sales_channel, region_token, regions(slug, probe_cep)')
+    .select(
+      'id, slug, host, platform, sales_channel, path_prefix, region_token, regions(slug, probe_cep)',
+    )
     .eq('active', true)
     .order('slug')
 
@@ -95,6 +99,7 @@ async function main(): Promise<void> {
       {
         storeId: store.id,
         host: store.host,
+        pathPrefix: store.path_prefix ?? undefined,
         salesChannel: store.sales_channel ?? undefined,
         regionToken,
         minIntervalMs: MIN_INTERVAL_MS,
@@ -151,6 +156,7 @@ async function resolveRegionToken(
     {
       storeId: store.id,
       host: store.host,
+      pathPrefix: store.path_prefix ?? undefined,
       salesChannel: store.sales_channel ?? undefined,
     },
     http,
