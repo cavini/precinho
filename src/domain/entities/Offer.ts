@@ -54,6 +54,11 @@ export class Offer {
     if (!props.storeId) {
       throw new DomainError('An offer must belong to a store')
     }
+    // Catalogues use zero to mean unlisted, so a zero price is missing data
+    // rather than a free product.
+    if (props.price.cents <= 0) {
+      throw new DomainError('An offer price must be above zero')
+    }
     return new Offer(props)
   }
 

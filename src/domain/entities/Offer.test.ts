@@ -33,6 +33,12 @@ describe('Offer', () => {
     expect(anOffer({ listPrice: null }).listPrice).toBeNull()
   })
 
+  it('refuses a price of zero, which is not something you can buy', () => {
+    // Catalogues report an unlisted item as price 0. It is a row to drop, not
+    // a free product, and the rule belongs here so it holds for every caller.
+    expect(() => anOffer({ price: Money.fromCents(0) })).toThrow(/price/i)
+  })
+
   it('refuses an offer with no store behind it', () => {
     expect(() => anOffer({ storeId: '' })).toThrow(/store/i)
   })
