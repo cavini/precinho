@@ -37,9 +37,12 @@ export type VtexStoreConfig = {
   /** VTEX sales channel; stores that use more than one need it pinned. */
   salesChannel?: string
   /**
-   * Trading-area token from the regions endpoint. Without it the catalogue
-   * answers with default-area prices, which are not the prices a shopper at
-   * this CEP would pay.
+   * Trading-area token from the regions endpoint.
+   *
+   * Only Intelligent Search honours it. The older catalogue endpoint
+   * accepts the parameter and ignores it, which is how this collector
+   * spent weeks storing Carrefour's default sales policy — 28.99 for a
+   * bag of rice the shop sells at 22.99 — under a regional label.
    */
   regionToken?: string
   /** How many products to ask for per term. */
@@ -142,20 +145,23 @@ export class VtexCatalogGateway implements StoreCatalogGateway, StoreRegionResol
       return { status: 'unavailable', reason: response.status }
     }
 
-    if (!Array.isArray(response.body)) {
+    // Two shapes, because the two endpoints disagree: the catalogue
+    // returns a bare array, Intelligent Search wraps it in `products`.
+    const raws = readProducts(response.body)
+    if (raws === null) {
       this.logger.warn('vtex.unexpected_payload', { storeId: this.storeId, term: asked })
       return { status: 'unavailable', reason: 'invalid-json' }
     }
 
-    const products = response.body.flatMap((raw) => {
-      const mapped = toCatalogProduct(raw, this.config.storefrontHost)
+    const products = raws.flatMap((raw) => {
+      const mapped = toCatalogProduct(raw, this.config.storefrontHost, this.config.host)
       return mapped ? [mapped] : []
     })
 
     this.logger.debug('vtex.search_ok', {
       storeId: this.storeId,
       term: asked,
-      received: response.body.length,
+      received: raws.length,
       usable: products.length,
     })
 
@@ -254,9 +260,31 @@ export class VtexCatalogGateway implements StoreCatalogGateway, StoreRegionResol
     return { regionToken: first.id, sellerIds }
   }
 
+  /**
+   * Intelligent Search rather than the catalogue endpoint, because it is
+   * the only one that prices for a region.
+   *
+   * Measured against Carrefour: the catalogue endpoint answers 4.49 for
+   * Camil 1kg with a region token and 4.49 without, while the storefront
+   * quotes 5.19 to somebody in São Paulo. Seven of seven prices checked
+   * were wrong, by as much as six reais on a single item.
+   */
   private searchUrl(term: string): string {
     const pageSize = this.config.pageSize ?? DEFAULT_PAGE_SIZE
-    return this.catalogUrl({ ft: term, _from: '0', _to: String(pageSize - 1) })
+    return this.storefrontUrl({ query: term, from: '0', to: String(pageSize - 1) })
+  }
+
+  /** Complexity: O(1) string building. */
+  private storefrontUrl(query: Record<string, string>): string {
+    const params = new URLSearchParams({ ...query, locale: 'pt-BR' })
+    if (this.config.salesChannel) params.set('sc', this.config.salesChannel)
+    if (this.config.regionToken) params.set('regionId', this.config.regionToken)
+
+    const encoded = params.toString().replace(/\+/g, '%20')
+
+    // No trailing slash before the query: Atacadão answers 308 to one, and
+    // a redirect the collector does not follow reads as a dead store.
+    return `${this.base}/api/io/_v/api/intelligent-search/product_search?${encoded}`
   }
 
   /** Every catalogue call shares the sales channel and the trading area. */
@@ -287,7 +315,18 @@ export class VtexCatalogGateway implements StoreCatalogGateway, StoreRegionResol
  * VTEX reports an unpriced or unlisted item as Price 0 rather than omitting
  * it, so a zero price is a row to drop, not a free product.
  */
-function toCatalogProduct(raw: unknown, storefrontHost?: string): CatalogProduct | null {
+/** Both endpoint shapes, or null when the payload is neither. */
+function readProducts(body: unknown): unknown[] | null {
+  if (Array.isArray(body)) return body
+  if (isRecord(body) && Array.isArray(body.products)) return body.products
+  return null
+}
+
+function toCatalogProduct(
+  raw: unknown,
+  storefrontHost?: string,
+  host?: string,
+): CatalogProduct | null {
   if (!isRecord(raw)) return null
 
   const item = firstOf(raw.items)
@@ -302,7 +341,7 @@ function toCatalogProduct(raw: unknown, storefrontHost?: string): CatalogProduct
   const price = asNumber(offer.Price)
   if (price === null || price <= 0) return null
 
-  const url = publicUrl(asString(raw.link), storefrontHost)
+  const url = publicUrl(asString(raw.link), storefrontHost, host)
   if (!url) return null
 
   const listPrice = asNumber(offer.ListPrice) ?? asNumber(offer.PriceWithoutDiscount)
@@ -334,8 +373,17 @@ function toCatalogProduct(raw: unknown, storefrontHost?: string): CatalogProduct
  *
  * Complexity: O(n) in the URL length.
  */
-function publicUrl(link: string | null, storefrontHost?: string): string | null {
+/**
+ * Intelligent Search returns a path ("/arroz-camil-1kg/p") where the
+ * catalogue endpoint returned a whole URL, so a host has to be put back on
+ * before the link reaches a shopper.
+ */
+function publicUrl(link: string | null, storefrontHost?: string, host?: string): string | null {
   if (!link) return null
+
+  const origin = storefrontHost ?? host
+  if (link.startsWith('/')) return origin ? `https://${origin}${link}` : null
+
   if (!storefrontHost) return link
 
   try {
