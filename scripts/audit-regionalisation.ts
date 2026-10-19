@@ -20,7 +20,8 @@ import { config as loadEnv } from 'dotenv'
 loadEnv({ path: '.env.local' })
 loadEnv()
 
-import type { CatalogProduct } from '@/application/ports/StoreCatalogGateway'
+import type { Logger } from '@/application/ports/Logger'
+import type { CatalogProduct, StoreCatalogGateway } from '@/application/ports/StoreCatalogGateway'
 import { PostalCode } from '@/domain/value-objects/PostalCode'
 import { readCollectorEnv } from '@/infrastructure/config/env'
 import { GpaCatalogGateway } from '@/infrastructure/gateways/gpa/GpaCatalogGateway'
@@ -29,6 +30,7 @@ import { VtexCatalogGateway } from '@/infrastructure/gateways/vtex/VtexCatalogGa
 import { FetchHttpClient } from '@/infrastructure/http/FetchHttpClient'
 import { StructuredLogger } from '@/infrastructure/observability/StructuredLogger'
 import { createWriteClient } from '@/infrastructure/persistence/supabase/supabaseClient'
+import type { StoreRow } from './storeRow'
 
 /** Staples every chain carries, so the comparison has something to match on. */
 const TERMS = ['arroz', 'leite', 'cafe', 'detergente'] as const
@@ -62,7 +64,7 @@ async function main(): Promise<void> {
     .eq('active', true)
     .order('slug')
 
-  const stores = ((data ?? []) as any[]).filter(
+  const stores = ((data ?? []) as unknown as StoreRow[]).filter(
     (store) =>
       (wanted.length === 0 || wanted.includes(store.slug)) &&
       // Tauste is swept under an agreed daily cap; spending it on an audit
@@ -95,7 +97,7 @@ async function main(): Promise<void> {
   }
 }
 
-async function audit(store: any, http: FetchHttpClient, logger: any): Promise<Verdict> {
+async function audit(store: StoreRow, http: FetchHttpClient, logger: Logger): Promise<Verdict> {
   const base = {
     storeId: store.slug,
     host: store.host,
@@ -184,7 +186,11 @@ async function audit(store: any, http: FetchHttpClient, logger: any): Promise<Ve
  * and it honours the region. Where the two disagree, the number in our
  * database is not a price anybody is offered.
  */
-async function compareWithStorefront(store: any, ours: any, regionToken: string): Promise<Verdict> {
+async function compareWithStorefront(
+  store: StoreRow,
+  ours: StoreCatalogGateway,
+  regionToken: string,
+): Promise<Verdict> {
   let matched = 0
   let differing = 0
   const examples: string[] = []
@@ -224,6 +230,12 @@ async function compareWithStorefront(store: any, ours: any, regionToken: string)
   return { slug: store.slug, platform: store.platform, matched, differing, examples }
 }
 
+/** Only the parts of an Intelligent Search product this comparison reads. */
+type StorefrontProduct = {
+  productId?: string | number
+  items?: Array<{ sellers?: Array<{ commertialOffer?: { Price?: number } }> }>
+}
+
 /** Product id to price, as the shop's own storefront would show it. */
 async function storefrontPrices(
   host: string,
@@ -244,11 +256,11 @@ async function storefrontPrices(
     })
     if (!response.ok) return null
 
-    const body = (await response.json()) as { products?: any[] }
+    const body = (await response.json()) as { products?: StorefrontProduct[] }
     const prices = new Map<string, number>()
 
     for (const product of body.products ?? []) {
-      const price = product?.items?.[0]?.sellers?.[0]?.commertialOffer?.Price
+      const price = product.items?.[0]?.sellers?.[0]?.commertialOffer?.Price
       if (typeof price === 'number') prices.set(String(product.productId), price)
     }
 
@@ -259,7 +271,11 @@ async function storefrontPrices(
 }
 
 /** Matches products by their store-side id and reports where the prices part company. */
-async function compare(store: any, a: any, b: any): Promise<Verdict> {
+async function compare(
+  store: StoreRow,
+  a: StoreCatalogGateway,
+  b: StoreCatalogGateway,
+): Promise<Verdict> {
   let matched = 0
   let differing = 0
   const examples: string[] = []

@@ -10,6 +10,7 @@ loadEnv()
 
 import { readCollectorEnv } from '@/infrastructure/config/env'
 import { createWriteClient } from '@/infrastructure/persistence/supabase/supabaseClient'
+import type { RegionRow, StoreRow } from './storeRow'
 
 async function main(): Promise<void> {
   const client = createWriteClient(readCollectorEnv())
@@ -20,7 +21,7 @@ async function main(): Promise<void> {
     .order('slug')
 
   console.log('stores:')
-  for (const store of (stores ?? []) as any[]) {
+  for (const store of (stores ?? []) as unknown as StoreRow[]) {
     const { count } = await client
       .from('offers')
       .select('*', { count: 'exact', head: true })
@@ -35,7 +36,7 @@ async function main(): Promise<void> {
 
   const { data: regions } = await client.from('regions').select('slug, name, probe_cep')
   console.log('\nregions:')
-  for (const region of (regions ?? []) as any[]) {
+  for (const region of (regions ?? []) as unknown as RegionRow[]) {
     console.log(`  ${region.slug.padEnd(14)} ${region.probe_cep}  ${region.name}`)
   }
 }
