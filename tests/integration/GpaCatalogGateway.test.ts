@@ -1,11 +1,12 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import type { HttpJsonResponse } from '@/application/ports/HttpClient'
+
 import { RecordingLogger } from '@/application/testing/RecordingLogger'
 import { ProductNameParser } from '@/domain/services/ProductNameParser'
 import { GpaCatalogGateway } from '@/infrastructure/gateways/gpa/GpaCatalogGateway'
 import type { GpaStoreConfig } from '@/infrastructure/gateways/gpa/GpaCatalogGateway'
+import type { FakeResponse } from '@/infrastructure/testing/FakeHttpClient'
 import { FakeHttpClient } from '@/infrastructure/testing/FakeHttpClient'
 
 /** Recorded from api.vendas.gpa.digital on 2026-10-19. */
@@ -15,7 +16,7 @@ const GPA_ARROZ: unknown = JSON.parse(
 
 const SEARCH = /search\/search/
 
-function build(response: HttpJsonResponse, config: Partial<GpaStoreConfig> = {}) {
+function build(response: FakeResponse, config: Partial<GpaStoreConfig> = {}) {
   const http = new FakeHttpClient([{ match: SEARCH, response }])
   const logger = new RecordingLogger()
   const gateway = new GpaCatalogGateway(
@@ -167,7 +168,9 @@ describe('GpaCatalogGateway when GPA will not answer', () => {
   })
 
   it('treats a missing stock flag as available rather than hiding the price', async () => {
-    const body = { products: [{ id: 1, name: 'Sem flag', urlDetails: 'https://x.com/p', price: 5 }] }
+    const body = {
+      products: [{ id: 1, name: 'Sem flag', urlDetails: 'https://x.com/p', price: 5 }],
+    }
     const { gateway } = build({ status: 'ok', statusCode: 200, body })
 
     const result = await gateway.searchTerm('arroz')

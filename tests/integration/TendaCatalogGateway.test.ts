@@ -1,12 +1,13 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import type { HttpJsonResponse } from '@/application/ports/HttpClient'
+
 import { RecordingLogger } from '@/application/testing/RecordingLogger'
 import { Ean } from '@/domain/value-objects/Ean'
 import { ProductNameParser } from '@/domain/services/ProductNameParser'
 import { TendaCatalogGateway } from '@/infrastructure/gateways/tenda/TendaCatalogGateway'
 import type { TendaStoreConfig } from '@/infrastructure/gateways/tenda/TendaCatalogGateway'
+import type { FakeResponse } from '@/infrastructure/testing/FakeHttpClient'
 import { FakeHttpClient } from '@/infrastructure/testing/FakeHttpClient'
 
 /** Names, SKUs, barcodes and prices are Tenda's, read on 2026-10-19. */
@@ -16,7 +17,7 @@ const TENDA_ARROZ: unknown = JSON.parse(
 
 const SEARCH = /public\/store\/search/
 
-function build(response: HttpJsonResponse, config: Partial<TendaStoreConfig> = {}) {
+function build(response: FakeResponse, config: Partial<TendaStoreConfig> = {}) {
   const http = new FakeHttpClient([{ match: SEARCH, response }])
   const logger = new RecordingLogger()
   const gateway = new TendaCatalogGateway({ storeId: 'tenda', ...config }, http, logger)
@@ -291,7 +292,13 @@ describe('TendaCatalogGateway skipping rows it cannot use', () => {
   it('reports a blank barcode as null', async () => {
     const body = {
       products: [
-        { name: 'Vazio', sku: 'v', url: 'https://tendaatacado.com.br/produto/v', price: 1, barcode: '   ' },
+        {
+          name: 'Vazio',
+          sku: 'v',
+          url: 'https://tendaatacado.com.br/produto/v',
+          price: 1,
+          barcode: '   ',
+        },
       ],
     }
     const { gateway } = build({ status: 'ok', statusCode: 200, body })

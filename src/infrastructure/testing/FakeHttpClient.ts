@@ -4,10 +4,20 @@ import type {
   HttpRequestOptions,
 } from '@/application/ports/HttpClient'
 
+/**
+ * A canned response. Headers are optional, because most tests do not care
+ * about them and spelling out an empty object everywhere would be noise.
+ */
+export type FakeResponse =
+  | Exclude<HttpJsonResponse, { status: 'ok' }>
+  | (Omit<Extract<HttpJsonResponse, { status: 'ok' }>, 'headers'> & {
+      headers?: Record<string, string>
+    })
+
 export type FakeRoute = {
   /** Matched against the full URL. */
   match: RegExp
-  response: HttpJsonResponse
+  response: FakeResponse
 }
 
 /**
@@ -53,7 +63,8 @@ export class FakeHttpClient implements HttpClient {
     const route = this.routes.find((candidate) => candidate.match.test(url))
     if (!route) return { status: 'network-error', reason: `no fake route for ${url}` }
 
-    return route.response
+    const { response } = route
+    return response.status === 'ok' ? { ...response, headers: response.headers ?? {} } : response
   }
 
   get lastUrl(): string {

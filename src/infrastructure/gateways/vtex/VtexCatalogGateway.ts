@@ -1,4 +1,4 @@
-import type { HttpClient } from '@/application/ports/HttpClient'
+import type { HttpClient, HttpJsonResponse } from '@/application/ports/HttpClient'
 import type {
   CatalogProduct,
   CatalogSearchResult,
@@ -120,10 +120,22 @@ export class VtexCatalogGateway implements StoreCatalogGateway, StoreRegionResol
       headers: { 'User-Agent': USER_AGENT, Accept: 'application/json' },
     })
 
+    return this.toSearchResult(response, term)
+  }
+
+  /**
+   * Maps a catalogue response, whatever asked for it.
+   *
+   * Keyword search and category browsing return byte-identical payloads, so
+   * they share this — the only difference between them is the query string.
+   *
+   * Complexity: O(n) over the products returned.
+   */
+  private toSearchResult(response: HttpJsonResponse, asked: string): CatalogSearchResult {
     if (response.status !== 'ok') {
       this.logger.warn('vtex.search_failed', {
         storeId: this.storeId,
-        term,
+        term: asked,
         result: response.status,
         statusCode: 'statusCode' in response ? response.statusCode : null,
       })
@@ -131,7 +143,7 @@ export class VtexCatalogGateway implements StoreCatalogGateway, StoreRegionResol
     }
 
     if (!Array.isArray(response.body)) {
-      this.logger.warn('vtex.unexpected_payload', { storeId: this.storeId, term })
+      this.logger.warn('vtex.unexpected_payload', { storeId: this.storeId, term: asked })
       return { status: 'unavailable', reason: 'invalid-json' }
     }
 
@@ -142,12 +154,60 @@ export class VtexCatalogGateway implements StoreCatalogGateway, StoreRegionResol
 
     this.logger.debug('vtex.search_ok', {
       storeId: this.storeId,
-      term,
+      term: asked,
       received: response.body.length,
       usable: products.length,
     })
 
     return { status: 'ok', products }
+  }
+
+  /**
+   * Exact size of a category, for one request that transfers no products.
+   *
+   * VTEX answers a zero-width window with a `resources: 0-0/1856` header,
+   * which is what makes planning a sweep affordable — otherwise sizing the
+   * tree would mean downloading it.
+   *
+   * Complexity: one request; O(1) parsing.
+   */
+  async countCategory(categoryPath: string): Promise<number | null> {
+    await this.pace()
+
+    const response = await this.http.getJson(
+      this.catalogUrl({ fq: categoryFilter(categoryPath), _from: '0', _to: '0' }),
+      {
+        timeoutMs: REQUEST_TIMEOUT_MS,
+        headers: { 'User-Agent': USER_AGENT, Accept: 'application/json' },
+      },
+    )
+
+    if (response.status !== 'ok') return null
+
+    // "0-0/1856" — the part after the slash is the whole category.
+    const total = response.headers.resources?.split('/')[1]
+    const parsed = Number(total)
+    return Number.isInteger(parsed) && parsed >= 0 ? parsed : null
+  }
+
+  /**
+   * One window of a category, mapped exactly like a keyword search — the
+   * payloads are identical, which is why browsing needed no new parser.
+   *
+   * Complexity: one request, O(n) over the products returned.
+   */
+  async searchCategory(categoryPath: string, from: number, to: number): Promise<CatalogSearchResult> {
+    await this.pace()
+
+    const response = await this.http.getJson(
+      this.catalogUrl({ fq: categoryFilter(categoryPath), _from: String(from), _to: String(to) }),
+      {
+        timeoutMs: REQUEST_TIMEOUT_MS,
+        headers: { 'User-Agent': USER_AGENT, Accept: 'application/json' },
+      },
+    )
+
+    return this.toSearchResult(response, categoryPath)
   }
 
   /**
@@ -192,11 +252,12 @@ export class VtexCatalogGateway implements StoreCatalogGateway, StoreRegionResol
 
   private searchUrl(term: string): string {
     const pageSize = this.config.pageSize ?? DEFAULT_PAGE_SIZE
-    const params = new URLSearchParams({
-      ft: term,
-      _from: '0',
-      _to: String(pageSize - 1),
-    })
+    return this.catalogUrl({ ft: term, _from: '0', _to: String(pageSize - 1) })
+  }
+
+  /** Every catalogue call shares the sales channel and the trading area. */
+  private catalogUrl(query: Record<string, string>): string {
+    const params = new URLSearchParams(query)
     if (this.config.salesChannel) params.set('sc', this.config.salesChannel)
     if (this.config.regionToken) params.set('regionId', this.config.regionToken)
 
@@ -205,9 +266,9 @@ export class VtexCatalogGateway implements StoreCatalogGateway, StoreRegionResol
     // "queijo%20mussarela". Safe to rewrite every "+" in the output, because
     // a literal plus in a value has already been escaped to %2B by then, so
     // the only ones left are spaces.
-    const query = params.toString().replace(/\+/g, '%20')
+    const encoded = params.toString().replace(/\+/g, '%20')
 
-    return `${this.base}/api/catalog_system/pub/products/search?${query}`
+    return `${this.base}/api/catalog_system/pub/products/search?${encoded}`
   }
 
   /** Scheme, host and any mount prefix the storefront puts the API behind. */
@@ -280,6 +341,18 @@ function publicUrl(link: string | null, storefrontHost?: string): string | null 
   } catch {
     return null
   }
+}
+
+/**
+ * Builds the category filter VTEX actually honours.
+ *
+ * The path has to start at the root id and end in a slash: `C:/1589/1599/`
+ * returns 6,903 products at Mambo, while `C:1599` and `C:/1599/` both
+ * return zero without erroring — a silent empty result, which is the worst
+ * kind of wrong answer to get from a catalogue.
+ */
+function categoryFilter(categoryPath: string): string {
+  return `C:${categoryPath.endsWith('/') ? categoryPath : `${categoryPath}/`}`
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

@@ -1,10 +1,11 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import type { HttpJsonResponse } from '@/application/ports/HttpClient'
+
 import { RecordingLogger } from '@/application/testing/RecordingLogger'
 import { PostalCode } from '@/domain/value-objects/PostalCode'
 import { ViaCepAddressLookup } from '@/infrastructure/gateways/viacep/ViaCepAddressLookup'
+import type { FakeResponse } from '@/infrastructure/testing/FakeHttpClient'
 import { FakeHttpClient } from '@/infrastructure/testing/FakeHttpClient'
 
 function fixture(name: string): unknown {
@@ -15,7 +16,7 @@ function fixture(name: string): unknown {
 const PAULISTA = fixture('viacep-01310100.json')
 const NOT_FOUND = fixture('viacep-not-found.json')
 
-function build(response: HttpJsonResponse) {
+function build(response: FakeResponse) {
   const http = new FakeHttpClient([{ match: /viacep\.com\.br/, response }])
   const logger = new RecordingLogger()
   return { lookup: new ViaCepAddressLookup(http, logger), http, logger }
