@@ -232,6 +232,83 @@ describe('VtexCatalogGateway request assembly', () => {
   })
 })
 
+describe('VtexCatalogGateway pacing itself', () => {
+  it('leaves a gap between requests to the same store', async () => {
+    // Thirty terms back to back from one address looks like an attack.
+    const slept: number[] = []
+    let clock = 0
+    const http = new FakeHttpClient([{ match: CATALOG, response: okWithFixture }])
+    const gateway = new VtexCatalogGateway(
+      {
+        storeId: 'mambo',
+        host: 'www.mambo.com.br',
+        minIntervalMs: 1_000,
+        nowMs: () => clock,
+        sleep: async (ms) => {
+          slept.push(ms)
+          clock += ms
+        },
+      },
+      http,
+      new RecordingLogger(),
+    )
+
+    await gateway.searchTerm('arroz')
+    clock += 200
+    await gateway.searchTerm('feijao')
+
+    // The first request waits for nothing; the second had 200ms of its
+    // second already behind it, so it waits out the remaining 800.
+    expect(slept).toEqual([800])
+  })
+
+  it('does not wait when enough time has already passed', async () => {
+    const slept: number[] = []
+    let clock = 0
+    const http = new FakeHttpClient([{ match: CATALOG, response: okWithFixture }])
+    const gateway = new VtexCatalogGateway(
+      {
+        storeId: 'mambo',
+        host: 'www.mambo.com.br',
+        minIntervalMs: 1_000,
+        nowMs: () => clock,
+        sleep: async (ms) => {
+          slept.push(ms)
+        },
+      },
+      http,
+      new RecordingLogger(),
+    )
+
+    await gateway.searchTerm('arroz')
+    clock += 5_000
+    await gateway.searchTerm('feijao')
+
+    expect(slept).toEqual([])
+  })
+
+  it('does not pace when no gap is configured, which is how the site reads', async () => {
+    const slept: number[] = []
+    const http = new FakeHttpClient([{ match: CATALOG, response: okWithFixture }])
+    const gateway = new VtexCatalogGateway(
+      {
+        storeId: 'mambo',
+        host: 'www.mambo.com.br',
+        sleep: async (ms) => {
+          slept.push(ms)
+        },
+      },
+      http,
+      new RecordingLogger(),
+    )
+
+    await gateway.searchTerm('arroz')
+    await gateway.searchTerm('feijao')
+
+    expect(slept).toEqual([])
+  })
+})
+
 describe('VtexCatalogGateway resolving a trading area from a CEP', () => {
   function withRegions(response: HttpJsonResponse) {
     const http = new FakeHttpClient([{ match: REGIONS, response }])

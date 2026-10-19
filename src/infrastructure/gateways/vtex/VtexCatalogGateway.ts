@@ -22,6 +22,16 @@ export type VtexStoreConfig = {
   regionToken?: string
   /** How many products to ask for per term. */
   pageSize?: number
+  /**
+   * Minimum gap between requests to this store. Thirty search terms fired
+   * back to back from one address looks like an attack and gets the
+   * collector blocked, which costs far more than the time it saves.
+   */
+  minIntervalMs?: number
+  /** Injected so tests do not wait. */
+  sleep?: (ms: number) => Promise<void>
+  /** Injected so pacing is testable without a real clock. */
+  nowMs?: () => number
 }
 
 const DEFAULT_PAGE_SIZE = 24
@@ -51,14 +61,38 @@ export class VtexCatalogGateway implements StoreCatalogGateway, StoreRegionResol
     private readonly logger: Logger,
   ) {}
 
+  // Negative infinity, not zero: the first request to a store has nothing to
+  // wait for, and starting at zero made it sit out a full interval.
+  private lastRequestAtMs = Number.NEGATIVE_INFINITY
+
   get storeId(): string {
     return this.config.storeId
+  }
+
+  /**
+   * Waits out the remainder of the configured gap since the last request to
+   * this store. No-op when no gap is configured, which is how the website
+   * (one request, on demand) differs from the collector (thirty in a row).
+   */
+  private async pace(): Promise<void> {
+    const interval = this.config.minIntervalMs
+    if (!interval) return
+
+    const now = this.config.nowMs?.() ?? Date.now()
+    const waitFor = this.lastRequestAtMs + interval - now
+    if (waitFor > 0) {
+      const sleep = this.config.sleep ?? ((ms: number) => new Promise((r) => setTimeout(r, ms)))
+      await sleep(waitFor)
+    }
+    this.lastRequestAtMs = this.config.nowMs?.() ?? Date.now()
   }
 
   /**
    * Complexity: O(n) over the products returned; one request per term.
    */
   async searchTerm(term: string): Promise<CatalogSearchResult> {
+    await this.pace()
+
     const response = await this.http.getJson(this.searchUrl(term), {
       timeoutMs: REQUEST_TIMEOUT_MS,
       headers: { 'User-Agent': USER_AGENT, Accept: 'application/json' },
