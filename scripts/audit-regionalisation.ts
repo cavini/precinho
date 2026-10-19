@@ -1,0 +1,293 @@
+/**
+ * Asks every chain whether the prices we store are really that region's.
+ *
+ * The test is the only one that settles it: fetch the same products twice
+ * under two different region contexts and compare. If nothing moves, we
+ * are recording one national price list under a regional label, and the
+ * whole premise of the app — the cheapest price near you — is wrong.
+ *
+ * Tenda's own product page says it outright: "Informe seu CEP para
+ * visualizar o preco" and "Os precos podem sofrer alteracao de acordo com
+ * a sua regiao". A chain saying that while our collector stores a single
+ * number is a bug, not a finding about the market.
+ *
+ * Usage: `npx tsx scripts/audit-regionalisation.ts [slug ...]`
+ *
+ * Complexity: two resolutions and 2t searches per store for t terms,
+ * four stores at a time.
+ */
+import { config as loadEnv } from 'dotenv'
+loadEnv({ path: '.env.local' })
+loadEnv()
+
+import type { CatalogProduct } from '@/application/ports/StoreCatalogGateway'
+import { PostalCode } from '@/domain/value-objects/PostalCode'
+import { readCollectorEnv } from '@/infrastructure/config/env'
+import { GpaCatalogGateway } from '@/infrastructure/gateways/gpa/GpaCatalogGateway'
+import { TendaCatalogGateway } from '@/infrastructure/gateways/tenda/TendaCatalogGateway'
+import { VtexCatalogGateway } from '@/infrastructure/gateways/vtex/VtexCatalogGateway'
+import { FetchHttpClient } from '@/infrastructure/http/FetchHttpClient'
+import { StructuredLogger } from '@/infrastructure/observability/StructuredLogger'
+import { createWriteClient } from '@/infrastructure/persistence/supabase/supabaseClient'
+
+/** Staples every chain carries, so the comparison has something to match on. */
+const TERMS = ['arroz', 'leite', 'cafe', 'detergente'] as const
+
+/** The region a shopper is in, against no region at all. */
+const HERE = PostalCode.tryParse('01310100')! // São Paulo, Avenida Paulista
+const THERE = PostalCode.tryParse('22071900')! // Rio de Janeiro, kept for reference
+
+/** GPA prices by numeric store, so the pair is two stores rather than two CEPs. */
+const GPA_PAIR = { here: 461, there: 1384 } // Ricardo Jafet (SP) and Independência (Taubaté)
+
+type Verdict = {
+  slug: string
+  platform: string
+  matched: number
+  differing: number
+  examples: string[]
+  note?: string
+}
+
+async function main(): Promise<void> {
+  const wanted = process.argv.slice(2).filter((arg) => !arg.startsWith('-'))
+  const env = readCollectorEnv()
+  const logger = new StructuredLogger({ level: 'error' }).child({ job: 'audit' })
+  const http = new FetchHttpClient(logger)
+  const client = createWriteClient(env)
+
+  const { data } = await client
+    .from('stores')
+    .select('slug, host, platform, sales_channel, path_prefix, store_view, region_token')
+    .eq('active', true)
+    .order('slug')
+
+  const stores = ((data ?? []) as any[]).filter(
+    (store) =>
+      (wanted.length === 0 || wanted.includes(store.slug)) &&
+      // Tauste is swept under an agreed daily cap; spending it on an audit
+      // would break the promise the cap exists to keep.
+      store.platform !== 'magento-graphql',
+  )
+
+  const verdicts: Verdict[] = []
+  for (let index = 0; index < stores.length; index += 4) {
+    verdicts.push(
+      ...(await Promise.all(
+        stores.slice(index, index + 4).map((store) => audit(store, http, logger)),
+      )),
+    )
+  }
+
+  console.log('')
+  for (const verdict of verdicts.sort((a, b) => a.slug.localeCompare(b.slug))) {
+    const share = verdict.matched > 0 ? Math.round((verdict.differing / verdict.matched) * 100) : 0
+    const label =
+      verdict.note ??
+      (verdict.matched === 0
+        ? 'inconclusive — nothing matched'
+        : verdict.differing === 0
+          ? "ok — the stored price is the region's price"
+          : `WRONG — ${verdict.differing}/${verdict.matched} stored prices are not the region's (${share}%)`)
+
+    console.log(`  ${verdict.slug.padEnd(20)} ${label}`)
+    for (const example of verdict.examples.slice(0, 2)) console.log(`      ${example}`)
+  }
+}
+
+async function audit(store: any, http: FetchHttpClient, logger: any): Promise<Verdict> {
+  const base = {
+    storeId: store.slug,
+    host: store.host,
+    pathPrefix: store.path_prefix ?? undefined,
+    salesChannel: store.sales_channel ?? undefined,
+  }
+
+  if (store.platform === 'vtex-legacy') {
+    const prober = new VtexCatalogGateway(base, http, logger)
+    const [here, there] = await Promise.all([
+      prober.resolveRegion(HERE),
+      prober.resolveRegion(THERE),
+    ])
+
+    if (!here || !there) {
+      return {
+        slug: store.slug,
+        platform: store.platform,
+        matched: 0,
+        differing: 0,
+        examples: [],
+        note: 'could not resolve both regions',
+      }
+    }
+    // The comparison that finds OUR bug rather than the market's shape:
+    // what the collector stores against what the shop quotes a person
+    // standing in that region. Both sides must not be the same endpoint —
+    // catalog_system ignores regionId for pricing, so comparing it with
+    // itself says "fine" no matter how wrong the number is.
+    void there
+    return compareWithStorefront(
+      store,
+      new VtexCatalogGateway({ ...base, regionToken: here.regionToken }, http, logger),
+      here.regionToken,
+    )
+  }
+
+  if (store.platform === 'gpa-api') {
+    const banner = store.store_view ?? 'pa'
+    return compare(
+      store,
+      new GpaCatalogGateway(
+        { storeId: store.slug, banner, gpaStoreId: GPA_PAIR.here },
+        http,
+        logger,
+      ),
+      new GpaCatalogGateway(
+        { storeId: store.slug, banner, gpaStoreId: GPA_PAIR.there },
+        http,
+        logger,
+      ),
+    )
+  }
+
+  if (store.platform === 'tenda-api') {
+    return compare(
+      store,
+      new TendaCatalogGateway(
+        { storeId: store.slug, apiHost: store.host, branchId: '8' },
+        http,
+        logger,
+      ),
+      new TendaCatalogGateway(
+        { storeId: store.slug, apiHost: store.host, branchId: '138' },
+        http,
+        logger,
+      ),
+    )
+  }
+
+  return {
+    slug: store.slug,
+    platform: store.platform,
+    matched: 0,
+    differing: 0,
+    examples: [],
+    note: 'no audit for this platform',
+  }
+}
+
+/**
+ * Our collector's price against the one the storefront quotes.
+ *
+ * The catalogue endpoint we sweep returns the default sales policy and
+ * ignores regionId; Intelligent Search is what the shop's own pages call
+ * and it honours the region. Where the two disagree, the number in our
+ * database is not a price anybody is offered.
+ */
+async function compareWithStorefront(store: any, ours: any, regionToken: string): Promise<Verdict> {
+  let matched = 0
+  let differing = 0
+  const examples: string[] = []
+
+  for (const term of TERMS) {
+    const mine = await ours.searchTerm(term)
+    if (mine.status !== 'ok') continue
+
+    const theirs = await storefrontPrices(store.host, term, regionToken)
+    if (theirs === null) {
+      return {
+        slug: store.slug,
+        platform: store.platform,
+        matched: 0,
+        differing: 0,
+        examples: [],
+        note: 'storefront search unavailable — cannot verify',
+      }
+    }
+
+    for (const product of mine.products) {
+      const quoted = theirs.get(product.externalId)
+      if (quoted === undefined || quoted <= 0) continue
+
+      matched += 1
+      if (Math.abs(product.priceReais - quoted) > 0.001) {
+        differing += 1
+        if (examples.length < 4) {
+          examples.push(
+            `${product.name.slice(0, 40)}  nosso ${product.priceReais.toFixed(2)} vs loja ${quoted.toFixed(2)}`,
+          )
+        }
+      }
+    }
+  }
+
+  return { slug: store.slug, platform: store.platform, matched, differing, examples }
+}
+
+/** Product id to price, as the shop's own storefront would show it. */
+async function storefrontPrices(
+  host: string,
+  term: string,
+  regionToken: string,
+): Promise<Map<string, number> | null> {
+  const url =
+    `https://${host}/api/io/_v/api/intelligent-search/product_search/` +
+    `?query=${encodeURIComponent(term)}&count=50&locale=pt-BR&regionId=${encodeURIComponent(regionToken)}`
+
+  try {
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'precinho-collector/1.0 (+https://github.com/cavini/precinho)',
+        Accept: 'application/json',
+      },
+      signal: AbortSignal.timeout(25_000),
+    })
+    if (!response.ok) return null
+
+    const body = (await response.json()) as { products?: any[] }
+    const prices = new Map<string, number>()
+
+    for (const product of body.products ?? []) {
+      const price = product?.items?.[0]?.sellers?.[0]?.commertialOffer?.Price
+      if (typeof price === 'number') prices.set(String(product.productId), price)
+    }
+
+    return prices
+  } catch {
+    return null
+  }
+}
+
+/** Matches products by their store-side id and reports where the prices part company. */
+async function compare(store: any, a: any, b: any): Promise<Verdict> {
+  let matched = 0
+  let differing = 0
+  const examples: string[] = []
+
+  for (const term of TERMS) {
+    const [left, right] = await Promise.all([a.searchTerm(term), b.searchTerm(term)])
+    if (left.status !== 'ok' || right.status !== 'ok') continue
+
+    const byId = new Map<string, CatalogProduct>()
+    for (const product of right.products) byId.set(product.externalId, product)
+
+    for (const product of left.products) {
+      const twin = byId.get(product.externalId)
+      if (!twin) continue
+
+      matched += 1
+      if (Math.abs(product.priceReais - twin.priceReais) > 0.001) {
+        differing += 1
+        if (examples.length < 4) {
+          examples.push(
+            `${product.name.slice(0, 44)}  ${product.priceReais.toFixed(2)} vs ${twin.priceReais.toFixed(2)}`,
+          )
+        }
+      }
+    }
+  }
+
+  return { slug: store.slug, platform: store.platform, matched, differing, examples }
+}
+
+void main()
