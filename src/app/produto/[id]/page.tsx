@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { headers } from 'next/headers'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
@@ -5,25 +6,33 @@ import { getWebContainer } from '@/composition/container'
 import { ContextBar } from '@/presentation/components/ContextBar'
 import { OfferTable } from '@/presentation/components/OfferTable'
 import { PostalCodeGate } from '@/presentation/components/PostalCodeGate'
+import {
+  ContextBarSkeleton,
+  ProductDetailSkeleton,
+} from '@/presentation/components/Skeletons'
 import { clientKeyFromHeaders } from '@/presentation/clientKey'
 import { readPageContext } from '@/presentation/server/shoppingContext'
-
-/**
- * Rendered per request, never prerendered.
- *
- * Every price on this page depends on the visitor's CEP and the stores they
- * picked, both of which come from their cookie, and the rate limiter needs
- * their request headers. There is no region-neutral version of this page to
- * cache, so blocking is the honest setting rather than a performance
- * oversight.
- */
-export const instant = false
 
 type Props = {
   params: Promise<{ id: string }>
 }
 
-export default async function ProductPage({ params }: Props) {
+export default function ProductPage({ params }: Props) {
+  return (
+    <Suspense
+      fallback={
+        <>
+          <ContextBarSkeleton />
+          <ProductDetailSkeleton />
+        </>
+      }
+    >
+      <ProductBody params={params} />
+    </Suspense>
+  )
+}
+
+async function ProductBody({ params }: Props) {
   const { id } = await params
   const context = await readPageContext()
 

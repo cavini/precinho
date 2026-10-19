@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { cookies } from 'next/headers'
 import type { ShoppingContextStore } from '@/application/use-cases/ResolveShoppingContext'
 import { getWebContainer } from '@/composition/container'
@@ -26,7 +27,7 @@ export type PageContext =
  *
  * Complexity: O(s) over the region's stores, one query.
  */
-export async function readPageContext(): Promise<PageContext> {
+export const readPageContext = cache(async function readPageContext(): Promise<PageContext> {
   const store = await cookies()
   const preferences = parsePreferences(store.get(PREFERENCES_COOKIE)?.value)
 
@@ -50,4 +51,4 @@ export async function readPageContext(): Promise<PageContext> {
     // sit in a cookie forever narrowing somebody's results invisibly.
     pickedStoreIds: preferences.storeIds.filter((id) => known.has(id)),
   }
-}
+})
