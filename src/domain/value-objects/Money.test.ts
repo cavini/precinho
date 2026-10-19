@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { plainSpaces } from '@/testing/plainSpaces'
 import { Money } from './Money'
 
 describe('Money', () => {
@@ -47,8 +48,8 @@ describe('Money', () => {
 
   it('formats as Brazilian currency for the screen', () => {
     // Non-breaking space is what Intl emits between symbol and digits.
-    expect(Money.fromCents(1049).format().replace(/ /g, ' ')).toBe('R$ 10,49')
-    expect(Money.fromCents(500).format().replace(/ /g, ' ')).toBe('R$ 5,00')
+    expect(plainSpaces(Money.fromCents(1049).format())).toBe('R$ 10,49')
+    expect(plainSpaces(Money.fromCents(500).format())).toBe('R$ 5,00')
   })
 
   it('is immutable', () => {

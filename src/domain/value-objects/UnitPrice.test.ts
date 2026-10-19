@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { plainSpaces } from '@/testing/plainSpaces'
 import { Money } from './Money'
 import { Quantity } from './Quantity'
 import { UnitPrice } from './UnitPrice'
@@ -27,10 +28,10 @@ describe('UnitPrice', () => {
 
   it('formats for the screen', () => {
     const perKilo = UnitPrice.from(Money.fromReais(52.5), Quantity.of(5, 'kg'))
-    expect(perKilo.format().replace(/ /g, ' ')).toBe('R$ 10,50/kg')
+    expect(plainSpaces(perKilo.format())).toBe('R$ 10,50/kg')
 
     const perLitre = UnitPrice.from(Money.fromReais(10.49), Quantity.of(2, 'L'))
-    expect(perLitre.format().replace(/ /g, ' ')).toBe('R$ 5,25/L')
+    expect(plainSpaces(perLitre.format())).toBe('R$ 5,25/L')
   })
 
   it('is immutable', () => {
