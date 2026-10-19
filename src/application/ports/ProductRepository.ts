@@ -50,6 +50,8 @@ export type FeedCriteria = {
   regionId: string
   storeIds: readonly string[]
   limit: number
+  /** How many cards to skip. The feed's order is stable, so this is safe. */
+  offset: number
 }
 
 export interface ProductRepository {

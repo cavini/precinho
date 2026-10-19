@@ -23,9 +23,11 @@ concurrency:
 jobs:
   collect:
     runs-on: ubuntu-latest
-    # Generous: the collector paces itself to stay polite to the stores, so
-    # the wall-clock time is mostly deliberate waiting.
-    timeout-minutes: 45
+    # Mostly deliberate waiting: the collector paces itself per store, and
+    # the basket is ~175 terms across a dozen stores. Raised from 45 when
+    # the basket grew — a sweep that times out half way leaves the newest
+    # aisles permanently uncollected, since each run starts from the top.
+    timeout-minutes: 180
 
     steps:
       - uses: actions/checkout@v5

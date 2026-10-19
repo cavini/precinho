@@ -172,6 +172,103 @@ describe('GetProductFeed', () => {
     })
   })
 
+  describe('paging', () => {
+    /** Forty comparable products, so there is something to page through. */
+    function manyCards() {
+      const products = Array.from({ length: 40 }, (_, index) =>
+        aProduct({
+          id: `p${String(index).padStart(2, '0')}`,
+          name: `Produto ${index}`,
+          searchText: `produto ${index}`,
+          imageUrl: `https://example.com/${index}.jpg`,
+        }),
+      )
+      const offers = products.flatMap((product, index) => [
+        anOffer(product.id, 'mambo', 10 + index),
+        anOffer(product.id, 'hortifruti', 12 + index * 1.5),
+      ])
+
+      return new GetProductFeed({
+        productRepository: new InMemoryProductRepository(products, offers, STORES),
+        storeRepository: new InMemoryStoreRepository(STORES),
+        rateLimiter: new AllowingRateLimiter(),
+        logger: new RecordingLogger(),
+        metrics: new RecordingMetrics(),
+      })
+    }
+
+    const page = (useCase: GetProductFeed, offset: number, limit = 6) =>
+      useCase.execute({
+        regionId: REGION_SP.id,
+        storeIds: SP_STORES,
+        limit,
+        offset,
+        clientKey: 'ip-hash',
+      })
+
+    it('returns a different page for a different offset', async () => {
+      const useCase = manyCards()
+      const first = await page(useCase, 0)
+      const second = await page(useCase, 6)
+
+      if (first.status !== 'ok' || second.status !== 'ok') throw new Error('expected ok')
+      const firstIds = first.cards.map((c) => c.productId)
+      const secondIds = second.cards.map((c) => c.productId)
+
+      expect(firstIds).toHaveLength(6)
+      // No overlap: a repeated card would render twice in the scroll.
+      expect(secondIds.filter((id) => firstIds.includes(id))).toEqual([])
+    })
+
+    it('says there is more while a page comes back full', async () => {
+      const result = await page(manyCards(), 0)
+      if (result.status !== 'ok') throw new Error(result.status)
+      expect(result.hasMore).toBe(true)
+    })
+
+    it('says there is no more once a page comes back short', async () => {
+      // Asking again after a short page costs a round trip to learn nothing.
+      const result = await page(manyCards(), 36)
+      if (result.status !== 'ok') throw new Error(result.status)
+      expect(result.cards.length).toBeLessThan(6)
+      expect(result.hasMore).toBe(false)
+    })
+
+    it('returns nothing past the end rather than wrapping around', async () => {
+      const result = await page(manyCards(), 500)
+      if (result.status !== 'ok') throw new Error(result.status)
+      expect(result.cards).toEqual([])
+      expect(result.hasMore).toBe(false)
+    })
+
+    it('treats a nonsense offset as the beginning', async () => {
+      const useCase = manyCards()
+      const negative = await page(useCase, -10)
+      const start = await page(useCase, 0)
+
+      if (negative.status !== 'ok' || start.status !== 'ok') throw new Error('expected ok')
+      expect(negative.cards.map((c) => c.productId)).toEqual(start.cards.map((c) => c.productId))
+    })
+
+    it('defaults to the first page when no offset is given', async () => {
+      const useCase = manyCards()
+      const implicit = await useCase.execute({
+        regionId: REGION_SP.id,
+        storeIds: SP_STORES,
+        limit: 6,
+        clientKey: 'ip-hash',
+      })
+
+      if (implicit.status !== 'ok') throw new Error(implicit.status)
+      const explicit = await page(useCase, 0)
+      if (explicit.status !== 'ok') throw new Error(explicit.status)
+
+      expect(implicit.cards.map((c) => c.productId)).toEqual(
+        explicit.cards.map((c) => c.productId),
+      )
+    })
+  })
+
   describe('observability', () => {
     it('counts outcomes and reports how full the feed was', async () => {
       const { useCase, logger, metrics } = build()

@@ -12,6 +12,8 @@ export type GetProductFeedInput = {
   regionId: string
   storeIds: readonly string[]
   limit?: number
+  /** Cards already shown. The caller counts; the feed's order is stable. */
+  offset?: number
   clientKey: string
 }
 
@@ -38,7 +40,12 @@ export type FeedCard = {
 }
 
 export type GetProductFeedOutput =
-  | { status: 'ok'; cards: readonly FeedCard[] }
+  | {
+      status: 'ok'
+      cards: readonly FeedCard[]
+      /** False once a page comes back short, which is how the scroll stops. */
+      hasMore: boolean
+    }
   | { status: 'no-stores-selected' }
   | { status: 'rate-limited'; retryAfterSeconds: number }
 
@@ -81,10 +88,13 @@ export class GetProductFeed {
     }
 
     const limit = clamp(input.limit)
+    const offset = Math.max(0, Math.floor(input.offset ?? 0))
+
     const entries = await productRepository.feed({
       regionId: input.regionId,
       storeIds: input.storeIds,
       limit,
+      offset,
     })
 
     const stores = await storeRepository.listByRegion(input.regionId)
@@ -94,11 +104,15 @@ export class GetProductFeed {
       regionId: input.regionId,
       storeCount: input.storeIds.length,
       cardCount: entries.length,
+      offset,
     })
 
     return this.finish({
       status: 'ok',
       cards: entries.map((entry) => toCard(entry, storesById)),
+      // A short page means the end; asking again would cost a round trip
+      // to learn nothing.
+      hasMore: entries.length === limit,
     })
   }
 
