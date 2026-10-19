@@ -202,7 +202,7 @@ describe('VtexCatalogGateway request assembly', () => {
     const { gateway, http } = build(okWithFixture, { pageSize: 10 })
     await gateway.searchTerm('coca cola')
 
-    expect(http.lastUrl).toContain('ft=coca+cola')
+    expect(http.lastUrl).toContain('ft=coca%20cola')
     expect(http.lastUrl).toContain('_from=0')
     expect(http.lastUrl).toContain('_to=9')
   })
@@ -255,7 +255,18 @@ describe('VtexCatalogGateway request assembly', () => {
     const { gateway, http } = build(okWithFixture)
     await gateway.searchTerm('leite & cia 100%')
 
-    expect(http.lastUrl).toContain('ft=leite+%26+cia+100%25')
+    expect(http.lastUrl).toContain('ft=leite%20%26%20cia%20100%25')
+  })
+
+  it('encodes a space as %20, not as +', async () => {
+    // Mambo answers 400 to "queijo+mussarela" and 206 to
+    // "queijo%20mussarela". Every multi-word term in the basket failed on
+    // the first real collection run because of this.
+    const { gateway, http } = build(okWithFixture)
+    await gateway.searchTerm('queijo mussarela')
+
+    expect(http.lastUrl).toContain('ft=queijo%20mussarela')
+    expect(http.lastUrl).not.toContain('+')
   })
 
   it('identifies itself', async () => {

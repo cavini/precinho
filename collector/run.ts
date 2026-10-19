@@ -13,7 +13,17 @@
  * zonasul` for named ones.
  */
 
-import 'dotenv/config'
+import { config as loadEnv } from 'dotenv'
+
+// Next loads .env.local on its own; a plain script does not. Without this
+// the collector reads a different file from the app it feeds, which looks
+// like missing credentials even though the app is configured fine.
+// .env.local first: dotenv never overwrites an already-set variable, so
+// this is what gives it precedence over .env and over nothing at all in CI,
+// where the values arrive as real environment variables.
+loadEnv({ path: '.env.local' })
+loadEnv()
+
 import { CollectStoreOffers } from '@/application/use-cases/CollectStoreOffers'
 import type { Logger } from '@/application/ports/Logger'
 import type { StoreCatalogGateway } from '@/application/ports/StoreCatalogGateway'
