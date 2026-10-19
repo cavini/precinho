@@ -91,7 +91,7 @@ export class InMemoryProductRepository implements ProductRepository {
             b.offers.length - a.offers.length ||
             a.product.id.localeCompare(b.product.id),
         )
-        .slice(0, criteria.limit)
+        .slice(criteria.offset, criteria.offset + criteria.limit)
     )
   }
 

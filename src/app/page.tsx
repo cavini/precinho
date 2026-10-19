@@ -3,7 +3,7 @@ import { headers } from 'next/headers'
 import { getWebContainer } from '@/composition/container'
 import { ContextBar } from '@/presentation/components/ContextBar'
 import { PostalCodeGate } from '@/presentation/components/PostalCodeGate'
-import { ProductFeed } from '@/presentation/components/ProductFeed'
+import { InfiniteFeed } from '@/presentation/components/InfiniteFeed'
 import { SearchForm } from '@/presentation/components/SearchForm'
 import { ContextBarSkeleton, FeedSkeleton } from '@/presentation/components/Skeletons'
 import { clientKeyFromHeaders } from '@/presentation/clientKey'
@@ -88,5 +88,5 @@ async function FeedSection({
 
   if (feed.status !== 'ok') return null
 
-  return <ProductFeed cards={feed.cards} />
+  return <InfiniteFeed initialCards={feed.cards} initialHasMore={feed.hasMore} />
 }
