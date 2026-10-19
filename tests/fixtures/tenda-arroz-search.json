@@ -1,0 +1,241 @@
+{
+  "_note": "Verbatim trim of GET https://api.tendaatacado.com.br/api/public/store/search?query=arroz&page=1&order=relevance, recorded 2026-10-19 with the collector's own User-Agent. Nothing is invented: four of the twenty products are kept, each product keeps only the fields this gateway reads, and each inventory array is cut to branches 5, 6, 20, 51 and 105. Every remaining value is exactly as Tenda served it.",
+  "current_page": 1,
+  "total_pages": 11,
+  "total_products": 217,
+  "products_per_page": 20,
+  "products": [
+    {
+      "id": 1782,
+      "sku": "000000000000976178-PT",
+      "barcode": "7896909500016",
+      "name": "Arroz Tipo 1 Visconde 5kg",
+      "url": "https://tendaatacado.com.br/produto/arroz-tipo-1-visconde-5kg-2500",
+      "token": "arroz-tipo-1-visconde-5kg-2500",
+      "thumbnail": "https://d3gdr9n5lqb5z7.cloudfront.net/fotos/1782.jpg",
+      "price": 16.99,
+      "currency": "R$",
+      "brand": "Visconde",
+      "brandToken": "visconde",
+      "availability": "in_stock",
+      "totalStock": 6,
+      "inventory": [
+        {
+          "branchId": "6",
+          "totalAvailable": 6
+        },
+        {
+          "branchId": "20",
+          "totalAvailable": 6
+        },
+        {
+          "branchId": "105",
+          "totalAvailable": 6
+        },
+        {
+          "branchId": "51",
+          "totalAvailable": 0
+        },
+        {
+          "branchId": "5",
+          "totalAvailable": 0
+        }
+      ],
+      "photos": [
+        {
+          "name": "1782",
+          "type": "jpg",
+          "contentType": "image/jpg",
+          "url": "https://d3gdr9n5lqb5z7.cloudfront.net/fotos/1782.jpg"
+        }
+      ],
+      "promotions": [
+        {
+          "description": "DESCONTOU_PLUS Preço especial de R$ 14.99 para compras via app do produto [000000000000948691-UN, 000000000000976178-UN]",
+          "template": "DESCONTOU_PLUS",
+          "price": 14.99,
+          "restriction": {
+            "title": "Cliente APP pagando com o Cartão Tenda",
+            "rules": [
+              {
+                "type": "PERIOD_OF_VALIDITY",
+                "description": "Vigência: Até 21/10/2026 às 23h00"
+              },
+              {
+                "type": "CARTAO_TENDA",
+                "description": "Ao utilizar um cupom ou vale com valor igual ou superior ao valor da compra \"À vista no Cartão Tenda\", as promoções \"Cliente APP pagando com o Cartão Tenda\" serão desabilitadas."
+              }
+            ]
+          }
+        },
+        {
+          "description": "DESCONTOU Preço especial de R$ 15.99 para compras via app do produto [000000000000948691-UN, 000000000000976178-UN]",
+          "template": "DESCONTOU",
+          "price": 15.99,
+          "restriction": {
+            "title": "Cliente APP",
+            "rules": [
+              {
+                "type": "PERIOD_OF_VALIDITY",
+                "description": "Vigência: Até 21/10/2026 às 23h00"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": 37759,
+      "sku": "000000000000953702-UN",
+      "barcode": "7896038357017",
+      "name": "Arroz Arbório Urbano 1kg",
+      "url": "https://tendaatacado.com.br/produto/arroz-arborio-urbano-1kg",
+      "token": "arroz-arborio-urbano-1kg",
+      "thumbnail": "https://d3gdr9n5lqb5z7.cloudfront.net/fotos/953702-arborio.jpg",
+      "price": 20.7,
+      "currency": "R$",
+      "brand": "Urbano",
+      "brandToken": "urbano",
+      "availability": "in_stock",
+      "totalStock": 500,
+      "inventory": [
+        {
+          "branchId": "6",
+          "totalAvailable": 0
+        },
+        {
+          "branchId": "5",
+          "totalAvailable": 0
+        },
+        {
+          "branchId": "105",
+          "totalAvailable": 0
+        },
+        {
+          "branchId": "20",
+          "totalAvailable": 0
+        },
+        {
+          "branchId": "51",
+          "totalAvailable": 13
+        }
+      ],
+      "photos": [
+        {
+          "name": "953702-arborio",
+          "type": "jpg",
+          "contentType": "image/jpg",
+          "url": "https://d3gdr9n5lqb5z7.cloudfront.net/fotos/953702-arborio.jpg"
+        }
+      ],
+      "promotions": [],
+      "wholesalePrices": [
+        {
+          "minQuantity": 4,
+          "price": 18.7
+        }
+      ]
+    },
+    {
+      "id": 61554,
+      "sku": "000000000000095621-PT",
+      "barcode": "7896006711124",
+      "name": "Arroz Tipo 1 Camil 2kg",
+      "url": "https://tendaatacado.com.br/produto/arroz-tipo-1-camil-2kg",
+      "token": "arroz-tipo-1-camil-2kg",
+      "thumbnail": "https://d3gdr9n5lqb5z7.cloudfront.net/fotos/95621-16-01-2025-09-42-39-255.jpg",
+      "price": 10.29,
+      "currency": "R$",
+      "brand": "Camil",
+      "brandToken": "camil",
+      "availability": "in_stock",
+      "totalStock": 500,
+      "inventory": [
+        {
+          "branchId": "105",
+          "totalAvailable": 27
+        },
+        {
+          "branchId": "20",
+          "totalAvailable": 79
+        },
+        {
+          "branchId": "6",
+          "totalAvailable": 106
+        },
+        {
+          "branchId": "5",
+          "totalAvailable": 435
+        }
+      ],
+      "photos": [
+        {
+          "name": "95621-16-01-2025-09-42-39-255",
+          "type": "jpg",
+          "contentType": "image/jpg",
+          "url": "https://d3gdr9n5lqb5z7.cloudfront.net/fotos/95621-16-01-2025-09-42-39-255.jpg"
+        }
+      ],
+      "promotions": [],
+      "wholesalePrices": [
+        {
+          "minQuantity": 3,
+          "price": 9.99
+        }
+      ]
+    },
+    {
+      "id": 20284,
+      "sku": "000000000000958364-PT",
+      "barcode": "7896006755517",
+      "name": "Arroz Integral Camil 1kg",
+      "url": "https://tendaatacado.com.br/produto/arroz-integral-camil-1kg-1647",
+      "token": "arroz-integral-camil-1kg-1647",
+      "thumbnail": "https://d3gdr9n5lqb5z7.cloudfront.net/fotos/958364.jpg",
+      "price": 5.29,
+      "currency": "R$",
+      "brand": "Camil",
+      "brandToken": "camil",
+      "availability": "in_stock",
+      "totalStock": 500,
+      "inventory": [
+        {
+          "branchId": "20",
+          "totalAvailable": 45
+        },
+        {
+          "branchId": "51",
+          "totalAvailable": 0
+        },
+        {
+          "branchId": "5",
+          "totalAvailable": 43
+        },
+        {
+          "branchId": "105",
+          "totalAvailable": 141
+        },
+        {
+          "branchId": "6",
+          "totalAvailable": 191
+        }
+      ],
+      "photos": [
+        {
+          "name": "958364",
+          "type": "jpg",
+          "contentType": "image/jpg",
+          "url": "https://d3gdr9n5lqb5z7.cloudfront.net/fotos/958364.jpg"
+        }
+      ],
+      "promotions": [],
+      "wholesalePrices": [
+        {
+          "minQuantity": 3,
+          "price": 4.99
+        }
+      ]
+    }
+  ],
+  "termos": "Arroz Tarumã 1kg;Arroz Tarumã 5kg;Arroz Saboroso 5kg ;Arroz Tipo 1 Solito 1Kg;Arroz Picinin 5kg;Arroz Arbório Urbano 1kg;Arroz Tipo 1 Select 1Kg"
+}

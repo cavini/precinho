@@ -2,9 +2,16 @@
  * Applies the SQL migrations in order.
  *
  * Supabase's REST interface cannot run DDL, so this connects to Postgres
- * directly. Every migration is written to be idempotent — `if not exists`,
- * `or replace`, `on conflict do nothing` — so re-running the whole folder is
- * safe and is the normal way to use this.
+ * directly.
+ *
+ * Each file runs once and is recorded. Idempotent statements are not enough
+ * on their own: 0004 recreates a check constraint listing the platforms
+ * known at the time, so replaying it after 0005 added another one fails
+ * against rows that are perfectly valid. Order matters, and "already done"
+ * has to be a fact rather than a hope.
+ *
+ * Each file runs inside its own transaction, so a failure leaves the
+ * schema where it was rather than half-changed.
  *
  * Usage: `npm run migrate` (migrations only) or `npm run migrate -- --seed`.
  */
@@ -39,10 +46,36 @@ async function main(): Promise<void> {
   await client.connect()
 
   try {
+    await client.query(`
+      create table if not exists schema_migrations (
+        filename    text primary key,
+        applied_at  timestamptz not null default now()
+      )
+    `)
+
+    const { rows } = await client.query<{ filename: string }>(
+      'select filename from schema_migrations',
+    )
+    const applied = new Set(rows.map((row) => row.filename))
+
     for (const file of files) {
+      if (applied.has(file)) {
+        console.log(`  ${file} ... already applied`)
+        continue
+      }
+
       process.stdout.write(`  ${file} ... `)
-      await client.query(readFileSync(join(MIGRATIONS_DIR, file), 'utf8'))
-      console.log('ok')
+      await client.query('begin')
+      try {
+        await client.query(readFileSync(join(MIGRATIONS_DIR, file), 'utf8'))
+        await client.query('insert into schema_migrations (filename) values ($1)', [file])
+        await client.query('commit')
+        console.log('ok')
+      } catch (error) {
+        await client.query('rollback')
+        console.log('failed')
+        throw error
+      }
     }
 
     if (process.argv.includes('--seed')) {
