@@ -25,4 +25,14 @@ export type HttpJsonResponse =
  */
 export interface HttpClient {
   getJson(url: string, options?: HttpRequestOptions): Promise<HttpJsonResponse>
+
+  /**
+   * Some catalogues only answer a POST — GPA's search takes its terms and
+   * its store in a JSON body rather than a query string.
+   *
+   * Never retried on a transport failure: a POST is not safe to repeat
+   * blindly, and no catalogue read is worth risking a duplicate side effect
+   * on somebody else's system.
+   */
+  postJson(url: string, body: unknown, options?: HttpRequestOptions): Promise<HttpJsonResponse>
 }

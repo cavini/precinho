@@ -55,3 +55,12 @@ on conflict (slug) do nothing;
 -- Carrefour: see the note above. Inactive until the data comes from a
 -- channel they offer rather than one that has to be talked past.
 update stores set active = false where slug = 'carrefour';
+
+-- Pão de Açúcar. GPA's own API, so the configuration lives in the two
+-- columns that already mean this: region_token is their numeric store (the
+-- trading area), store_view is the banner path.
+insert into stores (slug, name, chain, region_id, platform, host, region_token, store_view)
+select 'paodeacucar', 'Pão de Açúcar', 'Pão de Açúcar', r.id,
+       'gpa-api', 'api.vendas.gpa.digital', '461', 'pa'
+from regions r where r.slug = 'sao-paulo-sp'
+on conflict (slug) do nothing;

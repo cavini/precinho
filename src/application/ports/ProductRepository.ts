@@ -32,7 +32,37 @@ export type SearchCriteria = {
   limit: number
 }
 
+/**
+ * One card on the home feed: a product and every store that has it.
+ *
+ * Carries all the offers, not just the cheapest, because the card lists the
+ * stores underneath the picture.
+ */
+export type ProductFeedEntry = {
+  product: Product
+  /** In-stock offers, cheapest first. Never fewer than two. */
+  offers: readonly Offer[]
+  /** Dearest minus cheapest, which is what the feed is ranked on. */
+  spreadCents: number
+}
+
+export type FeedCriteria = {
+  regionId: string
+  storeIds: readonly string[]
+  limit: number
+}
+
 export interface ProductRepository {
+  /**
+   * What to show before anybody searches: products worth switching store
+   * for, biggest saving first.
+   *
+   * Implementations must exclude products carried by fewer than two of the
+   * picked stores — a single price is not a comparison — and must leave out
+   * out-of-stock offers, as everywhere else.
+   */
+  feed(criteria: FeedCriteria): Promise<readonly ProductFeedEntry[]>
+
   /**
    * Products matching every token of the query, ranked by how well they
    * match. Implementations must exclude out-of-stock offers from

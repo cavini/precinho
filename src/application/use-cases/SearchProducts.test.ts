@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { plainSpaces } from '@/testing/plainSpaces'
-import type { ProductRepository, ProductSearchHit, SearchCriteria } from '../ports/ProductRepository'
+import type {
+  FeedCriteria,
+  ProductRepository,
+  ProductSearchHit,
+  SearchCriteria,
+} from '../ports/ProductRepository'
 import { FixedClock } from '../testing/FixedClock'
 import {
   InMemoryProductRepository,
@@ -40,6 +45,10 @@ class CountingProductRepository implements ProductRepository {
   async search(criteria: SearchCriteria): Promise<readonly ProductSearchHit[]> {
     this.searches += 1
     return this.inner.search(criteria)
+  }
+
+  feed(criteria: FeedCriteria) {
+    return this.inner.feed(criteria)
   }
 
   findById(productId: string) {

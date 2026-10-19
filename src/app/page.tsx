@@ -1,6 +1,10 @@
+import { headers } from 'next/headers'
+import { getWebContainer } from '@/composition/container'
 import { ContextBar } from '@/presentation/components/ContextBar'
 import { PostalCodeGate } from '@/presentation/components/PostalCodeGate'
+import { ProductFeed } from '@/presentation/components/ProductFeed'
 import { SearchForm } from '@/presentation/components/SearchForm'
+import { clientKeyFromHeaders } from '@/presentation/clientKey'
 import { readPageContext } from '@/presentation/server/shoppingContext'
 
 /**
@@ -21,6 +25,12 @@ export default async function HomePage() {
     return <PostalCodeGate />
   }
 
+  const feed = await getWebContainer().getProductFeed.execute({
+    regionId: context.regionId,
+    storeIds: context.pickedStoreIds,
+    clientKey: clientKeyFromHeaders(await headers()),
+  })
+
   return (
     <>
       <ContextBar
@@ -31,11 +41,17 @@ export default async function HomePage() {
       />
 
       <section className="flex flex-col gap-3">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          O que você quer comparar?
-        </h1>
+        <h1 className="text-2xl font-semibold tracking-tight">O que você quer comparar?</h1>
         <SearchForm autoFocus />
       </section>
+
+      {feed.status === 'ok' && <ProductFeed cards={feed.cards} />}
+
+      {feed.status === 'no-stores-selected' && (
+        <p className="rounded-xl border border-zinc-200 p-4 text-sm text-zinc-600 dark:border-zinc-800 dark:text-zinc-400">
+          Marque pelo menos um mercado ali em cima pra eu ter o que comparar.
+        </p>
+      )}
     </>
   )
 }

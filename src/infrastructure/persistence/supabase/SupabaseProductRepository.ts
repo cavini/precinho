@@ -1,6 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Logger } from '@/application/ports/Logger'
 import type {
+  FeedCriteria,
+  ProductFeedEntry,
   ProductRepository,
   ProductSearchHit,
   SearchCriteria,
@@ -25,6 +27,24 @@ type SearchRow = {
   cheapest_collected_at: string | null
   dearest_price_cents: number | null
   available_store_count: number
+}
+
+/** One row of product_feed. */
+type FeedRow = {
+  product_id: string
+  name: string
+  brand: string | null
+  size_amount: number | string | null
+  size_unit: string | null
+  image_url: string | null
+  gtin14: string | null
+  spread_cents: number
+  offers: Array<{
+    store_id: string
+    price_cents: number
+    url: string
+    collected_at: string
+  }> | null
 }
 
 type ProductRow = {
@@ -72,6 +92,46 @@ export class SupabaseProductRepository implements ProductRepository {
     }
 
     return (data as SearchRow[]).map((row) => this.toHit(row))
+  }
+
+  /**
+   * Complexity: one round trip. The ranking and the two-store minimum are
+   * applied in the query, so what comes back is already the page.
+   */
+  async feed(criteria: FeedCriteria): Promise<readonly ProductFeedEntry[]> {
+    const { data, error } = await this.client.rpc('product_feed', {
+      p_region_id: criteria.regionId,
+      p_store_ids: criteria.storeIds,
+      p_limit: criteria.limit,
+    })
+
+    if (error) {
+      this.logger.error('products.feed_failed', {
+        reason: error.message,
+        regionId: criteria.regionId,
+      })
+      return []
+    }
+
+    return (data as FeedRow[]).flatMap((row) => {
+      const offers = (row.offers ?? []).flatMap((offer) => {
+        const mapped = toOffer({
+          store_id: offer.store_id,
+          price_cents: offer.price_cents,
+          list_price_cents: null,
+          url: offer.url,
+          // The function only aggregates in-stock offers.
+          in_stock: true,
+          collected_at: offer.collected_at,
+        })
+        return mapped ? [mapped] : []
+      })
+
+      // A row that lost an offer to bad data may no longer be a comparison.
+      if (offers.length < 2) return []
+
+      return [{ product: toProduct(row), offers, spreadCents: row.spread_cents }]
+    })
   }
 
   async findById(productId: string): Promise<Product | null> {

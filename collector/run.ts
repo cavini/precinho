@@ -27,6 +27,7 @@ loadEnv()
 import { CollectStoreOffers } from '@/application/use-cases/CollectStoreOffers'
 import type { Logger } from '@/application/ports/Logger'
 import type { StoreCatalogGateway } from '@/application/ports/StoreCatalogGateway'
+import { GpaCatalogGateway } from '@/infrastructure/gateways/gpa/GpaCatalogGateway'
 import { MagentoCatalogGateway } from '@/infrastructure/gateways/magento/MagentoCatalogGateway'
 import { ProductMatcher } from '@/domain/services/ProductMatcher'
 import { ProductNameParser } from '@/domain/services/ProductNameParser'
@@ -136,6 +137,27 @@ async function buildGateway(
   http: FetchHttpClient,
   logger: Logger,
 ): Promise<StoreCatalogGateway | null> {
+  if (store.platform === 'gpa-api') {
+    const gpaStoreId = Number(store.region_token)
+    if (!Number.isFinite(gpaStoreId)) {
+      // Without their store id the API answers for some default area, and
+      // those are not the prices anybody at this CEP would pay.
+      logger.warn('collector.gpa_store_missing', { slug: store.slug })
+      return null
+    }
+
+    return new GpaCatalogGateway(
+      {
+        storeId: store.id,
+        banner: store.store_view ?? 'pa',
+        gpaStoreId,
+        minIntervalMs: MIN_INTERVAL_MS,
+      },
+      http,
+      logger,
+    )
+  }
+
   if (store.platform === 'magento-graphql') {
     return new MagentoCatalogGateway(
       {
