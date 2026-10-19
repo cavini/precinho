@@ -1,0 +1,104 @@
+[
+  {
+    "productId": "12458",
+    "productName": "Refrigerante Coca-Cola Lata 350ml",
+    "brand": "Coca-cola",
+    "brandId": 20243,
+    "link": "https://www.mambo.com.br/refrigerante-coca-cola-lata-350ml/p",
+    "linkText": "refrigerante-coca-cola-lata-350ml",
+    "items": [
+      {
+        "itemId": "12472",
+        "name": "Refrigerante Coca-Cola Lata 350ml",
+        "ean": "7894900010015",
+        "measurementUnit": "un",
+        "unitMultiplier": 1,
+        "images": [
+          {
+            "imageUrl": "https://mambodelivery.vteximg.com.br/arquivos/ids/259973/_.jpg?v=639271515915770000"
+          }
+        ],
+        "sellers": [
+          {
+            "sellerId": "1",
+            "sellerName": "SUPERMERCADOS MAMBO - BR",
+            "commertialOffer": {
+              "Price": 3.99,
+              "ListPrice": 5.09,
+              "PriceWithoutDiscount": 3.99,
+              "AvailableQuantity": 99999
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "productId": "12455",
+    "productName": "Refrigerante Coca-Cola Vidro 250ml",
+    "brand": "Coca-cola",
+    "brandId": 20243,
+    "link": "https://www.mambo.com.br/refrigerante-coca-cola-vidro-250ml/p",
+    "linkText": "refrigerante-coca-cola-vidro-250ml",
+    "items": [
+      {
+        "itemId": "12469",
+        "name": "Refrigerante Coca-Cola Vidro 250ml",
+        "ean": "78912908",
+        "measurementUnit": "un",
+        "unitMultiplier": 1,
+        "images": [
+          {
+            "imageUrl": "https://mambodelivery.vteximg.com.br/arquivos/ids/227827/refrigerante-coca-cola-250ml_1.jpg?v=639271498024800000"
+          }
+        ],
+        "sellers": [
+          {
+            "sellerId": "1",
+            "sellerName": "SUPERMERCADOS MAMBO - BR",
+            "commertialOffer": {
+              "Price": 5.09,
+              "ListPrice": 5.09,
+              "PriceWithoutDiscount": 5.09,
+              "AvailableQuantity": 99999
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "productId": "24739",
+    "productName": "Refrigerante de Baunilha Coca-Cola 330ml",
+    "brand": "Coca-cola",
+    "brandId": 20243,
+    "link": "https://www.mambo.com.br/refrigerante-de-baunilha-coca-cola-330ml/p",
+    "linkText": "refrigerante-de-baunilha-coca-cola-330ml",
+    "items": [
+      {
+        "itemId": "24767",
+        "name": "Refrigerante de Baunilha Coca-Cola 330ml",
+        "ean": "5449000098917",
+        "measurementUnit": "un",
+        "unitMultiplier": 1,
+        "images": [
+          {
+            "imageUrl": "https://mambodelivery.vteximg.com.br/arquivos/ids/216721/280639-Refrigerante-de-Baunilha-Coca-Cola-330ml.jpg?v=638578629111500000"
+          }
+        ],
+        "sellers": [
+          {
+            "sellerId": "1",
+            "sellerName": "SUPERMERCADOS MAMBO - BR",
+            "commertialOffer": {
+              "Price": 12.98,
+              "ListPrice": 12.98,
+              "PriceWithoutDiscount": 12.98,
+              "AvailableQuantity": 100
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

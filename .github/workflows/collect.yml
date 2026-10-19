@@ -1,0 +1,46 @@
+name: Collect prices
+
+# Runs here rather than on Vercel Cron: a sweep of every store takes minutes,
+# and a Hobby serverless function is capped at sixty seconds with one cron
+# invocation a day.
+on:
+  schedule:
+    # 06:10 UTC, which is 03:10 in Brasília — quiet for the stores, and done
+    # before anybody shops.
+    - cron: '10 6 * * *'
+  workflow_dispatch:
+    inputs:
+      stores:
+        description: 'Store slugs to collect, space separated. Empty means all.'
+        required: false
+        default: ''
+
+concurrency:
+  # Two runs at once would double the requests to every store.
+  group: collect
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    # Generous: the collector paces itself to stay polite to the stores, so
+    # the wall-clock time is mostly deliberate waiting.
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Collect
+        run: npm run collect -- ${{ github.event.inputs.stores }}
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          LOG_LEVEL: info
