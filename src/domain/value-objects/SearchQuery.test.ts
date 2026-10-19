@@ -34,9 +34,7 @@ describe('SearchQuery', () => {
       // to make a single request expensive.
       // Twenty tokens that still fit inside MAX_LENGTH, so this exercises
       // the token cap rather than the length guard.
-      const many = Array.from({ length: 20 }, (_, i) =>
-        `a${String.fromCharCode(98 + i)}`,
-      ).join(' ')
+      const many = Array.from({ length: 20 }, (_, i) => `a${String.fromCharCode(98 + i)}`).join(' ')
       expect(many.length).toBeLessThanOrEqual(SearchQuery.MAX_LENGTH)
       expect(SearchQuery.tryParse(many)!.tokens).toHaveLength(SearchQuery.MAX_TOKENS)
     })

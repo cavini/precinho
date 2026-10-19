@@ -2,10 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { plainSpaces } from '@/testing/plainSpaces'
 import { OfferComparator } from '@/domain/services/OfferComparator'
 import { FixedClock } from '../testing/FixedClock'
-import {
-  InMemoryProductRepository,
-  InMemoryStoreRepository,
-} from '../testing/InMemoryRepositories'
+import { InMemoryProductRepository, InMemoryStoreRepository } from '../testing/InMemoryRepositories'
 import { RecordingLogger } from '../testing/RecordingLogger'
 import { RecordingMetrics } from '../testing/RecordingMetrics'
 import { AllowingRateLimiter, DenyingRateLimiter } from '../testing/StubRateLimiter'

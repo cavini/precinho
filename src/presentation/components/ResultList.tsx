@@ -17,7 +17,7 @@ export function ResultList({
 }) {
   if (items.length === 0) {
     return (
-      <p className="rounded-xl border border-zinc-200 p-4 text-sm text-zinc-600 dark:border-zinc-800 dark:text-zinc-400">
+      <p className="rounded-xl border border-rule p-4 text-sm text-ink-soft">
         Não achei nada para <span className="font-medium">{query}</span> nos mercados marcados.
         Tente um termo mais simples, tipo <span className="font-medium">arroz</span>.
       </p>
@@ -25,7 +25,7 @@ export function ResultList({
   }
 
   return (
-    <ul className="flex flex-col divide-y divide-zinc-200 dark:divide-zinc-800">
+    <ul className="flex flex-col divide-y divide-rule">
       {items.map((item) => (
         <li key={item.productId} className="py-4">
           <Link
@@ -37,26 +37,26 @@ export function ResultList({
                 {item.name}
               </span>
 
-              <span className="text-xs text-zinc-500">
+              <span className="text-xs text-ink-soft">
                 {[item.brand, item.size].filter(Boolean).join(' · ')}
               </span>
 
               {item.cheapest ? (
-                <span className="text-sm text-zinc-600 dark:text-zinc-400">
+                <span className="text-sm text-ink-soft">
                   mais barato no <span className="font-medium">{item.cheapest.storeName}</span>
                   {item.availableStoreCount > 1 && (
-                    <span className="text-zinc-500">
+                    <span className="text-ink-soft">
                       {' '}
                       · {item.availableStoreCount} mercados têm
                     </span>
                   )}
                 </span>
               ) : (
-                <span className="text-sm text-zinc-500">sem estoque nos mercados marcados</span>
+                <span className="text-sm text-ink-soft">sem estoque nos mercados marcados</span>
               )}
 
               {item.spread && (
-                <span className="text-xs text-emerald-700 dark:text-emerald-500">
+                <span className="text-xs text-accent">
                   dá pra economizar {item.spread.amountLabel} ({Math.round(item.spread.percent)}%)
                 </span>
               )}
@@ -69,7 +69,7 @@ export function ResultList({
                     {item.cheapest.priceLabel}
                   </span>
                   {item.cheapest.unitPriceLabel && (
-                    <span className="text-xs tabular-nums text-zinc-500">
+                    <span className="text-xs tabular-nums text-ink-soft">
                       {item.cheapest.unitPriceLabel}
                     </span>
                   )}

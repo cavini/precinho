@@ -46,9 +46,7 @@ export class SupabaseRateLimiter implements RateLimiter {
     return { allowed: false, remaining: 0, retryAfterSeconds: 1 }
   }
 
-  private async read(
-    key: string,
-  ): Promise<{ state: BucketState; updatedAt: string } | null> {
+  private async read(key: string): Promise<{ state: BucketState; updatedAt: string } | null> {
     const { data, error } = await this.client.rpc('read_rate_limit', { p_key: key })
     if (error) throw new Error(`read_rate_limit failed: ${error.message}`)
 

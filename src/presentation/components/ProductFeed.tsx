@@ -12,16 +12,16 @@ import type { FeedCard } from '@/application/use-cases/GetProductFeed'
 export function ProductFeed({ cards }: { cards: readonly FeedCard[] }) {
   if (cards.length === 0) {
     return (
-      <p className="rounded-xl border border-zinc-200 p-4 text-sm text-zinc-600 dark:border-zinc-800 dark:text-zinc-400">
-        Ainda não tenho nenhum produto nos mercados marcados que apareça em mais de um deles.
-        Marque mais mercados ali em cima, ou busque um produto direto.
+      <p className="rounded-xl border border-rule p-4 text-sm text-ink-soft">
+        Ainda não tenho nenhum produto nos mercados marcados que apareça em mais de um deles. Marque
+        mais mercados ali em cima, ou busque um produto direto.
       </p>
     )
   }
 
   return (
     <section className="flex flex-col gap-4">
-      <h2 className="text-sm font-medium uppercase tracking-wide text-zinc-500">
+      <h2 className="text-sm font-medium uppercase tracking-wide text-ink-soft">
         Onde dá pra economizar agora
       </h2>
 
@@ -29,7 +29,7 @@ export function ProductFeed({ cards }: { cards: readonly FeedCard[] }) {
         {cards.map((card) => (
           <li
             key={card.productId}
-            className="flex flex-col overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-800"
+            className="flex flex-col overflow-hidden rounded-2xl border border-rule bg-surface"
           >
             <Link href={`/produto/${card.productId}`} className="group flex flex-col gap-3 p-4">
               {card.imageUrl ? (
@@ -40,10 +40,10 @@ export function ProductFeed({ cards }: { cards: readonly FeedCard[] }) {
                   src={card.imageUrl}
                   alt=""
                   loading="lazy"
-                  className="h-36 w-full self-center object-contain"
+                  className="product-photo h-36 w-full self-center object-contain"
                 />
               ) : (
-                <div className="flex h-36 w-full items-center justify-center rounded-xl bg-zinc-100 text-xs text-zinc-400 dark:bg-zinc-900">
+                <div className="flex h-36 w-full items-center justify-center rounded-xl bg-ground text-xs text-ink-faint">
                   sem foto
                 </div>
               )}
@@ -52,14 +52,14 @@ export function ProductFeed({ cards }: { cards: readonly FeedCard[] }) {
                 <span className="text-sm font-medium leading-snug group-hover:underline underline-offset-2">
                   {card.name}
                 </span>
-                <span className="text-xs text-zinc-500">
+                <span className="text-xs text-ink-soft">
                   {[card.brand, card.size].filter(Boolean).join(' · ')}
                 </span>
               </div>
             </Link>
 
-            <div className="flex flex-col gap-2 border-t border-zinc-200 px-4 py-3 dark:border-zinc-800">
-              <span className="text-xs font-medium text-emerald-700 dark:text-emerald-500">
+            <div className="flex flex-col gap-2 border-t border-rule px-4 py-3">
+              <span className="text-xs font-medium text-accent">
                 economize até {card.savingsLabel}
               </span>
 
@@ -71,9 +71,7 @@ export function ProductFeed({ cards }: { cards: readonly FeedCard[] }) {
                       target="_blank"
                       rel="nofollow noopener noreferrer"
                       className={`truncate text-sm hover:underline underline-offset-2 ${
-                        offer.isCheapest
-                          ? 'font-medium text-zinc-900 dark:text-zinc-100'
-                          : 'text-zinc-500'
+                        offer.isCheapest ? 'font-medium text-ink' : 'text-ink-soft'
                       }`}
                     >
                       {offer.storeName}
@@ -81,9 +79,7 @@ export function ProductFeed({ cards }: { cards: readonly FeedCard[] }) {
 
                     <span
                       className={`shrink-0 text-sm tabular-nums ${
-                        offer.isCheapest
-                          ? 'font-semibold text-zinc-900 dark:text-zinc-100'
-                          : 'text-zinc-500'
+                        offer.isCheapest ? 'font-semibold text-ink' : 'text-ink-soft'
                       }`}
                     >
                       {offer.priceLabel}
@@ -93,7 +89,7 @@ export function ProductFeed({ cards }: { cards: readonly FeedCard[] }) {
               </ul>
 
               {card.unitPriceLabel && (
-                <span className="text-xs tabular-nums text-zinc-500">
+                <span className="text-xs tabular-nums text-ink-soft">
                   {card.unitPriceLabel} no mais barato
                 </span>
               )}

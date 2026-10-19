@@ -94,10 +94,7 @@ export function toProduct(fields: ProductFields): Product {
  * Null rather than a throw for a size that will not parse. A product with an
  * unreadable size is still worth listing; it just gets no price-per-unit.
  */
-export function toQuantity(
-  amount: number | string | null,
-  unit: string | null,
-): Quantity | null {
+export function toQuantity(amount: number | string | null, unit: string | null): Quantity | null {
   if (amount === null || unit === null) return null
   if (unit !== 'kg' && unit !== 'L' && unit !== 'un') return null
 

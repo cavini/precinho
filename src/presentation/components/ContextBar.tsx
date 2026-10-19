@@ -23,12 +23,10 @@ export function ContextBar({ postalCodeLabel, regionId, stores, picked }: Props)
   const [editing, setEditing] = useState(false)
 
   return (
-    <div className="flex flex-col gap-3 border-b border-zinc-200 pb-4 dark:border-zinc-800">
+    <div className="flex flex-col gap-3 border-b border-rule pb-4">
       <div className="flex flex-wrap items-center gap-2 text-sm">
-        <span className="text-zinc-500">Preços para o CEP</span>
-        <span className="font-medium tabular-nums text-zinc-900 dark:text-zinc-100">
-          {postalCodeLabel}
-        </span>
+        <span className="text-ink-soft">Preços para o CEP</span>
+        <span className="font-medium tabular-nums text-ink">{postalCodeLabel}</span>
 
         {editing ? (
           <PostalCodeForm current={postalCodeLabel} onDone={() => setEditing(false)} />
@@ -36,7 +34,7 @@ export function ContextBar({ postalCodeLabel, regionId, stores, picked }: Props)
           <button
             type="button"
             onClick={() => setEditing(true)}
-            className="text-zinc-500 underline underline-offset-2 hover:text-zinc-900 dark:hover:text-zinc-100"
+            className="text-ink-soft underline underline-offset-2 hover:text-ink"
           >
             trocar
           </button>

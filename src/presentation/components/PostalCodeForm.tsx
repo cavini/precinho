@@ -67,22 +67,21 @@ export function PostalCodeForm({ current, onDone }: Props) {
           placeholder="00000-000"
           aria-label="Seu CEP"
           aria-invalid={value.length > 0 && !valid}
-          className="w-36 rounded-lg border border-zinc-300 bg-white px-3 py-2 tabular-nums
-                     text-zinc-900 outline-none focus:border-zinc-900
-                     dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:focus:border-zinc-300"
+          className="w-36 rounded-lg border border-rule-strong bg-surface px-3 py-2 tabular-nums
+ text-ink outline-none focus:border-ink"
         />
         <button
           type="submit"
           disabled={!valid || busy}
-          className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white
-                     disabled:opacity-40 dark:bg-zinc-100 dark:text-zinc-900"
+          className="rounded-lg bg-ink px-4 py-2 text-sm font-medium text-surface
+                     disabled:opacity-40"
         >
           {busy ? 'Buscando…' : 'Usar'}
         </button>
       </div>
 
       {error && (
-        <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+        <p role="alert" className="text-sm text-red-700">
           {error}
         </p>
       )}

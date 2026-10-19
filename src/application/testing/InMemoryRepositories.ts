@@ -57,7 +57,9 @@ export class InMemoryProductRepository implements ProductRepository {
     const storeIds = this.storeIdsInRegion(criteria.regionId, criteria.storeIds)
 
     const hits = this.products
-      .filter((product) => criteria.query.tokens.every((token) => product.searchText.includes(token)))
+      .filter((product) =>
+        criteria.query.tokens.every((token) => startsAWord(product.searchText, token)),
+      )
       .map((product) => this.toHit(product, storeIds))
       .sort(byAvailabilityThenName)
 
@@ -67,28 +69,30 @@ export class InMemoryProductRepository implements ProductRepository {
   async feed(criteria: FeedCriteria): Promise<readonly ProductFeedEntry[]> {
     const storeIds = this.storeIdsInRegion(criteria.regionId, criteria.storeIds)
 
-    return this.products
-      .map((product) => {
-        const offers = this.currentOffers(product.id, storeIds)
-          .filter((offer) => offer.inStock)
-          .sort((a, b) => a.price.cents - b.price.cents || a.storeId.localeCompare(b.storeId))
+    return (
+      this.products
+        .map((product) => {
+          const offers = this.currentOffers(product.id, storeIds)
+            .filter((offer) => offer.inStock)
+            .sort((a, b) => a.price.cents - b.price.cents || a.storeId.localeCompare(b.storeId))
 
-        const spreadCents = offers.length
-          ? offers[offers.length - 1].price.cents - offers[0].price.cents
-          : 0
+          const spreadCents = offers.length
+            ? offers[offers.length - 1].price.cents - offers[0].price.cents
+            : 0
 
-        return { product, offers, spreadCents }
-      })
-      // One price is not a comparison.
-      .filter((entry) => entry.offers.length > 1)
-      .sort(
-        (a, b) =>
-          Number(b.product.imageUrl !== null) - Number(a.product.imageUrl !== null) ||
-          b.spreadCents - a.spreadCents ||
-          b.offers.length - a.offers.length ||
-          a.product.id.localeCompare(b.product.id),
-      )
-      .slice(0, criteria.limit)
+          return { product, offers, spreadCents }
+        })
+        // One price is not a comparison.
+        .filter((entry) => entry.offers.length > 1)
+        .sort(
+          (a, b) =>
+            Number(b.product.imageUrl !== null) - Number(a.product.imageUrl !== null) ||
+            b.spreadCents - a.spreadCents ||
+            b.offers.length - a.offers.length ||
+            a.product.id.localeCompare(b.product.id),
+        )
+        .slice(0, criteria.limit)
+    )
   }
 
   async findById(productId: string): Promise<Product | null> {
@@ -139,6 +143,20 @@ export class InMemoryProductRepository implements ProductRepository {
       availableStoreCount: available.length,
     }
   }
+}
+
+/**
+ * Whether the token begins a word in the text.
+ *
+ * Substring matching made "coca" find "paçoca", which is wrong in a way
+ * shoppers notice at once. A word-start anchor keeps prefix matching —
+ * "refri" still finds "refrigerante" — while refusing a match that starts
+ * mid-word. Mirrors the `\m` anchor the SQL function uses.
+ *
+ * Complexity: O(n) in the text length.
+ */
+function startsAWord(text: string, token: string): boolean {
+  return new RegExp(`\\b${token}`).test(text)
 }
 
 /**

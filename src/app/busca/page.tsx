@@ -63,12 +63,10 @@ export default async function SearchPage({ searchParams }: Props) {
       )}
 
       {result.status === 'rate-limited' && (
-        <Notice>
-          Muitas buscas em pouco tempo. Tente de novo em {result.retryAfterSeconds}s.
-        </Notice>
+        <Notice>Muitas buscas em pouco tempo. Tente de novo em {result.retryAfterSeconds}s.</Notice>
       )}
 
-      <p className="text-sm text-zinc-500">
+      <p className="text-sm text-ink-soft">
         <Link href="/" className="underline underline-offset-2">
           Voltar
         </Link>
@@ -78,9 +76,5 @@ export default async function SearchPage({ searchParams }: Props) {
 }
 
 function Notice({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="rounded-xl border border-zinc-200 p-4 text-sm text-zinc-600 dark:border-zinc-800 dark:text-zinc-400">
-      {children}
-    </p>
-  )
+  return <p className="rounded-xl border border-rule p-4 text-sm text-ink-soft">{children}</p>
 }

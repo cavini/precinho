@@ -1,8 +1,4 @@
-import type {
-  Address,
-  AddressLookup,
-  AddressLookupResult,
-} from '@/application/ports/AddressLookup'
+import type { Address, AddressLookup, AddressLookupResult } from '@/application/ports/AddressLookup'
 import type { HttpClient } from '@/application/ports/HttpClient'
 import type { Logger } from '@/application/ports/Logger'
 import type { PostalCode } from '@/domain/value-objects/PostalCode'

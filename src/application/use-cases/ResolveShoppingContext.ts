@@ -125,7 +125,12 @@ export class ResolveShoppingContext {
           // Sorted by name: this list is a picker, and a stable alphabetical
           // order is easier to scan than whatever the store table returns.
           .sort((a, b) => a.name.localeCompare(b.name))
-          .map((store) => ({ id: store.id, slug: store.slug, name: store.name, chain: store.chain })),
+          .map((store) => ({
+            id: store.id,
+            slug: store.slug,
+            name: store.name,
+            chain: store.chain,
+          })),
       },
     })
   }

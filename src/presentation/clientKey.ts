@@ -14,7 +14,10 @@ import { createHash } from 'node:crypto'
  */
 const SHARED_FALLBACK = 'unknown'
 
-export function clientKeyFromHeaders(headers: Headers, salt = process.env.RATE_LIMIT_SALT ?? ''): string {
+export function clientKeyFromHeaders(
+  headers: Headers,
+  salt = process.env.RATE_LIMIT_SALT ?? '',
+): string {
   const address = firstAddress(headers)
   if (!address) return SHARED_FALLBACK
 

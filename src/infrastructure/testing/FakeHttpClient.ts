@@ -1,4 +1,8 @@
-import type { HttpClient, HttpJsonResponse, HttpRequestOptions } from '@/application/ports/HttpClient'
+import type {
+  HttpClient,
+  HttpJsonResponse,
+  HttpRequestOptions,
+} from '@/application/ports/HttpClient'
 
 export type FakeRoute = {
   /** Matched against the full URL. */

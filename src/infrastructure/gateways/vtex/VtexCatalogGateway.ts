@@ -149,10 +149,12 @@ export class VtexCatalogGateway implements StoreCatalogGateway, StoreRegionResol
   async resolveRegion(
     postalCode: PostalCode,
   ): Promise<{ regionToken: string; sellerIds: readonly string[] } | null> {
-    const url =
-      `${this.base}/api/checkout/pub/regions` +
-      `?country=BRA&postalCode=${postalCode.digits}` +
-      `&sc=${encodeURIComponent(this.config.salesChannel ?? '1')}`
+    // No default sales channel: Carrefour's account answers 206 without one
+    // and 401 with sc=1, so guessing a channel is worse than omitting it.
+    const params = new URLSearchParams({ country: 'BRA', postalCode: postalCode.digits })
+    if (this.config.salesChannel) params.set('sc', this.config.salesChannel)
+
+    const url = `${this.base}/api/checkout/pub/regions?${params}`
 
     const response = await this.http.getJson(url, {
       timeoutMs: REQUEST_TIMEOUT_MS,
@@ -237,7 +239,9 @@ function toCatalogProduct(raw: unknown): CatalogProduct | null {
     ean: asString(item.ean),
     name: asString(raw.productName) ?? asString(item.name) ?? '',
     brand: asString(raw.brand),
-    imageUrl: asString(firstOf(item.images) && (firstOf(item.images) as Record<string, unknown>).imageUrl),
+    imageUrl: asString(
+      firstOf(item.images) && (firstOf(item.images) as Record<string, unknown>).imageUrl,
+    ),
     url,
     priceReais: price,
     // Only a list price above the selling price is a promotion.

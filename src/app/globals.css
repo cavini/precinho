@@ -1,26 +1,63 @@
 @import "tailwindcss";
 
+/*
+ * Light only, on purpose.
+ *
+ * Grocery catalogue photography is shot on pure white and comes to us as
+ * flat JPEGs. On a dark ground every product becomes a glowing white
+ * rectangle, which is why no shopping app ships a dark theme. The
+ * photographs decide the palette here, not taste.
+ *
+ * So the page sits on a faintly warm off-white and the cards are pure
+ * white: the product image blends into its card instead of fighting the
+ * page, and the card reads as an object on a surface. That tiny difference
+ * between #FAFAF9 and #FFFFFF is doing all the work.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* The page. Warm rather than blue-grey, which photographs of food sit
+     better against. */
+  --ground: #faf9f7;
+  /* Cards, and anything an image lands on. Matches the photography. */
+  --surface: #ffffff;
+  --ink: #1c1a17;
+  --ink-soft: #6b665f;
+  --ink-faint: #9a948b;
+  --rule: #e7e4df;
+  --rule-strong: #d4d0c9;
+  /* Savings. The one saturated colour on the page. */
+  --accent: #0f7a52;
+  --accent-wash: #e6f2ec;
+  /* A price old enough to warn about. */
+  --warn: #8a5a12;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-ground: var(--ground);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-faint: var(--ink-faint);
+  --color-rule: var(--rule);
+  --color-rule-strong: var(--rule-strong);
+  --color-accent: var(--accent);
+  --color-accent-wash: var(--accent-wash);
+  --color-warn: var(--warn);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--ground);
+  color: var(--ink);
+  font-family:
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/*
+ * Catalogue images arrive at wildly different aspect ratios and some carry
+ * a near-white rather than pure-white matte. Blending them into the card
+ * hides that seam without touching the pixels.
+ */
+.product-photo {
+  mix-blend-mode: multiply;
 }

@@ -39,7 +39,10 @@ export class InMemoryRateLimiter implements RateLimiter {
 
   /** Complexity: O(1) amortised. */
   async consume(key: string): Promise<RateLimitDecision> {
-    const { decision, state } = this.bucket.consume(this.buckets.get(key), this.clock.now().getTime())
+    const { decision, state } = this.bucket.consume(
+      this.buckets.get(key),
+      this.clock.now().getTime(),
+    )
 
     // Re-inserting moves the key to the end, so the least recently seen
     // caller is the one evicted.

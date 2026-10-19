@@ -9,11 +9,11 @@ import { PostalCodeForm } from './PostalCodeForm'
  */
 export function PostalCodeGate() {
   return (
-    <section className="flex flex-col gap-3 rounded-2xl border border-zinc-200 p-6 dark:border-zinc-800">
+    <section className="flex flex-col gap-3 rounded-2xl border border-rule p-6">
       <h2 className="text-xl font-semibold tracking-tight">Qual é o seu CEP?</h2>
-      <p className="max-w-prose text-sm text-zinc-600 dark:text-zinc-400">
-        Preço de mercado muda de região. Com o CEP eu mostro o que as lojas que atendem você
-        estão cobrando hoje.
+      <p className="max-w-prose text-sm text-ink-soft">
+        Preço de mercado muda de região. Com o CEP eu mostro o que as lojas que atendem você estão
+        cobrando hoje.
       </p>
       <PostalCodeForm />
     </section>

@@ -3,10 +3,7 @@ import { RegionSelector } from '@/domain/services/RegionSelector'
 import type { Region } from '@/domain/entities/Region'
 import type { Store } from '@/domain/entities/Store'
 import { FixedClock } from '../testing/FixedClock'
-import {
-  InMemoryRegionRepository,
-  InMemoryStoreRepository,
-} from '../testing/InMemoryRepositories'
+import { InMemoryRegionRepository, InMemoryStoreRepository } from '../testing/InMemoryRepositories'
 import { RecordingLogger } from '../testing/RecordingLogger'
 import { RecordingMetrics } from '../testing/RecordingMetrics'
 import { StubAddressLookup } from '../testing/StubAddressLookup'
@@ -24,21 +21,28 @@ const SAO_PAULO: Region = {
 
 const STORES: Store[] = [
   { id: 'mambo', slug: 'mambo', name: 'Mambo', chain: 'Mambo', regionId: 'region-sp' },
-  { id: 'hortifruti', slug: 'hortifruti', name: 'Hortifruti', chain: 'Hortifruti', regionId: 'region-sp' },
+  {
+    id: 'hortifruti',
+    slug: 'hortifruti',
+    name: 'Hortifruti',
+    chain: 'Hortifruti',
+    regionId: 'region-sp',
+  },
   { id: 'zonasul', slug: 'zonasul', name: 'Zona Sul', chain: 'Zona Sul', regionId: 'region-rj' },
 ]
 
 const PAULISTA = { city: 'São Paulo', uf: 'SP', neighbourhood: 'Bela Vista' }
 
-function build(overrides: {
-  addressLookup?: StubAddressLookup
-  rateLimiter?: AllowingRateLimiter | DenyingRateLimiter
-  regions?: Region[]
-} = {}) {
+function build(
+  overrides: {
+    addressLookup?: StubAddressLookup
+    rateLimiter?: AllowingRateLimiter | DenyingRateLimiter
+    regions?: Region[]
+  } = {},
+) {
   const logger = new RecordingLogger()
   const metrics = new RecordingMetrics()
-  const addressLookup =
-    overrides.addressLookup ?? new StubAddressLookup({ '01310100': PAULISTA })
+  const addressLookup = overrides.addressLookup ?? new StubAddressLookup({ '01310100': PAULISTA })
   const rateLimiter = overrides.rateLimiter ?? new AllowingRateLimiter()
 
   const useCase = new ResolveShoppingContext({

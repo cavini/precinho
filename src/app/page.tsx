@@ -48,7 +48,7 @@ export default async function HomePage() {
       {feed.status === 'ok' && <ProductFeed cards={feed.cards} />}
 
       {feed.status === 'no-stores-selected' && (
-        <p className="rounded-xl border border-zinc-200 p-4 text-sm text-zinc-600 dark:border-zinc-800 dark:text-zinc-400">
+        <p className="rounded-xl border border-rule p-4 text-sm text-ink-soft">
           Marque pelo menos um mercado ali em cima pra eu ter o que comparar.
         </p>
       )}

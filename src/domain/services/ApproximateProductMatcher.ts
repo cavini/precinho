@@ -16,9 +16,33 @@ export type ApproximateMatch = {
 
 /** Function words. They appear everywhere and say nothing about identity. */
 const STOPWORDS: ReadonlySet<string> = new Set([
-  'de', 'da', 'do', 'das', 'dos', 'com', 'sem', 'para', 'por',
-  'em', 'no', 'na', 'ao', 'aos', 'um', 'uma', 'os', 'as', 'e', 'ou',
-  'tipo', 'pacote', 'caixa', 'pct', 'cx', 'unidade', 'unidades',
+  'de',
+  'da',
+  'do',
+  'das',
+  'dos',
+  'com',
+  'sem',
+  'para',
+  'por',
+  'em',
+  'no',
+  'na',
+  'ao',
+  'aos',
+  'um',
+  'uma',
+  'os',
+  'as',
+  'e',
+  'ou',
+  'tipo',
+  'pacote',
+  'caixa',
+  'pct',
+  'cx',
+  'unidade',
+  'unidades',
 ])
 
 /**
@@ -31,9 +55,20 @@ const STOPWORDS: ReadonlySet<string> = new Set([
  * score says.
  */
 const MODIFIERS: ReadonlySet<string> = new Set([
-  'zero', 'diet', 'light', 'integral', 'desnatado', 'semidesnatado',
-  'lactose', 'deslactosado', 'organico', 'branco', 'defumado',
-  'apimentado', 'picante', 'infantil',
+  'zero',
+  'diet',
+  'light',
+  'integral',
+  'desnatado',
+  'semidesnatado',
+  'lactose',
+  'deslactosado',
+  'organico',
+  'branco',
+  'defumado',
+  'apimentado',
+  'picante',
+  'infantil',
 ])
 
 const UNIT_WORDS: ReadonlySet<string> = new Set(KNOWN_UNIT_SPELLINGS)
@@ -160,10 +195,7 @@ function describingWords(name: string): ReadonlySet<string> {
   return new Set(
     words.filter(
       (word) =>
-        word.length > 1 &&
-        !/\d/.test(word) &&
-        !STOPWORDS.has(word) &&
-        !UNIT_WORDS.has(word),
+        word.length > 1 && !/\d/.test(word) && !STOPWORDS.has(word) && !UNIT_WORDS.has(word),
     ),
   )
 }

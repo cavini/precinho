@@ -7,10 +7,7 @@ import type {
   SearchCriteria,
 } from '../ports/ProductRepository'
 import { FixedClock } from '../testing/FixedClock'
-import {
-  InMemoryProductRepository,
-  InMemoryStoreRepository,
-} from '../testing/InMemoryRepositories'
+import { InMemoryProductRepository, InMemoryStoreRepository } from '../testing/InMemoryRepositories'
 import { RecordingLogger } from '../testing/RecordingLogger'
 import { RecordingMetrics } from '../testing/RecordingMetrics'
 import { AllowingRateLimiter, DenyingRateLimiter } from '../testing/StubRateLimiter'
@@ -20,11 +17,19 @@ import {
   CONDENSED_MILK,
   REGION_SP,
   STORES,
+  aProduct,
   anOffer,
 } from '../testing/fixtures'
 import { SearchProducts } from './SearchProducts'
 
-const PRODUCTS = [COCA_COLA_2L, CONDENSED_MILK, BANANA]
+/** The trap: "pacoca" contains "coca" as a substring. */
+const PACOCA = aProduct({
+  id: 'pacoca',
+  name: 'Paçoca Rolha Santa Helena 1kg',
+  searchText: 'pacoca rolha santa helena 1kg',
+})
+
+const PRODUCTS = [COCA_COLA_2L, CONDENSED_MILK, BANANA, PACOCA]
 
 const OFFERS = [
   anOffer(COCA_COLA_2L.id, 'mambo', 14.98),
@@ -142,6 +147,35 @@ describe('SearchProducts', () => {
 
       if (result.status !== 'ok') throw new Error(result.status)
       expect(result.items[0].cheapest?.url).toBe('https://example.com/hortifruti/coca-2l')
+    })
+  })
+
+  describe('matching words, not substrings', () => {
+    it('does not find pacoca when you search for coca', async () => {
+      // Substring matching made this the second result on the real site.
+      const { useCase } = build()
+      const result = await search(useCase, 'coca')
+
+      if (result.status !== 'ok') throw new Error(result.status)
+      expect(result.items.map((item) => item.name)).not.toContain('Paçoca Rolha Santa Helena 1kg')
+    })
+
+    it('still matches a word by its beginning', async () => {
+      // "refri" has to keep finding "refrigerante", so the anchor is the
+      // start of a word rather than the whole word.
+      const { useCase } = build()
+      const result = await search(useCase, 'refri')
+
+      if (result.status !== 'ok') throw new Error(result.status)
+      expect(result.items.map((item) => item.name)).toContain('Refrigerante Coca-Cola 2L')
+    })
+
+    it('matches a word after a hyphen', async () => {
+      const { useCase } = build()
+      const result = await search(useCase, 'cola')
+
+      if (result.status !== 'ok') throw new Error(result.status)
+      expect(result.items.map((item) => item.name)).toContain('Refrigerante Coca-Cola 2L')
     })
   })
 

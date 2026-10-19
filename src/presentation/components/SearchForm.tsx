@@ -33,15 +33,13 @@ export function SearchForm({ autoFocus = false }: { autoFocus?: boolean }) {
         autoFocus={autoFocus}
         placeholder="arroz, leite condensado, coca 2L…"
         aria-label="Buscar produto"
-        className="flex-1 rounded-xl border border-zinc-300 bg-white px-4 py-3 text-zinc-900
-                   outline-none focus:border-zinc-900
-                   dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:focus:border-zinc-300"
+        className="flex-1 rounded-xl border border-rule-strong bg-surface px-4 py-3 text-ink
+ outline-none focus:border-ink"
       />
       <button
         type="submit"
         disabled={!usable}
-        className="rounded-xl bg-zinc-900 px-5 py-3 font-medium text-white disabled:opacity-40
-                   dark:bg-zinc-100 dark:text-zinc-900"
+        className="rounded-xl bg-ink px-5 py-3 font-medium text-surface disabled:opacity-40"
       >
         Buscar
       </button>

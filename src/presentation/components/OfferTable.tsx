@@ -12,7 +12,7 @@ import type { ProductDetailOffer } from '@/application/use-cases/GetProductDetai
  */
 export function OfferTable({ offers }: { offers: readonly ProductDetailOffer[] }) {
   return (
-    <ul className="flex flex-col divide-y divide-zinc-200 dark:divide-zinc-800">
+    <ul className="flex flex-col divide-y divide-rule">
       {offers.map((offer) => (
         <li
           key={offer.storeId}
@@ -24,18 +24,22 @@ export function OfferTable({ offers }: { offers: readonly ProductDetailOffer[] }
             <span className="flex items-center gap-2 font-medium">
               {offer.storeName}
               {offer.isCheapest && (
-                <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800 dark:bg-emerald-950 dark:text-emerald-400">
+                <span className="rounded-full bg-accent-wash px-2 py-0.5 text-xs font-medium text-accent">
                   mais barato
                 </span>
               )}
             </span>
 
-            <span className="text-xs text-zinc-500">
-              {offer.inStock ? <Collected at={offer.collectedAt} stale={offer.isStale} /> : 'sem estoque'}
+            <span className="text-xs text-ink-soft">
+              {offer.inStock ? (
+                <Collected at={offer.collectedAt} stale={offer.isStale} />
+              ) : (
+                'sem estoque'
+              )}
             </span>
 
             {offer.discount && (
-              <span className="text-xs text-zinc-500">
+              <span className="text-xs text-ink-soft">
                 promoção da loja: {offer.discount.amountLabel} off
               </span>
             )}
@@ -45,7 +49,7 @@ export function OfferTable({ offers }: { offers: readonly ProductDetailOffer[] }
             <div className="flex flex-col items-end">
               <span className="font-semibold tabular-nums">{offer.priceLabel}</span>
               {offer.unitPriceLabel && (
-                <span className="text-xs tabular-nums text-zinc-500">{offer.unitPriceLabel}</span>
+                <span className="text-xs tabular-nums text-ink-soft">{offer.unitPriceLabel}</span>
               )}
             </div>
 
@@ -53,7 +57,7 @@ export function OfferTable({ offers }: { offers: readonly ProductDetailOffer[] }
               href={offer.url}
               target="_blank"
               rel="nofollow noopener noreferrer"
-              className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm hover:border-zinc-900 dark:border-zinc-700 dark:hover:border-zinc-300"
+              className="rounded-lg border border-rule-strong px-3 py-1.5 text-sm hover:border-ink"
             >
               ver na loja
             </a>
@@ -73,11 +77,7 @@ function Collected({ at, stale }: { at: string; stale: boolean }) {
   }).format(new Date(at))
 
   if (stale) {
-    return (
-      <span className="text-amber-700 dark:text-amber-500">
-        preço de {label} — pode ter mudado
-      </span>
-    )
+    return <span className="text-warn">preço de {label} — pode ter mudado</span>
   }
   return <>coletado em {label}</>
 }
