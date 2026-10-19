@@ -146,6 +146,7 @@ export class CollectStoreOffers {
       }),
       gtin14: ean?.gtin14 ?? null,
       name: found.name,
+      description: trimDescription(found.description),
       brand,
       sizeAmount: size?.amount ?? null,
       sizeUnit: size?.unit ?? null,
@@ -189,4 +190,22 @@ export class CollectStoreOffers {
 
     return [...offers.values()]
   }
+}
+
+/**
+ * Catalogue blurbs run from a useful sentence to a wall of marketing with
+ * HTML in it. Tags are stripped, whitespace collapsed, and anything past a
+ * paragraph is cut — the listing shows two lines of this, not an essay.
+ */
+function trimDescription(raw: string | null): string | null {
+  if (!raw) return null
+
+  const text = raw
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  if (text.length < 10) return null
+  return text.length > 400 ? `${text.slice(0, 400).trimEnd()}…` : text
 }

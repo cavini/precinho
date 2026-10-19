@@ -44,6 +44,7 @@ const PRODUCT_FIELDS = `
   name
   sku
   url_key
+  short_description { html }
   stock_status
   price_range {
     minimum_price {
@@ -171,6 +172,10 @@ export class MagentoCatalogGateway implements StoreCatalogGateway {
       // Magento does not publish a barcode here; these stay store-local.
       ean: null,
       name,
+      description:
+        typeof (item.short_description as { html?: unknown } | undefined)?.html === 'string'
+          ? ((item.short_description as { html: string }).html)
+          : null,
       brand: null,
       imageUrl:
         typeof (item.small_image as { url?: unknown } | undefined)?.url === 'string'

@@ -2,11 +2,13 @@ import Link from 'next/link'
 import type { SearchResultItem } from '@/application/use-cases/SearchProducts'
 
 /**
- * The listing.
+ * The search listing.
  *
- * Each row answers one question — where is this cheapest and what does it
- * cost — and the price per unit sits next to it, because that is what settles
- * a comparison between a 350ml can and a 2L bottle.
+ * Shaped like the feed card rather than a bare row: a product is easier to
+ * recognise by its picture than by a name that runs to nine words of brand
+ * and packaging. The blurb is clamped to two lines — some catalogues write
+ * a sentence, others a page of marketing, and the row has to stay the same
+ * height either way.
  */
 export function ResultList({
   query,
@@ -28,12 +30,25 @@ export function ResultList({
     <ul className="flex flex-col divide-y divide-rule">
       {items.map((item) => (
         <li key={item.productId} className="py-4">
-          <Link
-            href={`/produto/${item.productId}`}
-            className="flex items-start justify-between gap-4 group"
-          >
-            <div className="flex min-w-0 flex-col gap-1">
-              <span className="truncate font-medium group-hover:underline underline-offset-2">
+          <Link href={`/produto/${item.productId}`} className="group flex items-start gap-4">
+            {item.imageUrl ? (
+              // Plain img: each chain serves photos from its own CDN, and
+              // every one would need allowlisting for next/image.
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={item.imageUrl}
+                alt=""
+                loading="lazy"
+                className="product-photo h-20 w-20 shrink-0 rounded-lg bg-surface object-contain"
+              />
+            ) : (
+              <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-lg bg-surface text-[10px] text-ink-faint">
+                sem foto
+              </div>
+            )}
+
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
+              <span className="font-medium leading-snug group-hover:underline underline-offset-2">
                 {item.name}
               </span>
 
@@ -41,18 +56,21 @@ export function ResultList({
                 {[item.brand, item.size].filter(Boolean).join(' · ')}
               </span>
 
+              {item.description && (
+                <p className="line-clamp-2 text-xs leading-relaxed text-ink-faint">
+                  {item.description}
+                </p>
+              )}
+
               {item.cheapest ? (
                 <span className="text-sm text-ink-soft">
                   mais barato no <span className="font-medium">{item.cheapest.storeName}</span>
                   {item.availableStoreCount > 1 && (
-                    <span className="text-ink-soft">
-                      {' '}
-                      · {item.availableStoreCount} mercados têm
-                    </span>
+                    <span className="text-ink-faint"> · {item.availableStoreCount} mercados têm</span>
                   )}
                 </span>
               ) : (
-                <span className="text-sm text-ink-soft">sem estoque nos mercados marcados</span>
+                <span className="text-sm text-ink-faint">sem estoque nos mercados marcados</span>
               )}
 
               {item.spread && (

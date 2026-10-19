@@ -31,6 +31,8 @@ export type CheapestOfferView = {
 export type SearchResultItem = {
   productId: string
   name: string
+  /** Store blurb, when the catalogue published one. */
+  description: string | null
   brand: string | null
   /** Human size label, e.g. "395 g". Null when unknown. */
   size: string | null
@@ -156,6 +158,7 @@ function toSearchResultItem(
   return {
     productId: product.id,
     name: product.name,
+    description: product.description,
     brand: product.brand,
     size: product.size?.label() ?? null,
     imageUrl: product.imageUrl,

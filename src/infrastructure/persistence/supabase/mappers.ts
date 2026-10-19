@@ -36,6 +36,7 @@ export type StoreRow = {
 export type ProductFields = {
   product_id: string
   name: string
+  description?: string | null
   brand: string | null
   size_amount: number | string | null
   size_unit: string | null
@@ -80,6 +81,7 @@ export function toProduct(fields: ProductFields): Product {
     id: fields.product_id,
     ean,
     name: fields.name,
+    description: fields.description ?? null,
     brand: fields.brand,
     size: toQuantity(fields.size_amount, fields.size_unit),
     imageUrl: fields.image_url,

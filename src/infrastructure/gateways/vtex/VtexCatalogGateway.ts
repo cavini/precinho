@@ -238,6 +238,7 @@ function toCatalogProduct(raw: unknown): CatalogProduct | null {
     externalId: asString(raw.productId) ?? asString(item.itemId) ?? url,
     ean: asString(item.ean),
     name: asString(raw.productName) ?? asString(item.name) ?? '',
+    description: asString(raw.description) ?? asString(raw.metaTagDescription),
     brand: asString(raw.brand),
     imageUrl: asString(
       firstOf(item.images) && (firstOf(item.images) as Record<string, unknown>).imageUrl,

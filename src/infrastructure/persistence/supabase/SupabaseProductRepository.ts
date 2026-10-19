@@ -15,6 +15,7 @@ import { type OfferRow, toOffer, toProduct } from './mappers'
 type SearchRow = {
   product_id: string
   name: string
+  description: string | null
   brand: string | null
   size_amount: number | string | null
   size_unit: string | null
@@ -50,6 +51,7 @@ type FeedRow = {
 type ProductRow = {
   id: string
   name: string
+  description: string | null
   brand: string | null
   size_amount: number | string | null
   size_unit: string | null
@@ -138,7 +140,7 @@ export class SupabaseProductRepository implements ProductRepository {
   async findById(productId: string): Promise<Product | null> {
     const { data, error } = await this.client
       .from('products')
-      .select('id, name, brand, size_amount, size_unit, image_url, gtin14')
+      .select('id, name, description, brand, size_amount, size_unit, image_url, gtin14')
       .eq('id', productId)
       .maybeSingle()
 
