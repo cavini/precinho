@@ -5,6 +5,7 @@ import type { CatalogProduct, CatalogSearchResult } from '../ports/StoreCatalogG
 import { BrowsingCatalogSource } from './BrowsingCatalogSource'
 
 const product = (name: string): CatalogProduct => ({
+  externalId: name,
   name,
   brand: null,
   ean: null,
@@ -107,7 +108,7 @@ describe('BrowsingCatalogSource', () => {
       'tauste',
       okPlan([slice('Cervejas', 10), slice('Vinhos', 10)]),
       {
-        'Cervejas:0': { status: 'failed', reason: 'http-error' },
+        'Cervejas:0': { status: 'unavailable', reason: 'http-error' },
         'Vinhos:0': page(10),
       },
     )
@@ -118,27 +119,24 @@ describe('BrowsingCatalogSource', () => {
     expect(pages[1].status).toBe('ok')
   })
 
-  it('abandons the sweep once refusals stop being incidental', async () => {
+  it('abandons the sweep once refusals stop being incidental', () => {
     // An allowance that has run out, or a shop that has gone down, should
     // end the run rather than be asked another hundred times.
     const slices = Array.from({ length: 50 }, (_, index) => slice(`c${index}`, 10))
-    const browser = new StubBrowser('tauste', okPlan(slices))
-    const pages = await drain(
-      new BrowsingCatalogSource(
-        new Proxy(browser, {
-          get: (target, key) =>
-            key === 'fetchPage'
-              ? async () => ({
-                  status: 'failed' as const,
-                  reason: 'budget-exhausted',
-                })
-              : Reflect.get(target, key),
-        }),
-        new RecordingLogger(),
-      ),
-    )
 
-    expect(pages).toHaveLength(5)
+    class AlwaysRefuses implements CatalogBrowser {
+      readonly storeId = 'tauste'
+      async planSweep(): Promise<SweepPlan> {
+        return okPlan(slices)
+      }
+      async fetchPage(): Promise<CatalogSearchResult> {
+        return { status: 'unavailable', reason: 'budget-exhausted' }
+      }
+    }
+
+    return drain(new BrowsingCatalogSource(new AlwaysRefuses(), new RecordingLogger())).then(
+      (pages) => expect(pages).toHaveLength(5),
+    )
   })
 
   it('reports one failure when the plan itself will not load', async () => {

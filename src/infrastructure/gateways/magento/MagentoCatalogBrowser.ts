@@ -2,7 +2,6 @@ import type { CatalogBrowser, CatalogSlice, SweepPlan } from '@/application/port
 import type { HttpClient } from '@/application/ports/HttpClient'
 import type { Logger } from '@/application/ports/Logger'
 import type { CatalogSearchResult } from '@/application/ports/StoreCatalogGateway'
-import type { RequestBudget } from '@/domain/services/RequestBudget'
 import type { MagentoStoreConfig } from './MagentoCatalogGateway'
 import { MagentoCatalogGateway, PRODUCT_FIELDS } from './MagentoCatalogGateway'
 

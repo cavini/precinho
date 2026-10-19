@@ -7,6 +7,7 @@ import type {
 import { TermCatalogSource } from './TermCatalogSource'
 
 const product = (name: string): CatalogProduct => ({
+  externalId: name,
   name,
   brand: null,
   ean: null,
