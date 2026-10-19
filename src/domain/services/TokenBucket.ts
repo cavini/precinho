@@ -56,7 +56,10 @@ export class TokenBucket {
    *
    * Complexity: O(1).
    */
-  consume(state: BucketState | undefined, nowMs: number): { decision: RateLimitDecision; state: BucketState } {
+  consume(
+    state: BucketState | undefined,
+    nowMs: number,
+  ): { decision: RateLimitDecision; state: BucketState } {
     const { capacity, refillPerSecond } = this.config
     const previous = normalizeState(state, capacity, nowMs)
 
@@ -80,7 +83,11 @@ export class TokenBucket {
   }
 }
 
-function normalizeState(state: BucketState | undefined, capacity: number, nowMs: number): BucketState {
+function normalizeState(
+  state: BucketState | undefined,
+  capacity: number,
+  nowMs: number,
+): BucketState {
   if (!state || !Number.isFinite(state.tokens) || !Number.isFinite(state.updatedAtMs)) {
     return { tokens: capacity, updatedAtMs: nowMs }
   }

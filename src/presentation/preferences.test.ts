@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  MAX_PICKED_STORES,
-  parsePreferences,
-  serializePreferences,
-} from './preferences'
+import { MAX_PICKED_STORES, parsePreferences, serializePreferences } from './preferences'
 
 const REGION = '11111111-1111-4111-8111-111111111111'
 const STORE_A = '22222222-2222-4222-8222-222222222222'
@@ -44,9 +40,7 @@ describe('parsePreferences with a hostile or stale cookie', () => {
   it('rejects a region id that is not a uuid', () => {
     // It reaches a query, so its shape is checked before it gets there.
     for (const region of ['', 'all', "' or 1=1--", '../../etc/passwd', 123]) {
-      expect(
-        parsePreferences(JSON.stringify({ cep: '01310100', region, stores: [] })),
-      ).toBeNull()
+      expect(parsePreferences(JSON.stringify({ cep: '01310100', region, stores: [] }))).toBeNull()
     }
   })
 

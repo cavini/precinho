@@ -54,6 +54,8 @@ type StoreConfigRow = {
   path_prefix: string | null
   /** Magento store view; how a chain like Tauste prices per town. */
   store_view: string | null
+  /** Per-store request gap; null takes the collector default. */
+  min_interval_ms: number | null
   region_token: string | null
   regions: { slug: string; probe_cep: string } | null
 }
@@ -76,7 +78,7 @@ async function main(): Promise<void> {
   const { data, error } = await client
     .from('stores')
     .select(
-      'id, slug, host, platform, sales_channel, path_prefix, store_view, region_token, regions(slug, probe_cep)',
+      'id, slug, host, platform, sales_channel, path_prefix, store_view, min_interval_ms, region_token, regions(slug, probe_cep)',
     )
     .eq('active', true)
     .order('slug')
@@ -138,13 +140,15 @@ async function buildGateway(
   http: FetchHttpClient,
   logger: Logger,
 ): Promise<StoreCatalogGateway | null> {
+  // One chain's rate limit is no reason to crawl the rest this slowly.
+  const minIntervalMs = store.min_interval_ms ?? MIN_INTERVAL_MS
   if (store.platform === 'tenda-api') {
     return new TendaCatalogGateway(
       {
         storeId: store.id,
         apiHost: store.host,
         branchId: store.store_view ?? undefined,
-        minIntervalMs: MIN_INTERVAL_MS,
+        minIntervalMs,
       },
       http,
       logger,
@@ -165,7 +169,7 @@ async function buildGateway(
         storeId: store.id,
         banner: store.store_view ?? 'pa',
         gpaStoreId,
-        minIntervalMs: MIN_INTERVAL_MS,
+        minIntervalMs,
       },
       http,
       logger,
@@ -178,7 +182,7 @@ async function buildGateway(
         storeId: store.id,
         host: store.host,
         storeView: store.store_view ?? undefined,
-        minIntervalMs: MIN_INTERVAL_MS,
+        minIntervalMs,
       },
       http,
       logger,
@@ -201,7 +205,7 @@ async function buildGateway(
         pathPrefix: store.path_prefix ?? undefined,
         salesChannel: store.sales_channel ?? undefined,
         regionToken,
-        minIntervalMs: MIN_INTERVAL_MS,
+        minIntervalMs,
       },
       http,
       logger,

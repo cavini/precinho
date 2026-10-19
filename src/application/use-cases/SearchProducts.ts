@@ -147,7 +147,10 @@ function clampLimit(requested: number | undefined): number {
   return Math.min(Math.floor(requested), SearchProducts.MAX_LIMIT)
 }
 
-function toSearchResultItem(hit: ProductSearchHit, storesById: Map<string, Store>): SearchResultItem {
+function toSearchResultItem(
+  hit: ProductSearchHit,
+  storesById: Map<string, Store>,
+): SearchResultItem {
   const { product, cheapestOffer, dearestPriceCents } = hit
 
   return {

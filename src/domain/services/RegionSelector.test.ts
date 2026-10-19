@@ -37,9 +37,7 @@ describe('RegionSelector', () => {
   it('picks the flagged default rather than whichever sorts first', () => {
     // 'ribeirao-preto-sp' sorts before 'sao-paulo-sp'; alphabetical order is
     // an arbitrary way to choose where somebody shops.
-    expect(selector.select(COVERED, { city: 'Santos', uf: 'SP' }).region?.slug).toBe(
-      'sao-paulo-sp',
-    )
+    expect(selector.select(COVERED, { city: 'Santos', uf: 'SP' }).region?.slug).toBe('sao-paulo-sp')
   })
 
   it('never crosses state lines for a city of the same name', () => {

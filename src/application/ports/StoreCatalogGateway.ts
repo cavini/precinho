@@ -38,5 +38,7 @@ export interface StoreCatalogGateway {
  * to say where it is shopping from before the prices mean anything.
  */
 export interface StoreRegionResolver {
-  resolveRegion(postalCode: PostalCode): Promise<{ regionToken: string; sellerIds: readonly string[] } | null>
+  resolveRegion(
+    postalCode: PostalCode,
+  ): Promise<{ regionToken: string; sellerIds: readonly string[] } | null>
 }

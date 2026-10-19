@@ -78,14 +78,34 @@ describe('ProductMatcher', () => {
     })
 
     it('still recognises the same item across collection runs', () => {
-      const firstRun = matcher.keyFor({ ean: null, storeId: 'mambo', name: 'Banana Prata', size: null })
-      const secondRun = matcher.keyFor({ ean: null, storeId: 'mambo', name: 'banana  prata', size: null })
+      const firstRun = matcher.keyFor({
+        ean: null,
+        storeId: 'mambo',
+        name: 'Banana Prata',
+        size: null,
+      })
+      const secondRun = matcher.keyFor({
+        ean: null,
+        storeId: 'mambo',
+        name: 'banana  prata',
+        size: null,
+      })
       expect(firstRun).toBe(secondRun)
     })
 
     it('separates two sizes of the same name', () => {
-      const small = matcher.keyFor({ ean: null, storeId: 'mambo', name: 'Pao', size: Quantity.of(0.5, 'kg') })
-      const large = matcher.keyFor({ ean: null, storeId: 'mambo', name: 'Pao', size: Quantity.of(1, 'kg') })
+      const small = matcher.keyFor({
+        ean: null,
+        storeId: 'mambo',
+        name: 'Pao',
+        size: Quantity.of(0.5, 'kg'),
+      })
+      const large = matcher.keyFor({
+        ean: null,
+        storeId: 'mambo',
+        name: 'Pao',
+        size: Quantity.of(1, 'kg'),
+      })
       expect(small).not.toBe(large)
     })
   })

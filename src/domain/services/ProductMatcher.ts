@@ -31,7 +31,9 @@ export class ProductMatcher {
   keyFor(input: MatchInput): string {
     if (input.ean) return `gtin:${input.ean.gtin14}`
 
-    const name = normalizeText(input.name).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+    const name = normalizeText(input.name)
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
     const size = input.size ? `:${input.size.amount}${input.size.unit}` : ''
     return `store:${input.storeId}:${name}${size}`
   }

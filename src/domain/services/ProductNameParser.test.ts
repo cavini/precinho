@@ -55,12 +55,8 @@ describe('ProductNameParser', () => {
     })
 
     it('multiplies a case count', () => {
-      expect(parser.extractSize('Refrigerante Caixa 12 Latas 350ml')).toEqual(
-        Quantity.of(4.2, 'L'),
-      )
-      expect(parser.extractSize('Cerveja Fardo 12 Unidades 269ml')).toEqual(
-        Quantity.of(3.228, 'L'),
-      )
+      expect(parser.extractSize('Refrigerante Caixa 12 Latas 350ml')).toEqual(Quantity.of(4.2, 'L'))
+      expect(parser.extractSize('Cerveja Fardo 12 Unidades 269ml')).toEqual(Quantity.of(3.228, 'L'))
     })
 
     it('does not read a size as a count', () => {

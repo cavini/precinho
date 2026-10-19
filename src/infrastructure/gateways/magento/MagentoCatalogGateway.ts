@@ -174,7 +174,7 @@ export class MagentoCatalogGateway implements StoreCatalogGateway {
       brand: null,
       imageUrl:
         typeof (item.small_image as { url?: unknown } | undefined)?.url === 'string'
-          ? ((item.small_image as { url: string }).url)
+          ? (item.small_image as { url: string }).url
           : null,
       url: `https://${this.config.host}/${urlKey}${suffix}`,
       priceReais: price,

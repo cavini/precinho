@@ -65,9 +65,7 @@ export function parsePreferences(raw: string | undefined | null): ShoppingPrefer
   if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return null
   const candidate = parsed as Record<string, unknown>
 
-  const postalCode = PostalCode.tryParse(
-    typeof candidate.cep === 'string' ? candidate.cep : null,
-  )
+  const postalCode = PostalCode.tryParse(typeof candidate.cep === 'string' ? candidate.cep : null)
   if (!postalCode) return null
 
   const regionId = typeof candidate.region === 'string' ? candidate.region : ''

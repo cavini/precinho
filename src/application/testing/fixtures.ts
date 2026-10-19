@@ -29,8 +29,20 @@ export const REGION_RJ: Region = {
 
 export const STORES: readonly Store[] = [
   { id: 'mambo', slug: 'mambo', name: 'Mambo', chain: 'Mambo', regionId: REGION_SP.id },
-  { id: 'hortifruti', slug: 'hortifruti', name: 'Hortifruti', chain: 'Hortifruti', regionId: REGION_SP.id },
-  { id: 'naturaldaterra', slug: 'naturaldaterra', name: 'Natural da Terra', chain: 'Natural da Terra', regionId: REGION_SP.id },
+  {
+    id: 'hortifruti',
+    slug: 'hortifruti',
+    name: 'Hortifruti',
+    chain: 'Hortifruti',
+    regionId: REGION_SP.id,
+  },
+  {
+    id: 'naturaldaterra',
+    slug: 'naturaldaterra',
+    name: 'Natural da Terra',
+    chain: 'Natural da Terra',
+    regionId: REGION_SP.id,
+  },
   { id: 'zonasul', slug: 'zonasul', name: 'Zona Sul', chain: 'Zona Sul', regionId: REGION_RJ.id },
 ]
 

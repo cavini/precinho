@@ -5,9 +5,27 @@ import { normalizeText, stripInvisible } from '../text/normalizeText'
  * predicate and buy no selectivity.
  */
 const STOPWORDS: ReadonlySet<string> = new Set([
-  'de', 'da', 'do', 'das', 'dos', 'com', 'sem', 'para', 'por',
-  'em', 'no', 'na', 'nos', 'nas', 'ao', 'aos', 'um', 'uma',
-  'os', 'as', 'ou',
+  'de',
+  'da',
+  'do',
+  'das',
+  'dos',
+  'com',
+  'sem',
+  'para',
+  'por',
+  'em',
+  'no',
+  'na',
+  'nos',
+  'nas',
+  'ao',
+  'aos',
+  'um',
+  'uma',
+  'os',
+  'as',
+  'ou',
 ])
 
 /**

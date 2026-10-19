@@ -118,7 +118,11 @@ describe('LoggingMetrics', () => {
     const { logger, parsed } = build()
     new LoggingMetrics(logger).timing('search.query_ms', 42, { regionId: 'sp' })
 
-    expect(parsed()[0]).toMatchObject({ message: 'metric.timing', metric: 'search.query_ms', ms: 42 })
+    expect(parsed()[0]).toMatchObject({
+      message: 'metric.timing',
+      metric: 'search.query_ms',
+      ms: 42,
+    })
   })
 
   it('carries the bound fields of the logger it was given', () => {

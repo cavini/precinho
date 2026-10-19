@@ -30,15 +30,9 @@ from (values
   -- because its own domain refuses connections outright.
   ('samsclub',         'Sam''s Club',      'Sam''s Club',      'sao-paulo-sp',      'vtex-legacy',     'www.samsclub.com.br',                       '1',  null,  null),
   ('atacadao',         'Atacadão',         'Atacadão',         'sao-paulo-sp',      'vtex-legacy',     'www.atacadao.com.br',                       '1',  '/io', null),
-  -- Carrefour is seeded but switched off below. Its account host answered a
-  -- handful of manual requests and then returned 401 to everything, from
-  -- every User-Agent, as soon as a real collection run reached it. Three
-  -- independent refusals now: a Cloudflare challenge on the storefront,
-  -- Disallow:/ in that host's robots.txt, and this. Getting past any of them
-  -- means pretending to be something we are not, so the row stays inactive
-  -- until the data arrives through a channel Carrefour actually offers.
-  -- Atacadao, same group, answers an honest collector and stays on.
-  ('carrefour',        'Carrefour',        'Carrefour',        'sao-paulo-sp',      'vtex-legacy',     'carrefourbrfood.vtexcommercestable.com.br', '1',  null,  null),
+  -- No sales channel: this account answers 206 without one and 401 with
+  -- sc=1, which failed a whole sweep while single requests kept working.
+  ('carrefour',        'Carrefour',        'Carrefour',        'sao-paulo-sp',      'vtex-legacy',     'carrefourbrfood.vtexcommercestable.com.br', null, null,  null),
   ('oba',              'Oba Hortifruti',   'Oba Hortifruti',   'sao-paulo-sp',      'vtex-legacy',     'obahortifruti.vtexcommercestable.com.br',   '1',  null,  null),
   -- Rio de Janeiro
   ('zonasul',          'Zona Sul',         'Zona Sul',         'rio-de-janeiro-rj', 'vtex-legacy',     'www.zonasul.com.br',                        '1',  null,  null),
@@ -51,10 +45,6 @@ from (values
 ) as v (slug, name, chain, region_slug, platform, host, sales_channel, path_prefix, store_view)
 join regions r on r.slug = v.region_slug
 on conflict (slug) do nothing;
-
--- Carrefour: see the note above. Inactive until the data comes from a
--- channel they offer rather than one that has to be talked past.
-update stores set active = false where slug = 'carrefour';
 
 -- Pão de Açúcar. GPA's own API, so the configuration lives in the two
 -- columns that already mean this: region_token is their numeric store (the
