@@ -1,0 +1,13 @@
+
+> precinho@0.1.0 collect
+> tsx collector/run.ts tauste carrefour-taubate atacadao-taubate samsclub-taubate oba-taubate paodeacucar-taubate extra-taubate
+
+◇ injected env (6) from .env.local
+◇ injected env (0) from .env
+{"level":"info","message":"collector.run_started","timestamp":"2026-10-19T22:36:14.553Z","job":"collector","stores":7,"terms":422}
+{"level":"info","message":"collector.region_resolved","timestamp":"2026-10-19T22:36:15.089Z","job":"collector","storeId":"891065a4-1f7f-4b50-ae7b-35a225d4ec73","slug":"oba-taubate","sellers":1}
+{"level":"info","message":"collector.region_resolved","timestamp":"2026-10-19T22:36:15.402Z","job":"collector","storeId":"175540d3-0c1b-4221-a124-92c2aafd1390","slug":"atacadao-taubate","sellers":5}
+{"level":"info","message":"collector.region_resolved","timestamp":"2026-10-19T22:36:15.569Z","job":"collector","storeId":"37af778e-dd15-41e6-9658-bad06fb46a3d","slug":"carrefour-taubate","sellers":19}
+{"level":"warn","message":"http.gave_up","timestamp":"2026-10-19T22:36:52.713Z","job":"collector","url":"https://www.atacadao.com.br/io/api/catalog_system/pub/products/search?ft=creme%20de%20leite&_from=0&_to=23&sc=1&regionId=v2.651925AB55CC4626316D776010014757","attempts":3,"result":"http-error"}
+{"level":"warn","message":"vtex.search_failed","timestamp":"2026-10-19T22:36:52.713Z","job":"collector","storeId":"175540d3-0c1b-4221-a124-92c2aafd1390","slug":"atacadao-taubate","term":"creme de leite","result":"http-error","statusCode":500}
+{"level":"info","message":"metric.count","timestamp":"2026-10-19T22:36:52.714Z","job":"collector","metric":"collector.unit_failed","value":1,"storeId":"175540d3-0c1b-4221-a124-92c2aafd1390"}
