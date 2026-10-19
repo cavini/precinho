@@ -89,7 +89,7 @@ export class GetProductDetail {
    */
   async execute(input: GetProductDetailInput): Promise<GetProductDetailOutput> {
     const { rateLimiter, productRepository, storeRepository, comparator } = this.deps
-    const { logger, metrics, clock } = this.deps
+    const { logger, clock } = this.deps
 
     const allowance = await rateLimiter.consume(`detail:${input.clientKey}`)
     if (!allowance.allowed) {

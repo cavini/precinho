@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { RegionSelector } from '@/domain/services/RegionSelector'
 import type { Region } from '@/domain/entities/Region'
 import type { Store } from '@/domain/entities/Store'

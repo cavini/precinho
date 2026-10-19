@@ -79,7 +79,7 @@ export class SearchProducts {
    * join per row.
    */
   async execute(input: SearchProductsInput): Promise<SearchProductsOutput> {
-    const { rateLimiter, productRepository, storeRepository, logger, metrics, clock } = this.deps
+    const { rateLimiter, productRepository, logger, metrics, clock } = this.deps
 
     const allowance = await rateLimiter.consume(`search:${input.clientKey}`)
     if (!allowance.allowed) {
