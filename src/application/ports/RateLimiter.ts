@@ -10,8 +10,3 @@ import type { RateLimitDecision } from '@/domain/services/TokenBucket'
 export interface RateLimiter {
   consume(key: string): Promise<RateLimitDecision>
 }
-
-/** Used where a limiter is structurally required but the route is not public. */
-export const unlimited: RateLimiter = {
-  consume: async () => ({ allowed: true, remaining: Number.MAX_SAFE_INTEGER, retryAfterSeconds: 0 }),
-}

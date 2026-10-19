@@ -192,6 +192,44 @@ describe('SearchProducts', () => {
       expect(result.appliedLimit).toBe(SearchProducts.MAX_LIMIT)
     })
 
+    it.each([0, -5, Number.NaN, undefined])(
+      'falls back to the default page size for a limit of %s',
+      async (limit) => {
+        const { useCase } = build()
+        const result = await useCase.execute({
+          rawQuery: 'leite',
+          regionId: REGION_SP.id,
+          storeIds: SP_STORES,
+          limit,
+          clientKey: 'ip-hash',
+        })
+
+        if (result.status !== 'ok') throw new Error(result.status)
+        expect(result.appliedLimit).toBe(SearchProducts.DEFAULT_LIMIT)
+      },
+    )
+
+    it('falls back to the store id when the store row has gone', async () => {
+      const useCase = new SearchProducts({
+        productRepository: new InMemoryProductRepository(PRODUCTS, OFFERS, STORES),
+        storeRepository: new InMemoryStoreRepository([]),
+        rateLimiter: new AllowingRateLimiter(),
+        logger: new RecordingLogger(),
+        metrics: new RecordingMetrics(),
+        clock: new FixedClock(new Date('2026-10-19T12:00:00Z')),
+      })
+
+      const result = await useCase.execute({
+        rawQuery: 'coca',
+        regionId: REGION_SP.id,
+        storeIds: SP_STORES,
+        clientKey: 'ip-hash',
+      })
+
+      if (result.status !== 'ok') throw new Error(result.status)
+      expect(result.items[0].cheapest?.storeName).toBe('hortifruti')
+    })
+
     it('turns away a flood before touching the database', async () => {
       const { useCase, repository } = build({ denied: true })
       const result = await search(useCase, 'coca')

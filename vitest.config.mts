@@ -12,6 +12,9 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'lcov'],
       include: ['src/domain/**', 'src/application/**', 'src/infrastructure/**'],
+      // Ports are interfaces: no runtime to cover. Their implementations are
+      // covered where they live, in infrastructure.
+      exclude: ['src/application/ports/**', 'src/application/testing/**'],
       // The domain and application layers hold the rules, so they carry the
       // strictest bar. Adapters are covered by contract/integration tests.
       thresholds: {
