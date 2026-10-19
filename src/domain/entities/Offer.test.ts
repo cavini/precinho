@@ -26,6 +26,17 @@ describe('Offer', () => {
     expect(offer.inStock).toBe(true)
   })
 
+  it('exposes the promotion price and the collection time', () => {
+    const offer = anOffer({ listPrice: Money.fromReais(14.98) })
+    expect(offer.listPrice?.cents).toBe(1498)
+    expect(offer.collectedAt).toEqual(COLLECTED_AT)
+    expect(anOffer({ listPrice: null }).listPrice).toBeNull()
+  })
+
+  it('refuses an offer with no store behind it', () => {
+    expect(() => anOffer({ storeId: '' })).toThrow(/store/i)
+  })
+
   describe('the link, which is rendered as an anchor', () => {
     it('accepts an absolute http(s) url', () => {
       expect(() => anOffer({ url: 'http://example.com/p' })).not.toThrow()

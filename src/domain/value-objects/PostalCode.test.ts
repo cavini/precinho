@@ -26,6 +26,13 @@ describe('PostalCode', () => {
     expect(PostalCode.tryParse('01310100')!.formatted).toBe('01310-100')
   })
 
+  it('compares by digits, however it was typed', () => {
+    const masked = PostalCode.tryParse('01310-100')!
+    const bare = PostalCode.tryParse('01310100')!
+    expect(masked.equals(bare)).toBe(true)
+    expect(masked.equals(PostalCode.tryParse('22071900')!)).toBe(false)
+  })
+
   describe('mask — used while the field is still being typed', () => {
     it('adds the hyphen once there are more than five digits', () => {
       expect(PostalCode.mask('013')).toBe('013')

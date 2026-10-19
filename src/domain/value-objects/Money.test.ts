@@ -19,6 +19,8 @@ describe('Money', () => {
   })
 
   it('refuses a value that is not a usable price', () => {
+    expect(() => Money.fromCents(Number.NaN)).toThrow(/finite/i)
+    expect(() => Money.fromCents(Number.POSITIVE_INFINITY)).toThrow(/finite/i)
     expect(() => Money.fromCents(-1)).toThrow(/negative/i)
     expect(() => Money.fromCents(10.5)).toThrow(/whole cents/i)
     expect(() => Money.fromReais(Number.NaN)).toThrow(/finite/i)

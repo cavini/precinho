@@ -91,6 +91,10 @@ describe('ProductNameParser', () => {
       expect(parser.normalizeBrand('coca-cola')).toBe('Coca-Cola')
     })
 
+    it('leaves a digit-bearing word alone inside a shouted brand', () => {
+      expect(parser.normalizeBrand('CLUB SOCIAL 144G')).toBe('Club Social 144G')
+    })
+
     it('leaves a short acronym alone', () => {
       expect(parser.normalizeBrand('3M')).toBe('3M')
       expect(parser.normalizeBrand('TNT')).toBe('TNT')

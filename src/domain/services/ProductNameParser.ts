@@ -95,7 +95,9 @@ export class ProductNameParser {
     return trimmed
       .split(/(\s+|-)/)
       .map((part) => {
-        if (part === '' || /^(\s+|-)$/.test(part)) return part
+        if (/^(\s+|-)$/.test(part)) return part
+        // Short words and anything with a digit keep their own casing, so
+        // "3D" and "144G" survive a brand that is otherwise shouted.
         if (part.length <= 2 || /\d/.test(part)) return part
         return part[0].toUpperCase() + part.slice(1).toLowerCase()
       })
