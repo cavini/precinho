@@ -102,7 +102,7 @@ export class InMemoryProductRepository implements ProductRepository {
     return {
       product,
       cheapestOffer: available[0] ?? null,
-      dearestOffer: available[available.length - 1] ?? null,
+      dearestPriceCents: available[available.length - 1]?.price.cents ?? null,
       availableStoreCount: available.length,
     }
   }

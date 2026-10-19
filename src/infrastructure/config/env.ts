@@ -30,7 +30,14 @@ export class MissingEnvError extends Error {
   }
 }
 
-function required(name: string, source: NodeJS.ProcessEnv): string {
+/**
+ * A plain string map rather than NodeJS.ProcessEnv: Next augments that type
+ * with required keys this has no business knowing about, and process.env is
+ * assignable to this anyway.
+ */
+export type EnvSource = Record<string, string | undefined>
+
+function required(name: string, source: EnvSource): string {
   const value = source[name]
   if (!value || value.trim() === '') throw new MissingEnvError(name)
   return value.trim()
@@ -38,13 +45,13 @@ function required(name: string, source: NodeJS.ProcessEnv): string {
 
 const LOG_LEVELS = new Set(['debug', 'info', 'warn', 'error'])
 
-function logLevel(source: NodeJS.ProcessEnv): AppEnv['logLevel'] {
+function logLevel(source: EnvSource): AppEnv['logLevel'] {
   const value = (source.LOG_LEVEL ?? 'info').trim()
   return LOG_LEVELS.has(value) ? (value as AppEnv['logLevel']) : 'info'
 }
 
 /** What the website needs: read-only access. */
-export function readAppEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
+export function readAppEnv(source: EnvSource = process.env): AppEnv {
   return {
     supabaseUrl: required('SUPABASE_URL', source),
     supabaseAnonKey: required('SUPABASE_ANON_KEY', source),
@@ -53,7 +60,7 @@ export function readAppEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
 }
 
 /** What the collector needs: write access as well. */
-export function readCollectorEnv(source: NodeJS.ProcessEnv = process.env): CollectorEnv {
+export function readCollectorEnv(source: EnvSource = process.env): CollectorEnv {
   return {
     ...readAppEnv(source),
     supabaseServiceRoleKey: required('SUPABASE_SERVICE_ROLE_KEY', source),

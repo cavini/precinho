@@ -11,15 +11,15 @@ import type { SearchQuery } from '@/domain/value-objects/SearchQuery'
  * would move O(p * s) rows per keystroke; letting the query do it with an
  * index on (product, store, collected_at) keeps it to O(p) rows out.
  *
- * `dearestInStock` comes back with it so the spread can be computed without
- * a second trip.
+ * The dearest price comes back with it so the spread needs no second trip —
+ * only the amount, since nothing links to the most expensive store.
  */
 export type ProductSearchHit = {
   product: Product
   /** Null when no store the shopper picked has it in stock. */
   cheapestOffer: Offer | null
-  /** Dearest in-stock offer; equals the cheapest when only one store has it. */
-  dearestOffer: Offer | null
+  /** Dearest in-stock price in cents; equals the cheapest when one store has it. */
+  dearestPriceCents: number | null
   /** How many of the picked stores have it in stock. */
   availableStoreCount: number
 }

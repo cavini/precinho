@@ -1,9 +1,11 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import type { HttpJsonResponse } from '@/application/ports/HttpClient'
 import { RecordingLogger } from '@/application/testing/RecordingLogger'
 import { ProductNameParser } from '@/domain/services/ProductNameParser'
 import { PostalCode } from '@/domain/value-objects/PostalCode'
+import type { VtexStoreConfig } from '@/infrastructure/gateways/vtex/VtexCatalogGateway'
 import { VtexCatalogGateway } from '@/infrastructure/gateways/vtex/VtexCatalogGateway'
 import { FakeHttpClient } from '@/infrastructure/testing/FakeHttpClient'
 
@@ -21,8 +23,8 @@ const CATALOG = /catalog_system\/pub\/products\/search/
 const REGIONS = /checkout\/pub\/regions/
 
 function build(
-  response: Parameters<typeof FakeHttpClient>[0][number]['response'],
-  config: Partial<ConstructorParameters<typeof VtexCatalogGateway>[0]> = {},
+  response: HttpJsonResponse,
+  config: Partial<VtexStoreConfig> = {},
 ) {
   const http = new FakeHttpClient([{ match: CATALOG, response }])
   const logger = new RecordingLogger()
@@ -231,7 +233,7 @@ describe('VtexCatalogGateway request assembly', () => {
 })
 
 describe('VtexCatalogGateway resolving a trading area from a CEP', () => {
-  function withRegions(response: Parameters<typeof FakeHttpClient>[0][number]['response']) {
+  function withRegions(response: HttpJsonResponse) {
     const http = new FakeHttpClient([{ match: REGIONS, response }])
     const gateway = new VtexCatalogGateway(
       { storeId: 'savegnago', host: 'www.savegnago.com.br' },

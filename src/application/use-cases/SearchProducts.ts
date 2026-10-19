@@ -1,4 +1,5 @@
 import type { Offer } from '@/domain/entities/Offer'
+import { Money } from '@/domain/value-objects/Money'
 import type { Store } from '@/domain/entities/Store'
 import { SearchQuery } from '@/domain/value-objects/SearchQuery'
 import type { Clock } from '../ports/Clock'
@@ -147,7 +148,7 @@ function clampLimit(requested: number | undefined): number {
 }
 
 function toSearchResultItem(hit: ProductSearchHit, storesById: Map<string, Store>): SearchResultItem {
-  const { product, cheapestOffer, dearestOffer } = hit
+  const { product, cheapestOffer, dearestPriceCents } = hit
 
   return {
     productId: product.id,
@@ -157,7 +158,7 @@ function toSearchResultItem(hit: ProductSearchHit, storesById: Map<string, Store
     imageUrl: product.imageUrl,
     cheapest: cheapestOffer ? toCheapestView(cheapestOffer, hit, storesById) : null,
     availableStoreCount: hit.availableStoreCount,
-    spread: toSpread(cheapestOffer, dearestOffer),
+    spread: toSpread(cheapestOffer, dearestPriceCents),
   }
 }
 
@@ -180,12 +181,13 @@ function toCheapestView(
 
 function toSpread(
   cheapest: Offer | null,
-  dearest: Offer | null,
+  dearestCents: number | null,
 ): { amountLabel: string; percent: number } | null {
-  if (!cheapest || !dearest || cheapest === dearest) return null
+  if (!cheapest || dearestCents === null) return null
 
-  const amount = dearest.price.minus(cheapest.price)
+  const dearest = Money.fromCents(dearestCents)
+  const amount = dearest.minus(cheapest.price)
   if (amount.cents === 0) return null
 
-  return { amountLabel: amount.format(), percent: (amount.cents / dearest.price.cents) * 100 }
+  return { amountLabel: amount.format(), percent: (amount.cents / dearest.cents) * 100 }
 }
