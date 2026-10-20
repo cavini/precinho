@@ -466,11 +466,21 @@ async function mergeJudgedSame(
 ): Promise<void> {
   const { data, error } = await client
     .from('product_equivalences')
-    .select('left_id, right_id')
+    .select('left_id, right_id, decided_by')
     .eq('same', true)
 
   if (error) throw new Error(error.message)
-  const positives = (data ?? []) as Array<{ left_id: string; right_id: string }>
+  const positives = (data ?? []) as Array<{
+    left_id: string
+    right_id: string
+    decided_by: string
+  }>
+
+  const decidedBy = new Map<string, string>()
+  for (const row of positives) {
+    decidedBy.set(row.left_id, row.decided_by)
+    decidedBy.set(row.right_id, row.decided_by)
+  }
 
   const parent = new Map<string, string>()
   const find = (id: string): string => {
@@ -501,7 +511,14 @@ async function mergeJudgedSame(
 
   const payload = groups.map((group) => {
     const [survivor, ...losers] = [...group].sort(bestFirst)
-    return { key: survivor.match_key, survivor: survivor.id, losers: losers.map((r) => r.id) }
+    return {
+      key: survivor.match_key,
+      survivor: survivor.id,
+      losers: losers.map((r) => r.id),
+      // Carried into product_merges so a wrong merge can be traced to
+      // whoever judged the pair behind it.
+      decided_by: decidedBy.get(survivor.id) ?? 'desconhecido',
+    }
   })
 
   for (let index = 0; index < payload.length; index += CHUNK) {
