@@ -55,26 +55,24 @@ export class FakeSupabaseClient {
   }
 
   from(table: string) {
-    const client = this
-
+    // Arrow functions rather than an alias for `this`: the builder object
+    // is handed to the writer, which calls these with its own receiver.
     return {
-      upsert(rows: Row[]) {
-        client.upserted.push(...rows)
+      upsert: (rows: Row[]) => {
+        this.upserted.push(...rows)
         return {
-          select() {
-            return {
-              data: rows.map((row, index) => ({
-                id: `new-${index}`,
-                match_key: row.match_key,
-              })),
-              error: null,
-            }
-          },
+          select: () => ({
+            data: rows.map((row, index) => ({
+              id: `new-${index}`,
+              match_key: row.match_key,
+            })),
+            error: null,
+          }),
         }
       },
 
-      insert(rows: Row[]) {
-        if (table === 'offers') client.inserted.push(...rows)
+      insert: (rows: Row[]) => {
+        if (table === 'offers') this.inserted.push(...rows)
         return { count: rows.length, error: null }
       },
     }
