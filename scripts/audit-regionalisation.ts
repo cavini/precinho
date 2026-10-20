@@ -25,7 +25,10 @@ import type { CatalogProduct, StoreCatalogGateway } from '@/application/ports/St
 import { PostalCode } from '@/domain/value-objects/PostalCode'
 import { readCollectorEnv } from '@/infrastructure/config/env'
 import { GpaCatalogGateway } from '@/infrastructure/gateways/gpa/GpaCatalogGateway'
+import { SfccCatalogGateway } from '@/infrastructure/gateways/sfcc/SfccCatalogGateway'
 import { TendaCatalogGateway } from '@/infrastructure/gateways/tenda/TendaCatalogGateway'
+import { VipCommerceCatalogGateway } from '@/infrastructure/gateways/vipcommerce/VipCommerceCatalogGateway'
+import type { VipCommerceStoreConfig } from '@/infrastructure/gateways/vipcommerce/VipCommerceCatalogGateway'
 import { VtexCatalogGateway } from '@/infrastructure/gateways/vtex/VtexCatalogGateway'
 import { FetchHttpClient } from '@/infrastructure/http/FetchHttpClient'
 import { StructuredLogger } from '@/infrastructure/observability/StructuredLogger'
@@ -60,7 +63,9 @@ async function main(): Promise<void> {
 
   const { data } = await client
     .from('stores')
-    .select('slug, host, platform, sales_channel, path_prefix, store_view, region_token')
+    .select(
+      'slug, host, platform, sales_channel, path_prefix, store_view, region_token, storefront_host',
+    )
     .eq('active', true)
     .order('slug')
 
@@ -168,6 +173,40 @@ async function audit(store: StoreRow, http: FetchHttpClient, logger: Logger): Pr
     )
   }
 
+  if (store.platform === 'vipcommerce') {
+    const row = vipCommerceRow(store)
+    if (!row) return inconclusive(store, 'row is missing the ids the platform needs')
+
+    // Taubaté against Caçapava: two branches of the same chain, which is
+    // the only lever VipCommerce has. The pair is hard-coded because the
+    // point is to re-check the finding, not to discover a new one.
+    return branchComparison(
+      store,
+      await compare(
+        store,
+        new VipCommerceCatalogGateway({ ...row, distributionCenterId: '10' }, http, logger),
+        new VipCommerceCatalogGateway({ ...row, distributionCenterId: '11' }, http, logger),
+      ),
+      'centres 10 (Taubaté) and 11 (Caçapava)',
+    )
+  }
+
+  if (store.platform === 'sfcc') {
+    if (!store.store_view) return inconclusive(store, 'row carries no Demandware site id')
+
+    const site = { storeId: store.slug, host: store.host, siteId: store.store_view }
+
+    return branchComparison(
+      store,
+      await compare(
+        store,
+        new SfccCatalogGateway({ ...site, sfccStoreId: '25' }, http, logger),
+        new SfccCatalogGateway({ ...site, sfccStoreId: '7' }, http, logger),
+      ),
+      'branches 25 (Taubaté) and 7 (São Paulo)',
+    )
+  }
+
   return {
     slug: store.slug,
     platform: store.platform,
@@ -176,6 +215,59 @@ async function audit(store: StoreRow, http: FetchHttpClient, logger: Logger): Pr
     examples: [],
     note: 'no audit for this platform',
   }
+}
+
+/** The VipCommerce ids a comparison needs, or null when the row lacks them. */
+function vipCommerceRow(
+  store: StoreRow,
+): Omit<VipCommerceStoreConfig, 'distributionCenterId'> | null {
+  const { sales_channel: organizationId, store_view: branchId, storefront_host: host } = store
+  if (!organizationId || !branchId || !host) return null
+
+  return {
+    storeId: store.slug,
+    apiHost: store.host,
+    organizationId,
+    branchId,
+    domainKey: host.replace(/^(?:www|site|rc|site-cdn|cdn)\./, ''),
+    storefrontHost: host,
+  }
+}
+
+function inconclusive(store: StoreRow, note: string): Verdict {
+  return {
+    slug: store.slug,
+    platform: store.platform,
+    matched: 0,
+    differing: 0,
+    examples: [],
+    note,
+  }
+}
+
+/**
+ * Says what a two-branch comparison actually measured.
+ *
+ * The default label below is written for the storefront comparison, where
+ * no difference means our number matches the shop's. Here no difference
+ * means the two branches quote alike, which is a fact about the chain
+ * rather than a verdict on us — Shibata prices its whole Vale do Paraíba
+ * the same and is right to. So this reports the measurement and names the
+ * one thing that would settle it, instead of borrowing a word that would
+ * mean the opposite.
+ *
+ * Complexity: O(1) over an already-computed verdict.
+ */
+function branchComparison(store: StoreRow, verdict: Verdict, pair: string): Verdict {
+  if (verdict.matched === 0) return inconclusive(store, `nothing matched across ${pair}`)
+
+  const note =
+    verdict.differing > 0
+      ? `regional — ${verdict.differing}/${verdict.matched} prices move between ${pair}`
+      : `uniform — ${verdict.matched} prices identical across ${pair}; ` +
+        'check the assortment differs before trusting it'
+
+  return { ...verdict, note }
 }
 
 /**
