@@ -45,8 +45,7 @@ const TOMATO = aProduct({
   id: 'tomato',
   name: 'Tomate Italiano',
   searchText: 'tomate italiano',
-  sizeAmount: null,
-  sizeUnit: null,
+  size: null,
 })
 
 const PRODUCTS = [COCA_COLA_2L, CONDENSED_MILK, BANANA, PACOCA, SOAP, TOMATO]

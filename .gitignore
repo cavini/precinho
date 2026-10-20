@@ -44,3 +44,6 @@ next-env.d.ts
 
 # Coverage output
 /coverage
+
+# Collector and dev-server output: useful locally, noise in history.
+.logs/
