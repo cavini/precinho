@@ -130,6 +130,42 @@ describe('ClaudeEquivalenceJudge', () => {
     expect(asked).not.toMatch(/R\$|price_cents|priceReais/)
   })
 
+  it('names the workspace when the key belongs to an organisation', async () => {
+    // An org-scoped key cannot pick a workspace on its own, and the API
+    // answers 400 saying so rather than guessing which one.
+    const sent: Array<{ headers: Record<string, string> }> = []
+    const http = {
+      async getJson() {
+        throw new Error('not used')
+      },
+      async postJson(_url: string, _body: unknown, options?: { headers?: Record<string, string> }) {
+        sent.push({ headers: options?.headers ?? {} })
+        return {
+          status: 'ok' as const,
+          statusCode: 200,
+          body: { content: [{ type: 'text', text: ANSWER }] },
+          headers: {},
+        }
+      },
+    }
+
+    const judge = new ClaudeEquivalenceJudge(
+      { apiKey: 'sk-test', workspaceId: 'wrkspc_123' },
+      http,
+      new RecordingLogger(),
+    )
+    await judge.judge(QUESTIONS)
+
+    expect(sent[0].headers['anthropic-workspace-id']).toBe('wrkspc_123')
+  })
+
+  it('omits the workspace header for a key that already has one', async () => {
+    const { judge, sent } = replying(ANSWER)
+    await judge.judge(QUESTIONS)
+
+    expect(sent[0].headers).not.toHaveProperty('anthropic-workspace-id')
+  })
+
   it('asks nothing when there is nothing to ask', async () => {
     const { judge, sent } = replying(ANSWER)
 

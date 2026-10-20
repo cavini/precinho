@@ -24,7 +24,9 @@
  *   npx tsx scripts/judge-equivalences.ts --judge --limit 200
  *   npx tsx scripts/judge-equivalences.ts --merge        # apply what was judged same
  *
- * Needs ANTHROPIC_API_KEY in .env.local for --judge. --merge needs nothing.
+ * Needs ANTHROPIC_API_KEY in .env.local for --judge, plus
+ * ANTHROPIC_WORKSPACE_ID when the key belongs to an organisation rather
+ * than to a single workspace. --merge needs neither.
  *
  * Complexity: recall is O(n) bucketing plus an inverted index per bucket;
  * judging is one request per batch of pairs; merging is one round trip per
@@ -226,7 +228,11 @@ async function judgePending(
   }
 
   const logger = new StructuredLogger({ level: 'warn' }).child({ job: 'judge' })
-  const judge = new ClaudeEquivalenceJudge({ apiKey }, new FetchHttpClient(logger), logger)
+  const judge = new ClaudeEquivalenceJudge(
+    { apiKey, workspaceId: process.env.ANTHROPIC_WORKSPACE_ID },
+    new FetchHttpClient(logger),
+    logger,
+  )
 
   let same = 0
   let different = 0

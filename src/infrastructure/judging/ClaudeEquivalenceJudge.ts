@@ -42,6 +42,12 @@ Reply with JSON only: {"verdicts":[{"id":"<id>","same":true|false,"reason":"<und
 
 export type ClaudeJudgeConfig = {
   apiKey: string
+  /**
+   * Required when the key belongs to an organisation rather than to one
+   * workspace: such a key cannot pick a workspace on its own, and the API
+   * answers 400 saying so rather than guessing.
+   */
+  workspaceId?: string
   /** Haiku is enough: the question is short and the answer is a boolean. */
   model?: string
   maxTokens?: number
@@ -80,6 +86,7 @@ export class ClaudeEquivalenceJudge implements ProductEquivalenceJudge {
           'x-api-key': this.config.apiKey,
           'anthropic-version': VERSION,
           'content-type': 'application/json',
+          ...(this.config.workspaceId ? { 'anthropic-workspace-id': this.config.workspaceId } : {}),
         },
       },
     )
