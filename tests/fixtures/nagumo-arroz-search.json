@@ -1,0 +1,199 @@
+{
+  "action": "Search-UpdateGrid",
+  "locale": "pt_BR",
+  "count": 577,
+  "productsSearchResult": [
+    {
+      "id": "293303",
+      "productName": "Arroz Branco Tipo 1 Camil 5Kg",
+      "brand": "CAMIL",
+      "available": true,
+      "availability": {
+        "messages": [
+          "Em estoque"
+        ],
+        "inStockDate": null
+      },
+      "images": {
+        "medium": [
+          {
+            "alt": "https://ngostpubprd001.blob.core.windows.net/produtos/assets/ofertas-ecommerce/293303.webp",
+            "url": "/on/demandware.static/-/Sites-storefront-catalog-ngm/pt_BR/v1792445425110/https://ngostpubprd001.blob.core.windows.net/produtos/assets/ofertas-ecommerce/293303.webp",
+            "index": "0",
+            "title": "Arroz Branco Tipo 1 Camil 5Kg",
+            "absURL": "https://www.nagumo.com.br/on/demandware.static/-/Sites-storefront-catalog-ngm/pt_BR/v1792445425110/https://ngostpubprd001.blob.core.windows.net/produtos/assets/ofertas-ecommerce/293303.webp",
+            "src": {
+              "disUrl": "https://ngostpubprd001.blob.core.windows.net/produtos/assets/ofertas-ecommerce/293303.webp"
+            }
+          }
+        ]
+      },
+      "price": {
+        "sales": {
+          "value": 23.7,
+          "currency": "BRL",
+          "formatted": "R$ 23,70",
+          "decimalPrice": "23.70"
+        },
+        "list": null,
+        "priceDiff": {
+          "value": 0,
+          "currency": "BRL",
+          "formatted": "R$ 0,00",
+          "decimalPrice": "0.00"
+        },
+        "quantityValue": 0,
+        "quantityValueFormatted": "0.0"
+      },
+      "productShowFullUrl": "https://www.nagumo.com.br/categoria/departamentos/basicos-e-matinais/commodities/arroz/arroz-branco-tipo-1-camil-5kg-293303.html",
+      "productShowQuickView": "https://www.nagumo.com.br/on/demandware.store/Sites-Nagumo-Site/pt_BR/Product-ShowQuickView?pid=293303",
+      "ATSInCurrentStore": 980,
+      "customAttributes": {},
+      "weighable": null
+    },
+    {
+      "id": "273800",
+      "productName": "Arroz Branco Tipo 1 Prato Fino 5Kg",
+      "brand": "PRATO FINO",
+      "available": true,
+      "availability": {
+        "messages": [
+          "Em estoque"
+        ],
+        "inStockDate": null
+      },
+      "images": {
+        "medium": [
+          {
+            "alt": "https://ngostpubprd001.blob.core.windows.net/produtos/assets/ofertas-ecommerce/273800.webp",
+            "url": "/on/demandware.static/-/Sites-storefront-catalog-ngm/pt_BR/v1792445425110/https://ngostpubprd001.blob.core.windows.net/produtos/assets/ofertas-ecommerce/273800.webp",
+            "index": "0",
+            "title": "Arroz Branco Tipo 1 Prato Fino 5Kg",
+            "absURL": "https://www.nagumo.com.br/on/demandware.static/-/Sites-storefront-catalog-ngm/pt_BR/v1792445425110/https://ngostpubprd001.blob.core.windows.net/produtos/assets/ofertas-ecommerce/273800.webp",
+            "src": {
+              "disUrl": "https://ngostpubprd001.blob.core.windows.net/produtos/assets/ofertas-ecommerce/273800.webp"
+            }
+          }
+        ]
+      },
+      "price": {
+        "sales": {
+          "value": 27.9,
+          "currency": "BRL",
+          "formatted": "R$ 27,90",
+          "decimalPrice": "27.90"
+        },
+        "list": null,
+        "priceDiff": {
+          "value": 0,
+          "currency": "BRL",
+          "formatted": "R$ 0,00",
+          "decimalPrice": "0.00"
+        },
+        "quantityValue": 0,
+        "quantityValueFormatted": "0.0"
+      },
+      "productShowFullUrl": "https://www.nagumo.com.br/categoria/departamentos/basicos-e-matinais/commodities/arroz/arroz-branco-tipo-1-prato-fino-5kg-273800.html",
+      "productShowQuickView": "https://www.nagumo.com.br/on/demandware.store/Sites-Nagumo-Site/pt_BR/Product-ShowQuickView?pid=273800",
+      "ATSInCurrentStore": 178,
+      "customAttributes": {},
+      "weighable": null
+    },
+    {
+      "id": "210021",
+      "productName": "Arroz Tipo 1 Raroz 5kg",
+      "brand": "RAROZ",
+      "available": true,
+      "availability": {
+        "messages": [
+          "Em estoque"
+        ],
+        "inStockDate": null
+      },
+      "images": {
+        "medium": [
+          {
+            "alt": "https://ngostpubprd001.blob.core.windows.net/produtos/assets/ofertas-ecommerce/210021.webp",
+            "url": "/on/demandware.static/-/Sites-storefront-catalog-ngm/pt_BR/v1792445425110/https://ngostpubprd001.blob.core.windows.net/produtos/assets/ofertas-ecommerce/210021.webp",
+            "index": "0",
+            "title": "Arroz Tipo 1 Raroz 5kg",
+            "absURL": "https://www.nagumo.com.br/on/demandware.static/-/Sites-storefront-catalog-ngm/pt_BR/v1792445425110/https://ngostpubprd001.blob.core.windows.net/produtos/assets/ofertas-ecommerce/210021.webp",
+            "src": {
+              "disUrl": "https://ngostpubprd001.blob.core.windows.net/produtos/assets/ofertas-ecommerce/210021.webp"
+            }
+          }
+        ]
+      },
+      "price": {
+        "sales": {
+          "value": 21.7,
+          "currency": "BRL",
+          "formatted": "R$ 21,70",
+          "decimalPrice": "21.70"
+        },
+        "list": null,
+        "priceDiff": {
+          "value": 0,
+          "currency": "BRL",
+          "formatted": "R$ 0,00",
+          "decimalPrice": "0.00"
+        },
+        "quantityValue": 0,
+        "quantityValueFormatted": "0.0"
+      },
+      "productShowFullUrl": "https://www.nagumo.com.br/categoria/departamentos/basicos-e-matinais/commodities/arroz/arroz-tipo-1-raroz-5kg-210021.html",
+      "productShowQuickView": "https://www.nagumo.com.br/on/demandware.store/Sites-Nagumo-Site/pt_BR/Product-ShowQuickView?pid=210021",
+      "ATSInCurrentStore": 131,
+      "customAttributes": {},
+      "weighable": null
+    },
+    {
+      "id": "257984",
+      "productName": "Arroz S Lucas 5kg Tp 1",
+      "brand": "S.LUCAS",
+      "available": true,
+      "availability": {
+        "messages": [
+          "Em estoque"
+        ],
+        "inStockDate": null
+      },
+      "images": {
+        "medium": [
+          {
+            "alt": "https://ngostpubprd001.blob.core.windows.net/produtos/assets/ofertas-ecommerce/257984.webp",
+            "url": "/on/demandware.static/-/Sites-storefront-catalog-ngm/pt_BR/v1792445425110/https://ngostpubprd001.blob.core.windows.net/produtos/assets/ofertas-ecommerce/257984.webp",
+            "index": "0",
+            "title": "Arroz S Lucas 5kg Tp 1",
+            "absURL": "https://www.nagumo.com.br/on/demandware.static/-/Sites-storefront-catalog-ngm/pt_BR/v1792445425110/https://ngostpubprd001.blob.core.windows.net/produtos/assets/ofertas-ecommerce/257984.webp",
+            "src": {
+              "disUrl": "https://ngostpubprd001.blob.core.windows.net/produtos/assets/ofertas-ecommerce/257984.webp"
+            }
+          }
+        ]
+      },
+      "price": {
+        "sales": {
+          "value": 19.9,
+          "currency": "BRL",
+          "formatted": "R$ 19,90",
+          "decimalPrice": "19.90"
+        },
+        "list": null,
+        "priceDiff": {
+          "value": 0,
+          "currency": "BRL",
+          "formatted": "R$ 0,00",
+          "decimalPrice": "0.00"
+        },
+        "quantityValue": 0,
+        "quantityValueFormatted": "0.0"
+      },
+      "productShowFullUrl": "https://www.nagumo.com.br/categoria/departamentos/basicos-e-matinais/commodities/arroz/arroz-s-lucas-5kg-tp-1-257984.html",
+      "productShowQuickView": "https://www.nagumo.com.br/on/demandware.store/Sites-Nagumo-Site/pt_BR/Product-ShowQuickView?pid=257984",
+      "ATSInCurrentStore": 349,
+      "customAttributes": {},
+      "weighable": null
+    }
+  ]
+}
