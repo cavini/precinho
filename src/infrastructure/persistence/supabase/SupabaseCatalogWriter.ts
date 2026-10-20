@@ -12,14 +12,14 @@ import type { Logger } from '@/application/ports/Logger'
 const CHUNK_SIZE = 200
 
 /**
- * How many values go into one `in (...)` clause.
+ * How many values go into one lookup.
  *
- * Deliberately small: these become a query string, and a thousand uuids
- * make a URL long enough to be rejected. A backfill script asked for a
- * thousand at a time, ignored the error, and silently rebuilt 212 of
- * 5,160 records before anybody noticed.
+ * These travel in a request body now rather than a query string, so
+ * length is no longer the constraint it was — a URL carrying two hundred
+ * product names was long enough that fetch refused to send it. The number
+ * is about keeping one failed call cheap.
  */
-const LOOKUP_SIZE = 200
+const LOOKUP_SIZE = 500
 
 /**
  * Writes a collection run.
@@ -114,15 +114,15 @@ export class SupabaseCatalogWriter implements CatalogWriter {
     const resolved = new Map<string, string>()
 
     for (const chunk of chunked([...new Set(keys)], LOOKUP_SIZE)) {
-      const { data, error } = await this.client
-        .from('product_aliases')
-        .select('match_key, product_id')
-        .in('match_key', chunk)
+      const { data, error } = await this.client.rpc('resolve_product_aliases', {
+        p_keys: chunk,
+      })
 
       if (error) {
-        // Failing open means a duplicate row, which somebody notices and
-        // the next merge fixes. Failing closed would mean dropping prices.
-        this.logger.warn('collector.aliases_unreadable', { reason: error.message })
+        // Loud, because failing open here recreates rows a merge removed
+        // and the run still reports success. That happened once, and the
+        // only trace was a warning nobody read.
+        this.logger.error('collector.aliases_unreadable', { reason: error.message })
         return resolved
       }
 
@@ -148,15 +148,12 @@ export class SupabaseCatalogWriter implements CatalogWriter {
     const resolved = new Map<string, string>()
 
     for (const chunk of chunked([...new Set(names)], LOOKUP_SIZE)) {
-      const { data, error } = await this.client
-        .from('product_names')
-        .select('name, product_id')
-        .in('name', chunk)
+      const { data, error } = await this.client.rpc('resolve_product_names', {
+        p_names: chunk,
+      })
 
       if (error) {
-        // Failing open costs a duplicate row, which somebody notices and
-        // the next merge fixes. Failing closed would drop prices.
-        this.logger.warn('collector.names_unreadable', { reason: error.message })
+        this.logger.error('collector.names_unreadable', { reason: error.message })
         return resolved
       }
 
