@@ -62,6 +62,9 @@ export class InMemoryProductRepository implements ProductRepository {
         criteria.query.tokens.every((token) => startsAWord(product.searchText, token)),
       )
       .map((product) => this.toHit(product, storeIds))
+      // Nothing the shopper can buy is nothing worth listing: a row with no
+      // price in any marked shop is a dead-end link.
+      .filter((hit) => hit.availableStoreCount > 0)
       .sort(byComparability)
 
     return hits.slice(criteria.offset, criteria.offset + criteria.limit)
