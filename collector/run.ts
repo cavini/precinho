@@ -335,11 +335,21 @@ async function buildGateway(
   // One chain's rate limit is no reason to crawl the rest this slowly.
   const minIntervalMs = store.min_interval_ms ?? MIN_INTERVAL_MS
   if (store.platform === 'tenda-api') {
+    if (!store.region_token) {
+      // Without a branch-bound cart the endpoint answers with São Paulo's
+      // list whatever region the row claims, and nothing in the response
+      // says so. That is right for a São Paulo row and wrong everywhere
+      // else, so it warns rather than skipping: the one store this
+      // currently covers is correct, and the next one would not be.
+      logger.warn('collector.tenda_cart_missing', { slug: store.slug })
+    }
+
     return new TendaCatalogGateway(
       {
         storeId: store.id,
         apiHost: store.host,
         branchId: store.store_view ?? undefined,
+        cartId: store.region_token ?? undefined,
         minIntervalMs,
       },
       http,

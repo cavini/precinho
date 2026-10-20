@@ -9,7 +9,10 @@
  * Tenda's own product page says it outright: "Informe seu CEP para
  * visualizar o preco" and "Os precos podem sofrer alteracao de acordo com
  * a sua regiao". A chain saying that while our collector stores a single
- * number is a bug, not a finding about the market.
+ * number is a bug, not a finding about the market. Measured on 2026-10-20
+ * it was telling the truth: a Taubate cart moves 7 of 117 matched prices
+ * and drops 27% of the listing. The default it answers without a cart is
+ * Sao Paulo's, matched 160 of 160 against the Guarapiranga branch.
  *
  * Usage: `npx tsx scripts/audit-regionalisation.ts [slug ...]`
  *
@@ -158,18 +161,29 @@ async function audit(store: StoreRow, http: FetchHttpClient, logger: Logger): Pr
   }
 
   if (store.platform === 'tenda-api') {
-    return compare(
+    // This used to vary branchId, which only narrows the in-stock flag and
+    // never touches the URL — so it compared one request with itself and
+    // could only ever answer "uniform". Tenda prices per branch and the
+    // cart is the only thing that carries the branch, so the comparison is
+    // the row's cart against no cart at all: what the collector stores
+    // against what the endpoint hands anyone who does not say where they
+    // are. Without a cart configured there is nothing to compare.
+    if (!store.region_token) {
+      return inconclusive(store, 'row carries no branch-bound cart; prices are São Paulo’s')
+    }
+
+    return branchComparison(
       store,
-      new TendaCatalogGateway(
-        { storeId: store.slug, apiHost: store.host, branchId: '8' },
-        http,
-        logger,
+      await compare(
+        store,
+        new TendaCatalogGateway(
+          { storeId: store.slug, apiHost: store.host, cartId: store.region_token },
+          http,
+          logger,
+        ),
+        new TendaCatalogGateway({ storeId: store.slug, apiHost: store.host }, http, logger),
       ),
-      new TendaCatalogGateway(
-        { storeId: store.slug, apiHost: store.host, branchId: '138' },
-        http,
-        logger,
-      ),
+      `cart ${store.region_token} and no cart (the São Paulo default)`,
     )
   }
 

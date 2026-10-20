@@ -175,6 +175,24 @@ describe('TendaCatalogGateway request assembly', () => {
     expect(new URL(http.lastUrl).searchParams.has('save')).toBe(false)
   })
 
+  it('sends the configured cart, which is what makes the price a branch price', async () => {
+    // Measured on 2026-10-20: the same term under a Taubaté cart and under
+    // no cart differ on 7 of 117 matched products — açúcar cristal Colombo
+    // 5kg is 13.99 against 15.89. Without this parameter every branch reads
+    // back São Paulo's list.
+    const { gateway, http } = build(okWithFixture, { cartId: '39875841' })
+    await gateway.searchTerm('arroz')
+
+    expect(new URL(http.lastUrl).searchParams.get('cartId')).toBe('39875841')
+  })
+
+  it('omits the cart when none is configured, rather than sending an empty one', async () => {
+    const { gateway, http } = build(okWithFixture)
+    await gateway.searchTerm('arroz')
+
+    expect(new URL(http.lastUrl).searchParams.has('cartId')).toBe(false)
+  })
+
   it('identifies itself', async () => {
     const { gateway, http } = build(okWithFixture)
     await gateway.searchTerm('arroz')
@@ -222,6 +240,23 @@ describe('TendaCatalogGateway when the store will not answer', () => {
 
     const result = await gateway.searchTerm('arroz')
     expect(result).toEqual({ status: 'unavailable', reason: response.status })
+    expect(logger.find('tenda.search_failed')).toHaveLength(1)
+  })
+
+  it('reports a cart the store no longer knows as unavailable, never as a price', async () => {
+    // A cart id Tenda does not recognise answers 500 — `cartId=1` and
+    // `cartId=99999999` both do. The run must lose the term rather than
+    // store the chain default under a branch's name, which is the exact
+    // failure this parameter exists to prevent.
+    const { gateway, logger } = build(
+      { status: 'http-error', statusCode: 500 },
+      { cartId: '39875841' },
+    )
+
+    expect(await gateway.searchTerm('arroz')).toEqual({
+      status: 'unavailable',
+      reason: 'http-error',
+    })
     expect(logger.find('tenda.search_failed')).toHaveLength(1)
   })
 
