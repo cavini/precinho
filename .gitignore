@@ -47,3 +47,7 @@ next-env.d.ts
 
 # Collector and dev-server output: useful locally, noise in history.
 .logs/
+
+# Judging work files: pairs exported for review and the verdicts coming back.
+pairs-to-judge.jsonl
+verdicts.jsonl
