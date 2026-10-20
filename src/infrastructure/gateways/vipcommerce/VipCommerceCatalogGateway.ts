@@ -172,8 +172,14 @@ export class VipCommerceCatalogGateway implements StoreCatalogGateway, StoreRegi
    * Complexity: one request; O(1) parsing.
    */
   async countDepartment(departmentId: string): Promise<number | null> {
-    const result = await this.searchDepartmentPaginator(departmentId)
-    return result?.total_items ?? null
+    const paginator = await this.searchDepartmentPaginator(departmentId)
+    const total = paginator?.total_items
+
+    // Checked rather than cast. A count that arrived as a string would
+    // divide into NaN when the sweep works out how many pages to ask for,
+    // and a slice that stops after one page looks exactly like a small
+    // department.
+    return typeof total === 'number' && Number.isInteger(total) && total >= 0 ? total : null
   }
 
   /**
@@ -209,7 +215,7 @@ export class VipCommerceCatalogGateway implements StoreCatalogGateway, StoreRegi
   /** The paginator block, or null when the department cannot be read. */
   private async searchDepartmentPaginator(
     departmentId: string,
-  ): Promise<{ total_items?: number } | null> {
+  ): Promise<{ total_items?: unknown } | null> {
     const headers = await this.authorize()
     if (!headers) return null
 

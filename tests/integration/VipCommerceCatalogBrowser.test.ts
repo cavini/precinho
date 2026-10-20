@@ -119,6 +119,27 @@ describe('VipCommerceCatalogBrowser planning a sweep', () => {
     expect(plan.slices).toEqual([])
   })
 
+  it('drops a department whose count is not a number', async () => {
+    // A size that arrived as a string would divide into NaN when the sweep
+    // works out how many pages to ask for, and a slice that stops after
+    // one page looks exactly like a small department.
+    const { browser } = build([
+      treeOk,
+      {
+        match: DEPARTMENT,
+        response: {
+          status: 'ok',
+          statusCode: 200,
+          body: { success: true, data: [], paginator: { total_items: '2771' } },
+        },
+      },
+    ])
+    const plan = await browser.planSweep()
+
+    if (plan.status !== 'ok') throw new Error(plan.reason)
+    expect(plan.slices).toEqual([])
+  })
+
   it('reports unavailable when the tree cannot be read', async () => {
     const { browser } = build([
       { match: TREE, response: { status: 'http-error', statusCode: 500 } },
