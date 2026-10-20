@@ -35,7 +35,11 @@ import { MagentoCatalogBrowser } from '@/infrastructure/gateways/magento/Magento
 import { VtexCatalogBrowser } from '@/infrastructure/gateways/vtex/VtexCatalogBrowser'
 import { GpaCatalogGateway } from '@/infrastructure/gateways/gpa/GpaCatalogGateway'
 import { MagentoCatalogGateway } from '@/infrastructure/gateways/magento/MagentoCatalogGateway'
+import { SfccCatalogGateway } from '@/infrastructure/gateways/sfcc/SfccCatalogGateway'
 import { TendaCatalogGateway } from '@/infrastructure/gateways/tenda/TendaCatalogGateway'
+import { VipCommerceCatalogBrowser } from '@/infrastructure/gateways/vipcommerce/VipCommerceCatalogBrowser'
+import { VipCommerceCatalogGateway } from '@/infrastructure/gateways/vipcommerce/VipCommerceCatalogGateway'
+import type { VipCommerceStoreConfig } from '@/infrastructure/gateways/vipcommerce/VipCommerceCatalogGateway'
 import { ProductMatcher } from '@/domain/services/ProductMatcher'
 import { ProductNameParser } from '@/domain/services/ProductNameParser'
 import { RequestBudget } from '@/domain/services/RequestBudget'
@@ -263,7 +267,56 @@ function buildBrowser(
     )
   }
 
+  if (store.platform === 'vipcommerce') {
+    const config = vipCommerceConfig(store, minIntervalMs, logger)
+    return config ? new VipCommerceCatalogBrowser(config, http, logger) : null
+  }
+
   return null
+}
+
+/**
+ * The four things a VipCommerce row has to carry, or null when it does not.
+ *
+ * Shared by the gateway and the browser so a half-configured row fails the
+ * same way whichever mode it is swept in.
+ */
+function vipCommerceConfig(
+  store: StoreConfigRow,
+  minIntervalMs: number,
+  logger: Logger,
+): VipCommerceStoreConfig | null {
+  const organizationId = store.sales_channel
+  const branchId = store.store_view
+  const distributionCenterId = store.region_token
+  const storefrontHost = store.storefront_host
+
+  if (!organizationId || !branchId || !distributionCenterId || !storefrontHost) {
+    // Without the distribution centre the API answers for whichever branch
+    // the storefront defaults to, and those are not this region's prices.
+    logger.warn('collector.vipcommerce_row_incomplete', {
+      slug: store.slug,
+      organizationId,
+      branchId,
+      distributionCenterId,
+      storefrontHost,
+    })
+    return null
+  }
+
+  return {
+    storeId: store.id,
+    apiHost: store.host,
+    organizationId,
+    branchId,
+    distributionCenterId,
+    // The tenant key is the storefront's domain without its subdomain
+    // prefix — the platform's own bundle derives it exactly this way,
+    // stripping www./site./cdn. before asking who it is talking to.
+    domainKey: storefrontHost.replace(/^(?:www|site|rc|site-cdn|cdn)\./, ''),
+    storefrontHost,
+    minIntervalMs,
+  }
 }
 
 /**
@@ -322,6 +375,36 @@ async function buildGateway(
         host: store.host,
         storeView: store.store_view ?? undefined,
         budget,
+        minIntervalMs,
+      },
+      http,
+      logger,
+    )
+  }
+
+  if (store.platform === 'vipcommerce') {
+    const config = vipCommerceConfig(store, minIntervalMs, logger)
+    return config ? new VipCommerceCatalogGateway(config, http, logger) : null
+  }
+
+  if (store.platform === 'sfcc') {
+    if (!store.store_view || !store.region_token) {
+      // The branch lives in a Demandware session keyed to that branch;
+      // without it the catalogue quotes whichever one it defaults to.
+      logger.warn('collector.sfcc_row_incomplete', {
+        slug: store.slug,
+        siteId: store.store_view,
+        sfccStoreId: store.region_token,
+      })
+      return null
+    }
+
+    return new SfccCatalogGateway(
+      {
+        storeId: store.id,
+        host: store.host,
+        siteId: store.store_view,
+        sfccStoreId: store.region_token,
         minIntervalMs,
       },
       http,
