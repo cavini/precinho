@@ -58,10 +58,71 @@ describe('ProductMatcher', () => {
     })
   })
 
-  describe('products without a usable barcode', () => {
+  describe('packaged products without a barcode', () => {
+    it('merges across stores when the name and the pack size agree', () => {
+      // Three shops listed "Sabonete Barra Original Dove 90G" and none
+      // published a barcode, so the comparator showed the same soap three
+      // times at three prices and compared nothing. A full catalogue name
+      // plus a pack size names one product.
+      const atMambo = matcher.keyFor({
+        ean: null,
+        storeId: 'mambo',
+        name: 'Sabonete Barra Original Dove 90G',
+        size: Quantity.of(0.09, 'kg'),
+      })
+      const atHortifruti = matcher.keyFor({
+        ean: null,
+        storeId: 'hortifruti',
+        name: 'sabonete barra original dove 90g',
+        size: Quantity.of(0.09, 'kg'),
+      })
+
+      expect(atMambo).toBe(atHortifruti)
+    })
+
+    it('does not merge two products whose names differ', () => {
+      // The whole reason this is safe is that the name has to match. "Dove
+      // Original" and "Dove Karité" are both 90g bars and are not the same
+      // bar.
+      const original = matcher.keyFor({
+        ean: null,
+        storeId: 'mambo',
+        name: 'Sabonete Barra Original Dove 90g',
+        size: Quantity.of(0.09, 'kg'),
+      })
+      const karite = matcher.keyFor({
+        ean: null,
+        storeId: 'mambo',
+        name: 'Sabonete Barra Karité Dove 90g',
+        size: Quantity.of(0.09, 'kg'),
+      })
+
+      expect(original).not.toBe(karite)
+    })
+
+    it('does not merge the same name in two pack sizes', () => {
+      const bar = matcher.keyFor({
+        ean: null,
+        storeId: 'mambo',
+        name: 'Sabonete Dove',
+        size: Quantity.of(0.09, 'kg'),
+      })
+      const box = matcher.keyFor({
+        ean: null,
+        storeId: 'mambo',
+        name: 'Sabonete Dove',
+        size: Quantity.of(0.54, 'kg'),
+      })
+
+      expect(bar).not.toBe(box)
+    })
+  })
+
+  describe('products with neither a barcode nor a pack size', () => {
     it('keeps them store-local rather than merging on name alone', () => {
-      // Loose produce has no barcode. "Banana Prata" at two stores is not
-      // provably the same item, and a wrong merge quotes the wrong price.
+      // Loose produce has no barcode and no pack size. "Banana Prata" at two
+      // stores is each shop's own fruit, not provably one product, and a
+      // wrong merge quotes the wrong price.
       const atMambo = matcher.keyFor({
         ean: null,
         storeId: 'mambo',

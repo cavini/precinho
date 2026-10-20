@@ -166,3 +166,13 @@
 {"level":"info","message":"product_detail.completed","timestamp":"2026-10-20T00:35:27.150Z","app":"precinho","productId":"de1d95b7-d258-4633-b1e5-88cce230b9b5","regionId":"32ebf460-b37e-4e79-a16b-d2f2093ae9c2","offerCount":1,"cheapestStoreId":"3450a021-6b2c-4067-80f6-53adaaf03e27"}
 {"level":"info","message":"metric.count","timestamp":"2026-10-20T00:35:27.151Z","app":"precinho","metric":"product_detail.execute","value":1,"status":"ok"}
  GET /produto/de1d95b7-d258-4633-b1e5-88cce230b9b5 [32m200[39m in 1425ms[2m (next.js: 5ms, generate-params: 7ms, application-code: 1412ms)[22m
+{"level":"info","message":"feed.completed","timestamp":"2026-10-20T00:35:33.874Z","app":"precinho","regionId":"32ebf460-b37e-4e79-a16b-d2f2093ae9c2","storeCount":6,"cardCount":12,"offset":0}
+{"level":"info","message":"metric.count","timestamp":"2026-10-20T00:35:33.878Z","app":"precinho","metric":"feed.execute","value":1,"status":"ok"}
+ GET / [32m200[39m in 2.0s[2m (next.js: 1.5ms, application-code: 2.0s)[22m
+{"level":"info","message":"product_detail.completed","timestamp":"2026-10-20T00:35:40.763Z","app":"precinho","productId":"deaa22d9-b06d-4fcc-9d2d-175ea9d2f60f","regionId":"32ebf460-b37e-4e79-a16b-d2f2093ae9c2","offerCount":3,"cheapestStoreId":"99909ddc-4047-4dd4-8e15-e6ff118e007b"}
+{"level":"info","message":"metric.count","timestamp":"2026-10-20T00:35:40.767Z","app":"precinho","metric":"product_detail.execute","value":1,"status":"ok"}
+ GET /produto/deaa22d9-b06d-4fcc-9d2d-175ea9d2f60f [32m200[39m in 1408ms[2m (next.js: 3ms, generate-params: 4ms, application-code: 1401ms)[22m
+{"level":"info","message":"metric.timing","timestamp":"2026-10-20T00:47:00.898Z","app":"precinho","metric":"search.query_ms","ms":943}
+{"level":"info","message":"search.completed","timestamp":"2026-10-20T00:47:00.918Z","app":"precinho","query":"sabonete dove","regionId":"32ebf460-b37e-4e79-a16b-d2f2093ae9c2","storeCount":7,"resultCount":24}
+{"level":"info","message":"metric.count","timestamp":"2026-10-20T00:47:00.918Z","app":"precinho","metric":"search.execute","value":1,"status":"ok"}
+ GET /busca?q=sabonete+dove [32m200[39m in 2.2s[2m (next.js: 4ms, application-code: 2.2s)[22m
