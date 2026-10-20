@@ -1,0 +1,79 @@
+{
+  "success": true,
+  "data": [
+    {
+      "classificacao_mercadologica_id": 3,
+      "nivel": "Departamento",
+      "parent_id": null,
+      "descricao": "Bebidas",
+      "link": "/bebidas",
+      "total_ofertas": 204,
+      "children": [
+        {
+          "classificacao_mercadologica_id": 29,
+          "nivel": "Seção",
+          "parent_id": 3,
+          "descricao": "AGUA DE COCO",
+          "link": "/bebidas/agua-de-coco",
+          "total_ofertas": 3,
+          "children": []
+        },
+        {
+          "classificacao_mercadologica_id": 30,
+          "nivel": "Seção",
+          "parent_id": 3,
+          "descricao": "AGUA MINERAL",
+          "link": "/bebidas/agua-mineral",
+          "total_ofertas": 0,
+          "children": []
+        },
+        {
+          "classificacao_mercadologica_id": 31,
+          "nivel": "Seção",
+          "parent_id": 3,
+          "descricao": "BEBIDA REFRIGERADA",
+          "link": "/bebidas/bebida-refrigerada",
+          "total_ofertas": 2,
+          "children": []
+        }
+      ]
+    },
+    {
+      "classificacao_mercadologica_id": 1,
+      "nivel": "Departamento",
+      "parent_id": null,
+      "descricao": "Açougue",
+      "link": "/acougue",
+      "total_ofertas": 27,
+      "children": [
+        {
+          "classificacao_mercadologica_id": 17,
+          "nivel": "Seção",
+          "parent_id": 1,
+          "descricao": "AVES",
+          "link": "/acougue/aves",
+          "total_ofertas": 9,
+          "children": []
+        },
+        {
+          "classificacao_mercadologica_id": 18,
+          "nivel": "Seção",
+          "parent_id": 1,
+          "descricao": "BOVINO",
+          "link": "/acougue/bovino",
+          "total_ofertas": 13,
+          "children": []
+        },
+        {
+          "classificacao_mercadologica_id": 20,
+          "nivel": "Seção",
+          "parent_id": 1,
+          "descricao": "SUINO",
+          "link": "/acougue/suino",
+          "total_ofertas": 5,
+          "children": []
+        }
+      ]
+    }
+  ]
+}
