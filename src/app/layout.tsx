@@ -10,7 +10,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR">
+    // Browser extensions write their own attributes onto <html> before React
+    // hydrates — a dark-mode one adds nighteye="disabled" — and React reports
+    // that as a hydration mismatch in our code. Suppressed on this node only,
+    // so a real mismatch anywhere inside still shows up.
+    <html lang="pt-BR" suppressHydrationWarning>
       <body className="min-h-dvh bg-surface text-ink antialiased">
         <div className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-6">
           <header>

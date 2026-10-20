@@ -18,6 +18,13 @@ export type ProductSearchHit = {
   product: Product
   /** Null when no store the shopper picked has it in stock. */
   cheapestOffer: Offer | null
+  /**
+   * Every in-stock offer, cheapest first.
+   *
+   * The listing shows the stores under the name the way the feed does, so
+   * a single price would hide the gap the comparison exists to show.
+   */
+  offers: readonly Offer[]
   /** Dearest in-stock price in cents; equals the cheapest when one store has it. */
   dearestPriceCents: number | null
   /** How many of the picked stores have it in stock. */

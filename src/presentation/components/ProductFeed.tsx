@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { ProductImage } from './ProductImage'
 import type { FeedCard } from '@/application/use-cases/GetProductFeed'
 
 /**
@@ -32,21 +33,11 @@ export function ProductFeed({ cards }: { cards: readonly FeedCard[] }) {
             className="flex flex-col overflow-hidden rounded-2xl border border-rule bg-surface"
           >
             <Link href={`/produto/${card.productId}`} className="group flex flex-col gap-3 p-4">
-              {card.imageUrl ? (
-                // Plain img: these are third-party CDNs that would each need
-                // allowlisting in next.config for the Image component.
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={card.imageUrl}
-                  alt=""
-                  loading="lazy"
-                  className="product-photo h-36 w-full self-center object-contain"
-                />
-              ) : (
-                <div className="flex h-36 w-full items-center justify-center rounded-xl bg-ground text-xs text-ink-faint">
-                  sem foto
-                </div>
-              )}
+              <ProductImage
+                src={card.imageUrl}
+                className="h-36 w-full self-center"
+                iconClassName="h-10 w-10"
+              />
 
               <div className="flex flex-col gap-0.5">
                 <span className="text-sm font-medium leading-snug group-hover:underline underline-offset-2">

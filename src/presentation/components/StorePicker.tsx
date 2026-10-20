@@ -41,9 +41,7 @@ export function StorePicker({ stores, picked, postalCode, regionId }: Props) {
 
   function toggle(storeId: string) {
     apply(
-      selected.includes(storeId)
-        ? selected.filter((id) => id !== storeId)
-        : [...selected, storeId],
+      selected.includes(storeId) ? selected.filter((id) => id !== storeId) : [...selected, storeId],
     )
   }
 

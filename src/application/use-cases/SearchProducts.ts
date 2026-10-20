@@ -8,6 +8,8 @@ import type { Metrics } from '../ports/Metrics'
 import type { ProductRepository, ProductSearchHit } from '../ports/ProductRepository'
 import type { RateLimiter } from '../ports/RateLimiter'
 import type { StoreRepository } from '../ports/StoreRepository'
+import type { StorePrice } from '../views/StorePrice'
+import { toStorePrice } from '../views/StorePrice'
 
 export type SearchProductsInput = {
   rawQuery: string
@@ -39,6 +41,14 @@ export type SearchResultItem = {
   imageUrl: string | null
   /** Null when no picked store has it in stock. */
   cheapest: CheapestOfferView | null
+  /**
+   * Every store that has it, cheapest first.
+   *
+   * The listing used to show one price, which is the answer to a question
+   * nobody asked: somebody comparing wants to see 5.19 here and 6.49
+   * there, because the gap is the point.
+   */
+  offers: readonly StorePrice[]
   availableStoreCount: number
   /** What switching stores is worth. Null when there is nothing to compare. */
   spread: { amountLabel: string; percent: number } | null
@@ -163,6 +173,7 @@ function toSearchResultItem(
     size: product.size?.label() ?? null,
     imageUrl: product.imageUrl,
     cheapest: cheapestOffer ? toCheapestView(cheapestOffer, hit, storesById) : null,
+    offers: hit.offers.map((offer, index) => toStorePrice(offer, index === 0, storesById)),
     availableStoreCount: hit.availableStoreCount,
     spread: toSpread(cheapestOffer, dearestPriceCents),
   }

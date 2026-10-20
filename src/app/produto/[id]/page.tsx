@@ -1,4 +1,5 @@
 import { Suspense } from 'react'
+import { ProductImage } from '@/presentation/components/ProductImage'
 import { headers } from 'next/headers'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
@@ -6,10 +7,7 @@ import { getWebContainer } from '@/composition/container'
 import { ContextBar } from '@/presentation/components/ContextBar'
 import { OfferTable } from '@/presentation/components/OfferTable'
 import { PostalCodeGate } from '@/presentation/components/PostalCodeGate'
-import {
-  ContextBarSkeleton,
-  ProductDetailSkeleton,
-} from '@/presentation/components/Skeletons'
+import { ContextBarSkeleton, ProductDetailSkeleton } from '@/presentation/components/Skeletons'
 import { clientKeyFromHeaders } from '@/presentation/clientKey'
 import { readPageContext } from '@/presentation/server/shoppingContext'
 
@@ -61,20 +59,11 @@ async function ProductBody({ params }: Props) {
       {result.status === 'ok' ? (
         <>
           <section className="flex flex-col gap-4 sm:flex-row sm:items-start">
-            {result.product.imageUrl ? (
-              // Plain img: each store serves its photos from its own CDN,
-              // and every one would need allowlisting for next/image.
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={result.product.imageUrl}
-                alt=""
-                className="product-photo h-44 w-44 shrink-0 self-center rounded-xl bg-surface object-contain sm:self-start"
-              />
-            ) : (
-              <div className="flex h-44 w-44 shrink-0 items-center justify-center self-center rounded-xl bg-surface text-xs text-ink-faint sm:self-start">
-                sem foto
-              </div>
-            )}
+            <ProductImage
+              src={result.product.imageUrl}
+              className="h-44 w-44 shrink-0 self-center rounded-xl sm:self-start"
+              iconClassName="h-12 w-12"
+            />
 
             <div className="flex min-w-0 flex-col gap-1">
               <h1 className="text-2xl font-semibold tracking-tight">{result.product.name}</h1>

@@ -139,6 +139,8 @@ export class InMemoryProductRepository implements ProductRepository {
     return {
       product,
       cheapestOffer: available[0] ?? null,
+      // Already cheapest-first, matching the order the SQL aggregates in.
+      offers: available,
       dearestPriceCents: available[available.length - 1]?.price.cents ?? null,
       availableStoreCount: available.length,
     }

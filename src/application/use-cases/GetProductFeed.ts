@@ -2,6 +2,8 @@ import type { Offer } from '@/domain/entities/Offer'
 import type { Product } from '@/domain/entities/Product'
 import type { Store } from '@/domain/entities/Store'
 import { Money } from '@/domain/value-objects/Money'
+import type { StorePrice } from '../views/StorePrice'
+import { toStorePrice } from '../views/StorePrice'
 import type { Logger } from '../ports/Logger'
 import type { Metrics } from '../ports/Metrics'
 import type { ProductFeedEntry, ProductRepository } from '../ports/ProductRepository'
@@ -17,13 +19,8 @@ export type GetProductFeedInput = {
   clientKey: string
 }
 
-export type FeedCardOffer = {
-  storeId: string
-  storeName: string
-  priceLabel: string
-  url: string
-  isCheapest: boolean
-}
+/** Kept as a name the screens already import; the shape is shared. */
+export type FeedCardOffer = StorePrice
 
 /** One card: a picture, a name, and the stores that carry it. */
 export type FeedCard = {
@@ -138,24 +135,10 @@ function toCard(entry: ProductFeedEntry, storesById: Map<string, Store>): FeedCa
     brand: entry.product.brand,
     size: entry.product.size?.label() ?? null,
     imageUrl: entry.product.imageUrl,
-    offers: entry.offers.map((offer, index) => toCardOffer(offer, index === 0, storesById)),
+    offers: entry.offers.map((offer, index) => toStorePrice(offer, index === 0, storesById)),
     savingsLabel: Money.fromCents(entry.spreadCents).format(),
     // On the cheapest offer only: the card is an argument for one price.
     unitPriceLabel: unitPriceOf(cheapest, entry.product),
-  }
-}
-
-function toCardOffer(
-  offer: Offer,
-  isCheapest: boolean,
-  storesById: Map<string, Store>,
-): FeedCardOffer {
-  return {
-    storeId: offer.storeId,
-    storeName: storesById.get(offer.storeId)?.name ?? offer.storeId,
-    priceLabel: offer.price.format(),
-    url: offer.url,
-    isCheapest,
   }
 }
 

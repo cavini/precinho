@@ -28,6 +28,12 @@ type SearchRow = {
   cheapest_collected_at: string | null
   dearest_price_cents: number | null
   available_store_count: number
+  offers: Array<{
+    store_id: string
+    price_cents: number
+    url: string
+    collected_at: string
+  }> | null
 }
 
 /** One row of product_feed. */
@@ -173,6 +179,18 @@ export class SupabaseProductRepository implements ProductRepository {
     return {
       product: toProduct(row),
       cheapestOffer: this.toCheapestOffer(row),
+      offers: (row.offers ?? []).flatMap((offer) => {
+        const mapped = toOffer({
+          store_id: offer.store_id,
+          price_cents: offer.price_cents,
+          list_price_cents: null,
+          url: offer.url,
+          // The function only aggregates in-stock offers.
+          in_stock: true,
+          collected_at: offer.collected_at,
+        })
+        return mapped ? [mapped] : []
+      }),
       dearestPriceCents: row.dearest_price_cents,
       availableStoreCount: row.available_store_count,
     }
