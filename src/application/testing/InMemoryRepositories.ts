@@ -61,9 +61,9 @@ export class InMemoryProductRepository implements ProductRepository {
         criteria.query.tokens.every((token) => startsAWord(product.searchText, token)),
       )
       .map((product) => this.toHit(product, storeIds))
-      .sort(byAvailabilityThenName)
+      .sort(byComparability)
 
-    return hits.slice(0, criteria.limit)
+    return hits.slice(criteria.offset, criteria.offset + criteria.limit)
   }
 
   async feed(criteria: FeedCriteria): Promise<readonly ProductFeedEntry[]> {
@@ -169,10 +169,33 @@ function startsAWord(text: string, token: string): boolean {
  * stable order is worth more than a guessed one. Trigram ranking is a later
  * slice, and when it lands it lands in both implementations at once.
  */
-function byAvailabilityThenName(a: ProductSearchHit, b: ProductSearchHit): number {
-  const aHas = a.availableStoreCount > 0
-  const bHas = b.availableStoreCount > 0
-  if (aHas !== bHas) return aHas ? -1 : 1
+/**
+ * The same ranking search_products applies, because this repository is the
+ * contract in TypeScript and the SQL is the contract in Postgres — a
+ * difference between them is a bug in one of the two, which is what the
+ * contract test exists to catch.
+ *
+ * Most shops first, then the widest disagreement, then having a photo,
+ * then name. Alphabetical alone put Arroz Arbóreo Riso Scotti — one shop,
+ * no comparison — at the top of a search for "arroz".
+ */
+function byComparability(a: ProductSearchHit, b: ProductSearchHit): number {
+  if (a.availableStoreCount !== b.availableStoreCount) {
+    return b.availableStoreCount - a.availableStoreCount
+  }
+
+  const spread = spreadOf(b) - spreadOf(a)
+  if (spread !== 0) return spread
+
+  const aPhoto = a.product.imageUrl !== null
+  const bPhoto = b.product.imageUrl !== null
+  if (aPhoto !== bPhoto) return aPhoto ? -1 : 1
 
   return a.product.name.localeCompare(b.product.name) || a.product.id.localeCompare(b.product.id)
+}
+
+/** Dearest minus cheapest, or zero when there is nothing to compare. */
+function spreadOf(hit: ProductSearchHit): number {
+  if (hit.dearestPriceCents === null || !hit.cheapestOffer) return 0
+  return hit.dearestPriceCents - hit.cheapestOffer.price.cents
 }

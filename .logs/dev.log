@@ -1,0 +1,91 @@
+
+> precinho@0.1.0 dev
+> next dev
+
+[1m[38;2;173;127;168m▲ Next.js 16.4.2[39m[22m (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.0.163:3000
+- Environments: .env.local
+[32m[1m✓[22m[39m Ready in 355ms
+[32m[1m✓[22m[39m Running next.config.ts took 23ms
+- Cache Components enabled
+- Partial Prefetching enabled
+
+{"level":"info","message":"metric.timing","timestamp":"2026-10-20T00:29:40.668Z","app":"precinho","metric":"search.query_ms","ms":1405}
+{"level":"info","message":"search.completed","timestamp":"2026-10-20T00:29:40.678Z","app":"precinho","query":"sabonete","regionId":"32ebf460-b37e-4e79-a16b-d2f2093ae9c2","storeCount":7,"resultCount":24}
+{"level":"info","message":"metric.count","timestamp":"2026-10-20T00:29:40.679Z","app":"precinho","metric":"search.execute","value":1,"status":"ok"}
+ GET /busca?q=sabonete [32m200[39m in 2.7s[2m (next.js: 145ms, application-code: 2.6s)[22m
+{"level":"info","message":"metric.timing","timestamp":"2026-10-20T00:29:40.738Z","app":"precinho","metric":"search.query_ms","ms":959}
+{"level":"info","message":"search.completed","timestamp":"2026-10-20T00:29:40.745Z","app":"precinho","query":"sabonete","regionId":"32ebf460-b37e-4e79-a16b-d2f2093ae9c2","storeCount":7,"resultCount":24}
+{"level":"info","message":"metric.count","timestamp":"2026-10-20T00:29:40.745Z","app":"precinho","metric":"search.execute","value":1,"status":"ok"}
+ GET /busca?q=sabonete [32m200[39m in 2.3s[2m (next.js: 3ms, application-code: 2.3s)[22m
+{"level":"info","message":"feed.completed","timestamp":"2026-10-20T00:29:41.321Z","app":"precinho","regionId":"32ebf460-b37e-4e79-a16b-d2f2093ae9c2","storeCount":7,"cardCount":12,"offset":0}
+{"level":"info","message":"metric.count","timestamp":"2026-10-20T00:29:41.323Z","app":"precinho","metric":"feed.execute","value":1,"status":"ok"}
+ GET / [32m200[39m in 2.8s[2m (next.js: 27ms, application-code: 2.8s)[22m
+{"level":"info","message":"metric.timing","timestamp":"2026-10-20T00:29:41.472Z","app":"precinho","metric":"search.query_ms","ms":1041}
+{"level":"info","message":"search.completed","timestamp":"2026-10-20T00:29:41.478Z","app":"precinho","query":"arroz","regionId":"32ebf460-b37e-4e79-a16b-d2f2093ae9c2","storeCount":7,"resultCount":24}
+{"level":"info","message":"metric.count","timestamp":"2026-10-20T00:29:41.478Z","app":"precinho","metric":"search.execute","value":1,"status":"ok"}
+ GET /busca?q=arroz [32m200[39m in 3.1s[2m (next.js: 1.0ms, application-code: 3.1s)[22m
+{"level":"info","message":"metric.timing","timestamp":"2026-10-20T00:29:42.714Z","app":"precinho","metric":"search.query_ms","ms":873}
+{"level":"info","message":"search.completed","timestamp":"2026-10-20T00:29:43.101Z","app":"precinho","query":"sabonete","regionId":"32ebf460-b37e-4e79-a16b-d2f2093ae9c2","storeCount":7,"resultCount":24}
+{"level":"info","message":"metric.count","timestamp":"2026-10-20T00:29:43.102Z","app":"precinho","metric":"search.execute","value":1,"status":"ok"}
+ GET /api/busca?q=sabonete&offset=24 [32m200[39m in 2.2s[2m (next.js: 80ms, application-code: 2.1s)[22m
+{"level":"info","message":"metric.timing","timestamp":"2026-10-20T00:29:46.933Z","app":"precinho","metric":"search.query_ms","ms":526}
+{"level":"info","message":"search.completed","timestamp":"2026-10-20T00:29:47.106Z","app":"precinho","query":"sabonete","regionId":"32ebf460-b37e-4e79-a16b-d2f2093ae9c2","storeCount":7,"resultCount":24}
+{"level":"info","message":"metric.count","timestamp":"2026-10-20T00:29:47.106Z","app":"precinho","metric":"search.execute","value":1,"status":"ok"}
+ GET /api/busca?q=sabonete&offset=48 [32m200[39m in 1756ms[2m (next.js: 1.9ms, application-code: 1754ms)[22m
+{"level":"info","message":"metric.timing","timestamp":"2026-10-20T00:29:50.646Z","app":"precinho","metric":"search.query_ms","ms":861}
+{"level":"info","message":"search.completed","timestamp":"2026-10-20T00:29:51.071Z","app":"precinho","query":"sabonete","regionId":"32ebf460-b37e-4e79-a16b-d2f2093ae9c2","storeCount":7,"resultCount":24}
+{"level":"info","message":"metric.count","timestamp":"2026-10-20T00:29:51.071Z","app":"precinho","metric":"search.execute","value":1,"status":"ok"}
+ GET /api/busca?q=sabonete&offset=72 [32m200[39m in 2.0s[2m (next.js: 3ms, application-code: 2.0s)[22m
+{"level":"info","message":"metric.timing","timestamp":"2026-10-20T00:29:54.067Z","app":"precinho","metric":"search.query_ms","ms":793}
+ GET / [32m200[39m in 53ms[2m (next.js: 3ms, application-code: 51ms)[22m
+{"level":"info","message":"search.completed","timestamp":"2026-10-20T00:29:54.511Z","app":"precinho","query":"sabonete","regionId":"32ebf460-b37e-4e79-a16b-d2f2093ae9c2","storeCount":7,"resultCount":24}
+{"level":"info","message":"metric.count","timestamp":"2026-10-20T00:29:54.511Z","app":"precinho","metric":"search.execute","value":1,"status":"ok"}
+ GET /api/busca?q=sabonete&offset=96 [32m200[39m in 1738ms[2m (next.js: 0.8ms, application-code: 1737ms)[22m
+{"level":"info","message":"metric.timing","timestamp":"2026-10-20T00:29:58.787Z","app":"precinho","metric":"search.query_ms","ms":653}
+{"level":"info","message":"search.completed","timestamp":"2026-10-20T00:29:58.957Z","app":"precinho","query":"sabonete","regionId":"32ebf460-b37e-4e79-a16b-d2f2093ae9c2","storeCount":7,"resultCount":24}
+{"level":"info","message":"metric.count","timestamp":"2026-10-20T00:29:58.958Z","app":"precinho","metric":"search.execute","value":1,"status":"ok"}
+ GET /api/busca?q=sabonete&offset=120 [32m200[39m in 1493ms[2m (next.js: 3ms, application-code: 1490ms)[22m
+{"level":"info","message":"metric.timing","timestamp":"2026-10-20T00:30:01.868Z","app":"precinho","metric":"search.query_ms","ms":1601}
+{"level":"info","message":"search.completed","timestamp":"2026-10-20T00:30:01.877Z","app":"precinho","query":"sabonete","regionId":"32ebf460-b37e-4e79-a16b-d2f2093ae9c2","storeCount":7,"resultCount":24}
+{"level":"info","message":"metric.count","timestamp":"2026-10-20T00:30:01.878Z","app":"precinho","metric":"search.execute","value":1,"status":"ok"}
+ GET /busca?q=sabonete [32m200[39m in 2.3s[2m (next.js: 1.6ms, application-code: 2.3s)[22m
+{"level":"info","message":"metric.timing","timestamp":"2026-10-20T00:30:11.154Z","app":"precinho","metric":"search.query_ms","ms":1057}
+{"level":"info","message":"metric.timing","timestamp":"2026-10-20T00:30:11.751Z","app":"precinho","metric":"search.query_ms","ms":554}
+{"level":"info","message":"search.completed","timestamp":"2026-10-20T00:30:11.968Z","app":"precinho","query":"sabonete","regionId":"32ebf460-b37e-4e79-a16b-d2f2093ae9c2","storeCount":7,"resultCount":24}
+{"level":"info","message":"metric.count","timestamp":"2026-10-20T00:30:11.969Z","app":"precinho","metric":"search.execute","value":1,"status":"ok"}
+ GET /api/busca?q=sabonete&offset=24 [32m200[39m in 5.1s[2m (next.js: 4ms, application-code: 5.1s)[22m
+{"level":"info","message":"search.completed","timestamp":"2026-10-20T00:30:12.209Z","app":"precinho","query":"sabonete","regionId":"32ebf460-b37e-4e79-a16b-d2f2093ae9c2","storeCount":7,"resultCount":24}
+{"level":"info","message":"metric.count","timestamp":"2026-10-20T00:30:12.218Z","app":"precinho","metric":"search.execute","value":1,"status":"ok"}
+ GET /api/busca?q=sabonete&offset=144 [32m200[39m in 11.5s[2m (next.js: 3ms, application-code: 11.5s)[22m
+{"level":"info","message":"metric.timing","timestamp":"2026-10-20T00:30:16.585Z","app":"precinho","metric":"search.query_ms","ms":2525}
+{"level":"info","message":"search.completed","timestamp":"2026-10-20T00:30:16.764Z","app":"precinho","query":"sabonete","regionId":"32ebf460-b37e-4e79-a16b-d2f2093ae9c2","storeCount":7,"resultCount":24}
+{"level":"info","message":"metric.count","timestamp":"2026-10-20T00:30:16.765Z","app":"precinho","metric":"search.execute","value":1,"status":"ok"}
+ GET /api/busca?q=sabonete&offset=24 [32m200[39m in 4.8s[2m (next.js: 2ms, application-code: 4.8s)[22m
+{"level":"info","message":"metric.timing","timestamp":"2026-10-20T00:30:18.578Z","app":"precinho","metric":"search.query_ms","ms":826}
+{"level":"info","message":"search.completed","timestamp":"2026-10-20T00:30:20.016Z","app":"precinho","query":"sabonete","regionId":"32ebf460-b37e-4e79-a16b-d2f2093ae9c2","storeCount":7,"resultCount":24}
+{"level":"info","message":"metric.count","timestamp":"2026-10-20T00:30:20.016Z","app":"precinho","metric":"search.execute","value":1,"status":"ok"}
+ GET /api/busca?q=sabonete&offset=48 [32m200[39m in 2.8s[2m (next.js: 0.6ms, application-code: 2.8s)[22m
+{"level":"info","message":"metric.timing","timestamp":"2026-10-20T00:30:22.892Z","app":"precinho","metric":"search.query_ms","ms":816}
+{"level":"info","message":"search.completed","timestamp":"2026-10-20T00:30:23.065Z","app":"precinho","query":"sabonete","regionId":"32ebf460-b37e-4e79-a16b-d2f2093ae9c2","storeCount":7,"resultCount":24}
+{"level":"info","message":"metric.count","timestamp":"2026-10-20T00:30:23.069Z","app":"precinho","metric":"search.execute","value":1,"status":"ok"}
+ GET /api/busca?q=sabonete&offset=72 [32m200[39m in 1950ms[2m (next.js: 1.8ms, application-code: 1948ms)[22m
+{"level":"info","message":"metric.timing","timestamp":"2026-10-20T00:30:24.772Z","app":"precinho","metric":"search.query_ms","ms":532}
+{"level":"info","message":"search.completed","timestamp":"2026-10-20T00:30:24.956Z","app":"precinho","query":"sabonete","regionId":"32ebf460-b37e-4e79-a16b-d2f2093ae9c2","storeCount":7,"resultCount":24}
+{"level":"info","message":"metric.count","timestamp":"2026-10-20T00:30:24.958Z","app":"precinho","metric":"search.execute","value":1,"status":"ok"}
+ GET /api/busca?q=sabonete&offset=96 [32m200[39m in 1249ms[2m (next.js: 2ms, application-code: 1247ms)[22m
+{"level":"info","message":"metric.timing","timestamp":"2026-10-20T00:30:27.961Z","app":"precinho","metric":"search.query_ms","ms":524}
+{"level":"info","message":"search.completed","timestamp":"2026-10-20T00:30:28.182Z","app":"precinho","query":"sabonete","regionId":"32ebf460-b37e-4e79-a16b-d2f2093ae9c2","storeCount":7,"resultCount":24}
+{"level":"info","message":"metric.count","timestamp":"2026-10-20T00:30:28.182Z","app":"precinho","metric":"search.execute","value":1,"status":"ok"}
+ GET /api/busca?q=sabonete&offset=168 [32m200[39m in 1594ms[2m (next.js: 1.9ms, application-code: 1592ms)[22m
+{"level":"info","message":"product_detail.completed","timestamp":"2026-10-20T00:30:29.749Z","app":"precinho","productId":"ef3c04a0-d8de-4376-9dd8-104dc58b77c4","regionId":"32ebf460-b37e-4e79-a16b-d2f2093ae9c2","offerCount":1,"cheapestStoreId":"175540d3-0c1b-4221-a124-92c2aafd1390"}
+{"level":"info","message":"metric.count","timestamp":"2026-10-20T00:30:29.749Z","app":"precinho","metric":"product_detail.execute","value":1,"status":"ok"}
+ GET /produto/ef3c04a0-d8de-4376-9dd8-104dc58b77c4 [32m200[39m in 1421ms[2m (next.js: 14ms, generate-params: 477ms, application-code: 931ms)[22m
+{"level":"info","message":"metric.timing","timestamp":"2026-10-20T00:30:33.798Z","app":"precinho","metric":"search.query_ms","ms":816}
+{"level":"info","message":"search.completed","timestamp":"2026-10-20T00:30:34.005Z","app":"precinho","query":"sabonete","regionId":"32ebf460-b37e-4e79-a16b-d2f2093ae9c2","storeCount":7,"resultCount":24}
+{"level":"info","message":"metric.count","timestamp":"2026-10-20T00:30:34.005Z","app":"precinho","metric":"search.execute","value":1,"status":"ok"}
+ GET /api/busca?q=sabonete&offset=192 [32m200[39m in 1656ms[2m (next.js: 1.9ms, application-code: 1655ms)[22m
+{"level":"info","message":"product_detail.completed","timestamp":"2026-10-20T00:30:36.096Z","app":"precinho","productId":"5015af00-6804-4542-bbbf-9951c4a40d73","regionId":"32ebf460-b37e-4e79-a16b-d2f2093ae9c2","offerCount":1,"cheapestStoreId":"99909ddc-4047-4dd4-8e15-e6ff118e007b"}
+{"level":"info","message":"metric.count","timestamp":"2026-10-20T00:30:36.098Z","app":"precinho","metric":"product_detail.execute","value":1,"status":"ok"}
+ GET /produto/5015af00-6804-4542-bbbf-9951c4a40d73 [32m200[39m in 1025ms[2m (next.js: 5ms, generate-params: 9ms, application-code: 1011ms)[22m

@@ -37,6 +37,8 @@ export type SearchCriteria = {
   /** The stores the shopper picked. Never empty — the caller resolves the default. */
   storeIds: readonly string[]
   limit: number
+  /** How many results to skip. The ranking is stable, so this is safe. */
+  offset: number
 }
 
 /**

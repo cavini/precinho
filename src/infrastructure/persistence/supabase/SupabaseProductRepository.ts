@@ -89,6 +89,7 @@ export class SupabaseProductRepository implements ProductRepository {
       p_region_id: criteria.regionId,
       p_store_ids: criteria.storeIds,
       p_limit: criteria.limit,
+      p_offset: criteria.offset,
     })
 
     if (error) {
