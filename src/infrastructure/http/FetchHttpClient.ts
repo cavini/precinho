@@ -123,7 +123,11 @@ export class FetchHttpClient implements HttpClient {
       })
 
       if (!response.ok) {
-        return { status: 'http-error', statusCode: response.status }
+        return {
+          status: 'http-error',
+          statusCode: response.status,
+          body: await readReason(response),
+        }
       }
 
       try {
@@ -143,6 +147,33 @@ export class FetchHttpClient implements HttpClient {
     } finally {
       clearTimeout(timer)
     }
+  }
+}
+
+/**
+ * How much of a failed response to carry back.
+ *
+ * Enough for an API's own explanation, not enough for a page of HTML in a
+ * log line.
+ */
+const MAX_REASON_LENGTH = 400
+
+/**
+ * The server's explanation, when it gave one.
+ *
+ * Never throws: a body that cannot be read is a missing reason, not a
+ * second failure on top of the first.
+ *
+ * Complexity: O(1) in the truncated length.
+ */
+async function readReason(response: Response): Promise<string | undefined> {
+  try {
+    const text = (await response.text()).trim()
+    if (text === '') return undefined
+
+    return text.length > MAX_REASON_LENGTH ? `${text.slice(0, MAX_REASON_LENGTH)}…` : text
+  } catch {
+    return undefined
   }
 }
 

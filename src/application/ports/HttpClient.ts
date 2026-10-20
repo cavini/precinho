@@ -19,7 +19,23 @@ export type HttpJsonResponse =
       headers: Readonly<Record<string, string>>
     }
   /** Reached the server, it said no. */
-  | { status: 'http-error'; statusCode: number }
+  | {
+      status: 'http-error'
+      statusCode: number
+      /**
+       * The start of the body, when the server sent one.
+       *
+       * A 4xx almost always says why, and throwing it away costs the next
+       * person an hour. An Anthropic 400 reading "this API key is not
+       * scoped to a workspace" reached the log as "http-error 400" and
+       * nothing else, twice, and the message only appeared on a request
+       * made by hand outside the collector.
+       *
+       * Truncated: this goes into log lines, and a 500 can answer with a
+       * whole HTML error page.
+       */
+      body?: string
+    }
   /** Never got an answer: DNS, TLS, connection reset. */
   | { status: 'network-error'; reason: string }
   | { status: 'timeout' }

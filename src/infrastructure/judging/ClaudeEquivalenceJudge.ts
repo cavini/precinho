@@ -95,6 +95,10 @@ export class ClaudeEquivalenceJudge implements ProductEquivalenceJudge {
       this.logger.warn('judge.request_failed', {
         result: response.status,
         statusCode: 'statusCode' in response ? response.statusCode : null,
+        // The API says why — that the key has no workspace, that the
+        // balance is empty — and reading it out of the log beats
+        // reproducing the request by hand to find out.
+        reason: 'body' in response ? (response.body ?? null) : null,
         asked: questions.length,
       })
       return []
