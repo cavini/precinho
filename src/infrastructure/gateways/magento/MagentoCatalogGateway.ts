@@ -183,6 +183,23 @@ export class MagentoCatalogGateway implements StoreCatalogGateway {
    *
    * Complexity: one request, O(n) over the products returned.
    */
+  /**
+   * A product link that lands in the right town.
+   *
+   * Magento serves each store view under its own path segment, and
+   * without it the shop falls back to its default: a Taubaté price linked
+   * to tauste.com.br/{produto}.html opens Marília's page, which is a
+   * different price for the same product. Verified in a browser — a
+   * plain fetch of either form is redirected home by their branch module,
+   * so this is not visible from curl.
+   *
+   * Complexity: O(1).
+   */
+  private productUrl(urlKey: string, suffix: string): string {
+    const prefix = this.config.storeView ? `${this.config.storeView}/` : ''
+    return `https://${this.config.host}/${prefix}${urlKey}${suffix}`
+  }
+
   async searchCategory(
     categoryUid: string,
     page: number,
@@ -260,7 +277,7 @@ export class MagentoCatalogGateway implements StoreCatalogGateway {
         typeof (item.small_image as { url?: unknown } | undefined)?.url === 'string'
           ? (item.small_image as { url: string }).url
           : null,
-      url: `https://${this.config.host}/${urlKey}${suffix}`,
+      url: this.productUrl(urlKey, suffix),
       priceReais: price,
       listPriceReais: regular !== null && regular > price ? regular : null,
       inStock: item.stock_status === 'IN_STOCK',
