@@ -40,6 +40,7 @@ export class SupabaseCatalogWriter implements CatalogWriter {
    */
   async upsertProducts(products: readonly ProductUpsert[]): Promise<ReadonlyMap<string, string>> {
     const ids = new Map<string, string>()
+    let matched = 0
 
     // Two ways a product already here can be recognised. The name is the
     // durable one — a shop republishes the same string every sweep —
@@ -58,8 +59,12 @@ export class SupabaseCatalogWriter implements CatalogWriter {
       const fresh: ProductUpsert[] = []
       for (const product of chunk) {
         const known = absorbed.get(product.matchKey) ?? byName.get(product.name)
-        if (known) ids.set(product.matchKey, known)
-        else fresh.push(product)
+        if (known) {
+          ids.set(product.matchKey, known)
+          matched += 1
+        } else {
+          fresh.push(product)
+        }
       }
 
       if (fresh.length === 0) continue
@@ -97,6 +102,16 @@ export class SupabaseCatalogWriter implements CatalogWriter {
         ids.set(row.match_key, row.id)
       }
     }
+
+    // The number that says how much reconciling tomorrow will cost. A
+    // sweep that recognises everything it sees creates no new pairs to
+    // judge; one that creates hundreds of rows creates work. Without it
+    // the only way to know was to count the catalogue before and after.
+    this.logger.info('collector.products_written', {
+      seen: products.length,
+      matched,
+      created: products.length - matched,
+    })
 
     return ids
   }

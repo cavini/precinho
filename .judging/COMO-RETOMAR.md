@@ -1,4 +1,27 @@
-# Resuming the judging run
+# The judging pipeline
+
+## After every collection
+
+    npm run reconcile
+
+Applies verdicts already decided — free, and skipping it leaves a
+grouping unapplied, which is a duplicate on somebody's screen — then
+prints how many pairs nobody has judged yet.
+
+Judging is the part that costs, so it is never automatic. What drives
+its cost is how many *new names* a sweep brings in, not how big the
+catalogue is: a shop that publishes the same strings it published
+yesterday produces no new pairs at all. Measured on a full sweep of Oba
+Taubaté after the first run: 5,211 products seen, one new row. The
+collector logs `collector.products_written` with `matched` and `created`
+on every run, so the number is visible without counting the catalogue
+before and after.
+
+New chains are the exception — adding Shibata and Nagumo put two whole
+catalogues of unseen names in at once, and that is a backlog, not a
+daily cost.
+
+# Resuming a judging run
 
 18 of 30 batches are judged. Everything judged is already in the database;
 the remaining work is `lote-18` through `lote-29`, about 18,000 pairs.
