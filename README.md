@@ -16,10 +16,10 @@ what is stored is what somebody at that address would actually pay.
 
 Measured on 2026-10-19, same barcode, same week, two São Paulo chains:
 
-| Product | Mambo | Hortifruti |
-|---|---|---|
-| Coca-Cola 2L | R$ 14,98 | **R$ 10,49** |
-| Coca-Cola 600ml | R$ 6,89 | **R$ 5,69** |
+| Product         | Mambo    | Hortifruti   |
+| --------------- | -------- | ------------ |
+| Coca-Cola 2L    | R$ 14,98 | **R$ 10,49** |
+| Coca-Cola 600ml | R$ 6,89  | **R$ 5,69**  |
 
 That 30% is the whole reason this exists.
 
@@ -154,13 +154,22 @@ website shows you, read politely and attributed with a link back. Every price
 on the site links to the store's product page, and the footer says to confirm
 there before buying.
 
+Not every chain can be read. `docs/chains-ruled-out.md` records the ones
+investigated and found to publish no structured prices, with the evidence,
+so the same couple of hours is not spent twice.
+
 ## What is not built yet
 
-- Relevance ranking. Search requires every token to match and then orders by
-  name, which is predictable but not clever. Trigram similarity is the obvious
-  next step, and it has to land in both the SQL function and the in-memory
-  reference implementation at once.
+- Relevance ranking. Search requires every token to match, then ranks by how
+  many shops carry the product and how much they disagree. That surfaces real
+  comparisons, but it is not relevance: trigram similarity is the obvious next
+  step, and it has to land in the SQL function and the in-memory reference
+  implementation at once.
 - Price history is being recorded but nothing reads it yet.
-- One platform (`vtex-legacy`). The gateway is an interface, so a second is a
-  new adapter rather than an edit.
-- End-to-end browser tests. The layers below are covered; the screens are not.
+- Approximate matching. A barcode merges across shops, and so does a full
+  catalogue name with a pack size, which covers most of the catalogue. Two
+  shops that name the same packaged item differently still produce two rows;
+  `ApproximateProductMatcher` exists for that case and is not yet wired in.
+- End-to-end browser tests. The layers below are covered; the screens are not,
+  and every visual fault so far has been found by a person rather than a
+  test.
