@@ -89,3 +89,39 @@
 {"level":"info","message":"product_detail.completed","timestamp":"2026-10-20T00:30:36.096Z","app":"precinho","productId":"5015af00-6804-4542-bbbf-9951c4a40d73","regionId":"32ebf460-b37e-4e79-a16b-d2f2093ae9c2","offerCount":1,"cheapestStoreId":"99909ddc-4047-4dd4-8e15-e6ff118e007b"}
 {"level":"info","message":"metric.count","timestamp":"2026-10-20T00:30:36.098Z","app":"precinho","metric":"product_detail.execute","value":1,"status":"ok"}
  GET /produto/5015af00-6804-4542-bbbf-9951c4a40d73 [32m200[39m in 1025ms[2m (next.js: 5ms, generate-params: 9ms, application-code: 1011ms)[22m
+{"level":"info","message":"product_detail.completed","timestamp":"2026-10-20T00:31:03.929Z","app":"precinho","productId":"add40863-f57d-49ca-bd81-a3adcdbba628","regionId":"32ebf460-b37e-4e79-a16b-d2f2093ae9c2","offerCount":1,"cheapestStoreId":"95919487-4c7d-4f77-83a9-a19285f821ab"}
+{"level":"info","message":"metric.count","timestamp":"2026-10-20T00:31:03.931Z","app":"precinho","metric":"product_detail.execute","value":1,"status":"ok"}
+ GET /produto/add40863-f57d-49ca-bd81-a3adcdbba628 [32m200[39m in 1419ms[2m (next.js: 3ms, generate-params: 3ms, application-code: 1413ms)[22m
+[32m[1m✓[22m[39m Compiled in 63ms
+{"level":"info","message":"product_detail.completed","timestamp":"2026-10-20T00:31:57.577Z","app":"precinho","productId":"add40863-f57d-49ca-bd81-a3adcdbba628","regionId":"32ebf460-b37e-4e79-a16b-d2f2093ae9c2","offerCount":1,"cheapestStoreId":"95919487-4c7d-4f77-83a9-a19285f821ab"}
+{"level":"info","message":"metric.count","timestamp":"2026-10-20T00:31:57.577Z","app":"precinho","metric":"product_detail.execute","value":1,"status":"ok"}
+ GET /produto/add40863-f57d-49ca-bd81-a3adcdbba628 [32m200[39m in 1865ms[2m (next.js: 2ms, generate-params: 3ms, application-code: 1860ms)[22m
+{"level":"info","message":"metric.timing","timestamp":"2026-10-20T00:32:14.076Z","app":"precinho","metric":"search.query_ms","ms":491}
+{"level":"info","message":"search.completed","timestamp":"2026-10-20T00:32:14.088Z","app":"precinho","query":"sabonete nivea","regionId":"32ebf460-b37e-4e79-a16b-d2f2093ae9c2","storeCount":7,"resultCount":24}
+{"level":"info","message":"metric.count","timestamp":"2026-10-20T00:32:14.088Z","app":"precinho","metric":"search.execute","value":1,"status":"ok"}
+ GET /busca?q=sabonete+nivea [32m200[39m in 1567ms[2m (next.js: 1.9ms, application-code: 1565ms)[22m
+{"level":"info","message":"metric.timing","timestamp":"2026-10-20T00:33:34.200Z","app":"precinho","metric":"search.query_ms","ms":3013}
+{"level":"info","message":"search.completed","timestamp":"2026-10-20T00:33:34.208Z","app":"precinho","query":"sabonete","regionId":"32ebf460-b37e-4e79-a16b-d2f2093ae9c2","storeCount":7,"resultCount":24}
+{"level":"info","message":"metric.count","timestamp":"2026-10-20T00:33:34.208Z","app":"precinho","metric":"search.execute","value":1,"status":"ok"}
+ GET /busca?q=sabonete [32m200[39m in 4.6s[2m (next.js: 7ms, application-code: 4.6s)[22m
+{"level":"info","message":"metric.timing","timestamp":"2026-10-20T00:33:35.732Z","app":"precinho","metric":"search.query_ms","ms":547}
+{"level":"info","message":"search.completed","timestamp":"2026-10-20T00:33:35.903Z","app":"precinho","query":"sabonete","regionId":"32ebf460-b37e-4e79-a16b-d2f2093ae9c2","storeCount":7,"resultCount":24}
+{"level":"info","message":"metric.count","timestamp":"2026-10-20T00:33:35.903Z","app":"precinho","metric":"search.execute","value":1,"status":"ok"}
+ GET /api/busca?q=sabonete&offset=24 [32m200[39m in 1527ms[2m (next.js: 0.8ms, application-code: 1526ms)[22m
+{"level":"info","message":"metric.timing","timestamp":"2026-10-20T00:33:54.747Z","app":"precinho","metric":"search.query_ms","ms":592}
+{"level":"info","message":"search.completed","timestamp":"2026-10-20T00:33:55.161Z","app":"precinho","query":"sabonete","regionId":"32ebf460-b37e-4e79-a16b-d2f2093ae9c2","storeCount":7,"resultCount":24}
+{"level":"info","message":"metric.count","timestamp":"2026-10-20T00:33:55.162Z","app":"precinho","metric":"search.execute","value":1,"status":"ok"}
+ GET /api/busca?q=sabonete&offset=48 [32m200[39m in 1878ms[2m (next.js: 7ms, application-code: 1872ms)[22m
+{"level":"info","message":"metric.timing","timestamp":"2026-10-20T00:33:57.865Z","app":"precinho","metric":"search.query_ms","ms":511}
+{"level":"info","message":"search.completed","timestamp":"2026-10-20T00:33:58.060Z","app":"precinho","query":"sabonete","regionId":"32ebf460-b37e-4e79-a16b-d2f2093ae9c2","storeCount":7,"resultCount":24}
+{"level":"info","message":"metric.count","timestamp":"2026-10-20T00:33:58.062Z","app":"precinho","metric":"search.execute","value":1,"status":"ok"}
+ GET /api/busca?q=sabonete&offset=72 [32m200[39m in 1290ms[2m (next.js: 2.0ms, application-code: 1288ms)[22m
+{"level":"info","message":"feed.completed","timestamp":"2026-10-20T00:34:10.801Z","app":"precinho","regionId":"32ebf460-b37e-4e79-a16b-d2f2093ae9c2","storeCount":7,"cardCount":12,"offset":0}
+{"level":"info","message":"metric.count","timestamp":"2026-10-20T00:34:10.805Z","app":"precinho","metric":"feed.execute","value":1,"status":"ok"}
+ GET / [32m200[39m in 2.5s[2m (next.js: 5ms, application-code: 2.5s)[22m
+{"level":"info","message":"feed.completed","timestamp":"2026-10-20T00:34:13.766Z","app":"precinho","regionId":"32ebf460-b37e-4e79-a16b-d2f2093ae9c2","storeCount":7,"cardCount":12,"offset":12}
+{"level":"info","message":"metric.count","timestamp":"2026-10-20T00:34:13.773Z","app":"precinho","metric":"feed.execute","value":1,"status":"ok"}
+ GET /api/feed?offset=12 [32m200[39m in 1365ms[2m (next.js: 23ms, application-code: 1342ms)[22m
+{"level":"info","message":"feed.completed","timestamp":"2026-10-20T00:34:15.263Z","app":"precinho","regionId":"32ebf460-b37e-4e79-a16b-d2f2093ae9c2","storeCount":6,"cardCount":12,"offset":0}
+{"level":"info","message":"metric.count","timestamp":"2026-10-20T00:34:15.265Z","app":"precinho","metric":"feed.execute","value":1,"status":"ok"}
+ GET / [32m200[39m in 1049ms[2m (next.js: 2ms, application-code: 1047ms)[22m

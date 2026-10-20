@@ -81,7 +81,7 @@ export function ResultList({
             would be an <a> inside an <a>, which is invalid HTML and makes
             React complain about hydration.
           */}
-          {item.offers.length > 1 && (
+          {item.offers.length > 0 && (
             <ul className="mt-2 flex flex-col gap-1 pl-24">
               {item.offers.map((offer) => (
                 <li key={offer.storeId} className="flex items-baseline justify-between gap-3">

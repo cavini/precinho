@@ -1,4 +1,5 @@
 import type { Offer } from '@/domain/entities/Offer'
+import { ComparablePrices } from '@/domain/services/ComparablePrices'
 import type { Product } from '@/domain/entities/Product'
 import type { Region } from '@/domain/entities/Region'
 import type { Store } from '@/domain/entities/Store'
@@ -72,9 +73,7 @@ export class InMemoryProductRepository implements ProductRepository {
     return (
       this.products
         .map((product) => {
-          const offers = this.currentOffers(product.id, storeIds)
-            .filter((offer) => offer.inStock)
-            .sort((a, b) => a.price.cents - b.price.cents || a.storeId.localeCompare(b.storeId))
+          const offers = this.comparableOffers(product.id, storeIds)
 
           const spreadCents = offers.length
             ? offers[offers.length - 1].price.cents - offers[0].price.cents
@@ -131,10 +130,29 @@ export class InMemoryProductRepository implements ProductRepository {
     return [...latestByStore.values()]
   }
 
-  private toHit(product: Product, storeIds: ReadonlySet<string>): ProductSearchHit {
-    const available = this.currentOffers(product.id, storeIds)
+  /**
+   * In-stock offers worth comparing, cheapest first.
+   *
+   * Applies the same refusal the SQL does: a price more than three times
+   * the cheapest is a different package sharing a barcode, not a worse
+   * deal. Search offered a Nivea bar at 1.99 against 24.91 and called the
+   * gap a 92% saving — the 24.91 is a box.
+   *
+   * Complexity: O(n log n) for the sort over one product's offers.
+   */
+  private comparableOffers(productId: string, storeIds: ReadonlySet<string>): Offer[] {
+    const available = this.currentOffers(productId, storeIds)
       .filter((offer) => offer.inStock)
       .sort((a, b) => a.price.cents - b.price.cents || a.storeId.localeCompare(b.storeId))
+
+    const kept = new ComparablePrices().keepComparable(available.map((offer) => offer.price))
+    const ceiling = kept.length > 0 ? kept[kept.length - 1].cents : 0
+
+    return available.filter((offer) => offer.price.cents <= ceiling)
+  }
+
+  private toHit(product: Product, storeIds: ReadonlySet<string>): ProductSearchHit {
+    const available = this.comparableOffers(product.id, storeIds)
 
     return {
       product,
