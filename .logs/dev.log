@@ -125,3 +125,44 @@
 {"level":"info","message":"feed.completed","timestamp":"2026-10-20T00:34:15.263Z","app":"precinho","regionId":"32ebf460-b37e-4e79-a16b-d2f2093ae9c2","storeCount":6,"cardCount":12,"offset":0}
 {"level":"info","message":"metric.count","timestamp":"2026-10-20T00:34:15.265Z","app":"precinho","metric":"feed.execute","value":1,"status":"ok"}
  GET / [32m200[39m in 1049ms[2m (next.js: 2ms, application-code: 1047ms)[22m
+{"level":"info","message":"metric.timing","timestamp":"2026-10-20T00:34:25.164Z","app":"precinho","metric":"search.query_ms","ms":529}
+{"level":"info","message":"search.completed","timestamp":"2026-10-20T00:34:25.176Z","app":"precinho","query":"suco de uva","regionId":"32ebf460-b37e-4e79-a16b-d2f2093ae9c2","storeCount":6,"resultCount":24}
+{"level":"info","message":"metric.count","timestamp":"2026-10-20T00:34:25.176Z","app":"precinho","metric":"search.execute","value":1,"status":"ok"}
+ GET /busca?q=suco+de+uva [32m200[39m in 1467ms[2m (next.js: 1.4ms, application-code: 1466ms)[22m
+{"level":"info","message":"metric.timing","timestamp":"2026-10-20T00:34:28.249Z","app":"precinho","metric":"search.query_ms","ms":374}
+{"level":"info","message":"search.completed","timestamp":"2026-10-20T00:34:28.256Z","app":"precinho","query":"sabonete nivea","regionId":"32ebf460-b37e-4e79-a16b-d2f2093ae9c2","storeCount":7,"resultCount":24}
+{"level":"info","message":"metric.count","timestamp":"2026-10-20T00:34:28.256Z","app":"precinho","metric":"search.execute","value":1,"status":"ok"}
+ GET /busca?q=sabonete+nivea [32m200[39m in 1639ms[2m (next.js: 3ms, application-code: 1636ms)[22m
+{"level":"info","message":"metric.timing","timestamp":"2026-10-20T00:34:29.895Z","app":"precinho","metric":"search.query_ms","ms":323}
+{"level":"info","message":"search.completed","timestamp":"2026-10-20T00:34:29.905Z","app":"precinho","query":"suco de uva","regionId":"32ebf460-b37e-4e79-a16b-d2f2093ae9c2","storeCount":6,"resultCount":24}
+{"level":"info","message":"metric.count","timestamp":"2026-10-20T00:34:29.907Z","app":"precinho","metric":"search.execute","value":1,"status":"ok"}
+ GET /busca?q=suco+de+uva [32m200[39m in 1203ms[2m (next.js: 1.3ms, application-code: 1202ms)[22m
+{"level":"info","message":"feed.completed","timestamp":"2026-10-20T00:34:34.658Z","app":"precinho","regionId":"32ebf460-b37e-4e79-a16b-d2f2093ae9c2","storeCount":6,"cardCount":12,"offset":0}
+{"level":"info","message":"metric.count","timestamp":"2026-10-20T00:34:34.660Z","app":"precinho","metric":"feed.execute","value":1,"status":"ok"}
+ GET / [32m200[39m in 1152ms[2m (next.js: 1.4ms, application-code: 1151ms)[22m
+{"level":"info","message":"feed.completed","timestamp":"2026-10-20T00:34:36.781Z","app":"precinho","regionId":"32ebf460-b37e-4e79-a16b-d2f2093ae9c2","storeCount":6,"cardCount":12,"offset":0}
+{"level":"info","message":"metric.count","timestamp":"2026-10-20T00:34:36.784Z","app":"precinho","metric":"feed.execute","value":1,"status":"ok"}
+ GET / [32m200[39m in 1376ms[2m (next.js: 1.4ms, application-code: 1374ms)[22m
+{"level":"info","message":"metric.timing","timestamp":"2026-10-20T00:34:39.973Z","app":"precinho","metric":"search.query_ms","ms":327}
+{"level":"info","message":"search.completed","timestamp":"2026-10-20T00:34:39.978Z","app":"precinho","query":"suco de uva","regionId":"32ebf460-b37e-4e79-a16b-d2f2093ae9c2","storeCount":6,"resultCount":24}
+{"level":"info","message":"metric.count","timestamp":"2026-10-20T00:34:39.979Z","app":"precinho","metric":"search.execute","value":1,"status":"ok"}
+ GET /busca?q=suco+de+uva [32m200[39m in 913ms[2m (next.js: 1.7ms, application-code: 911ms)[22m
+{"level":"info","message":"metric.timing","timestamp":"2026-10-20T00:35:04.790Z","app":"precinho","metric":"search.query_ms","ms":643}
+{"level":"info","message":"search.completed","timestamp":"2026-10-20T00:35:05.246Z","app":"precinho","query":"suco de uva","regionId":"32ebf460-b37e-4e79-a16b-d2f2093ae9c2","storeCount":6,"resultCount":24}
+{"level":"info","message":"metric.count","timestamp":"2026-10-20T00:35:05.247Z","app":"precinho","metric":"search.execute","value":1,"status":"ok"}
+ GET /api/busca?q=suco%20de%20uva&offset=24 [32m200[39m in 3.3s[2m (next.js: 2.0ms, application-code: 3.3s)[22m
+{"level":"info","message":"metric.timing","timestamp":"2026-10-20T00:35:07.007Z","app":"precinho","metric":"search.query_ms","ms":598}
+{"level":"info","message":"search.completed","timestamp":"2026-10-20T00:35:07.014Z","app":"precinho","query":"sabonete nivea","regionId":"32ebf460-b37e-4e79-a16b-d2f2093ae9c2","storeCount":7,"resultCount":24}
+{"level":"info","message":"metric.count","timestamp":"2026-10-20T00:35:07.015Z","app":"precinho","metric":"search.execute","value":1,"status":"ok"}
+ GET /busca?q=sabonete+nivea [32m200[39m in 1876ms[2m (next.js: 0.9ms, application-code: 1875ms)[22m
+{"level":"info","message":"metric.timing","timestamp":"2026-10-20T00:35:08.869Z","app":"precinho","metric":"search.query_ms","ms":323}
+{"level":"info","message":"search.completed","timestamp":"2026-10-20T00:35:08.880Z","app":"precinho","query":"suco de uva aurora","regionId":"32ebf460-b37e-4e79-a16b-d2f2093ae9c2","storeCount":6,"resultCount":24}
+{"level":"info","message":"metric.count","timestamp":"2026-10-20T00:35:08.880Z","app":"precinho","metric":"search.execute","value":1,"status":"ok"}
+ GET /busca?q=suco+de+uva+aurora [32m200[39m in 1153ms[2m (next.js: 1.1ms, application-code: 1152ms)[22m
+{"level":"info","message":"metric.timing","timestamp":"2026-10-20T00:35:13.092Z","app":"precinho","metric":"search.query_ms","ms":532}
+{"level":"info","message":"search.completed","timestamp":"2026-10-20T00:35:13.532Z","app":"precinho","query":"suco de uva aurora","regionId":"32ebf460-b37e-4e79-a16b-d2f2093ae9c2","storeCount":6,"resultCount":6}
+{"level":"info","message":"metric.count","timestamp":"2026-10-20T00:35:13.534Z","app":"precinho","metric":"search.execute","value":1,"status":"ok"}
+ GET /api/busca?q=suco%20de%20uva%20aurora&offset=24 [32m200[39m in 1759ms[2m (next.js: 4ms, application-code: 1754ms)[22m
+{"level":"info","message":"product_detail.completed","timestamp":"2026-10-20T00:35:27.150Z","app":"precinho","productId":"de1d95b7-d258-4633-b1e5-88cce230b9b5","regionId":"32ebf460-b37e-4e79-a16b-d2f2093ae9c2","offerCount":1,"cheapestStoreId":"3450a021-6b2c-4067-80f6-53adaaf03e27"}
+{"level":"info","message":"metric.count","timestamp":"2026-10-20T00:35:27.151Z","app":"precinho","metric":"product_detail.execute","value":1,"status":"ok"}
+ GET /produto/de1d95b7-d258-4633-b1e5-88cce230b9b5 [32m200[39m in 1425ms[2m (next.js: 5ms, generate-params: 7ms, application-code: 1412ms)[22m
