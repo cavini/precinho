@@ -59,3 +59,4 @@ verdicts.jsonl
 .judging/.importado-*
 .judging/*.log
 .judging/importar.jsonl
+.judging/restantes
