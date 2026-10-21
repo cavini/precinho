@@ -20,7 +20,10 @@ const MAMBO_COCA_COLA: unknown = JSON.parse(
   readFileSync(join(import.meta.dirname, '../fixtures/vtex-legacy-mambo-coca-cola.json'), 'utf8'),
 )
 
-const CATALOG = /catalog_system\/pub\/products\/search/
+// Intelligent Search, not the catalogue endpoint: only this one prices
+// for a region. The catalogue endpoint accepts regionId and ignores it,
+// which is how Carrefour's 22.99 bag of rice was stored at 28.99.
+const CATALOG = /intelligent-search\/product_search/
 const REGIONS = /checkout\/pub\/regions/
 
 function build(response: FakeResponse, config: Partial<VtexStoreConfig> = {}) {
@@ -206,8 +209,10 @@ describe('VtexCatalogGateway when a store will not answer', () => {
     expect(logger.find('vtex.search_failed')).toHaveLength(1)
   })
 
-  it('refuses a body that is not the array the API promises', async () => {
-    const { gateway, logger } = build({ status: 'ok', statusCode: 200, body: { products: [] } })
+  it('refuses a body in neither shape the two endpoints return', async () => {
+    // A bare array is the catalogue endpoint, { products } is Intelligent
+    // Search; anything else means the API changed under us.
+    const { gateway, logger } = build({ status: 'ok', statusCode: 200, body: { items: [] } })
 
     const result = await gateway.searchTerm('coca-cola')
     expect(result.status).toBe('unavailable')
@@ -284,13 +289,13 @@ describe('VtexCatalogGateway request assembly', () => {
     const { gateway, http } = build(okWithFixture, { pageSize: 10 })
     await gateway.searchTerm('coca cola')
 
-    expect(http.lastUrl).toContain('ft=coca%20cola')
-    expect(http.lastUrl).toContain('_from=0')
-    expect(http.lastUrl).toContain('_to=9')
+    expect(http.lastUrl).toContain('query=coca%20cola')
+    expect(http.lastUrl).toContain('from=0')
+    expect(http.lastUrl).toContain('to=9')
   })
 
   it('pins the sales channel and trading area when configured', async () => {
-    // Without the area token the catalogue answers with default-area prices,
+    // Without the area token the shop answers with default-policy prices,
     // which are not the prices a shopper at this CEP would pay.
     const { gateway, http } = build(okWithFixture, { salesChannel: '2', regionToken: 'v2.ABC' })
     await gateway.searchTerm('leite')
@@ -300,12 +305,12 @@ describe('VtexCatalogGateway request assembly', () => {
   })
 
   it('mounts the catalogue under a prefix when the storefront does', async () => {
-    // Atacadão serves the same API at /io/api/catalog_system/..., so the
+    // Atacadão serves the same API under /io, so the
     // store row carries the prefix instead of the code knowing the chain.
     const { gateway, http } = build(okWithFixture, { pathPrefix: '/io' })
     await gateway.searchTerm('arroz')
 
-    expect(http.lastUrl).toContain('/io/api/catalog_system/pub/products/search')
+    expect(http.lastUrl).toContain('/io/api/io/_v/api/intelligent-search/product_search')
   })
 
   it('reads a chain through its VTEX account host', async () => {
@@ -315,7 +320,7 @@ describe('VtexCatalogGateway request assembly', () => {
     await gateway.searchTerm('arroz')
 
     expect(http.lastUrl).toMatch(
-      /^https:\/\/carrefourbrfood\.vtexcommercestable\.com\.br\/api\/catalog_system\//,
+      /^https:\/\/carrefourbrfood\.vtexcommercestable\.com\.br\/api\/io\/_v\/api\/intelligent-search\//,
     )
   })
 
@@ -340,7 +345,7 @@ describe('VtexCatalogGateway request assembly', () => {
     const { gateway, http } = build(okWithFixture)
     await gateway.searchTerm('leite & cia 100%')
 
-    expect(http.lastUrl).toContain('ft=leite%20%26%20cia%20100%25')
+    expect(http.lastUrl).toContain('query=leite%20%26%20cia%20100%25')
   })
 
   it('encodes a space as %20, not as +', async () => {
@@ -350,7 +355,7 @@ describe('VtexCatalogGateway request assembly', () => {
     const { gateway, http } = build(okWithFixture)
     await gateway.searchTerm('queijo mussarela')
 
-    expect(http.lastUrl).toContain('ft=queijo%20mussarela')
+    expect(http.lastUrl).toContain('query=queijo%20mussarela')
     expect(http.lastUrl).not.toContain('+')
   })
 

@@ -3,22 +3,20 @@ import type { ProductNameParser } from '@/domain/services/ProductNameParser'
 import { Ean } from '@/domain/value-objects/Ean'
 import { Money } from '@/domain/value-objects/Money'
 import type { CatalogProduct } from '@/application/ports/StoreCatalogGateway'
+import type { CatalogSource } from '../ports/CatalogSource'
 import type { CatalogWriter, OfferInsert, ProductUpsert } from '../ports/CatalogWriter'
 import type { Clock } from '../ports/Clock'
 import type { Logger } from '../ports/Logger'
 import type { Metrics } from '../ports/Metrics'
-import type { StoreCatalogGateway } from '../ports/StoreCatalogGateway'
-
-export type CollectStoreOffersInput = {
-  /** Search terms to sweep, e.g. a basic-basket list. */
-  terms: readonly string[]
-}
 
 export type CollectionReport = {
   storeId: string
-  termsAttempted: number
-  /** Terms where the store would not answer. A run is usually partly failed. */
-  termsFailed: number
+  /** Whether the catalogue was read by search term or by category. */
+  mode: 'terms' | 'categories'
+  /** Terms tried, or category pages fetched. */
+  unitsAttempted: number
+  /** Units the store would not answer. A run is usually partly failed. */
+  unitsFailed: number
   productsSeen: number
   productsStored: number
   offersWritten: number
@@ -27,7 +25,7 @@ export type CollectionReport = {
 }
 
 export type CollectStoreOffersDeps = {
-  gateway: StoreCatalogGateway
+  source: CatalogSource
   writer: CatalogWriter
   nameParser: ProductNameParser
   matcher: ProductMatcher
@@ -37,10 +35,14 @@ export type CollectStoreOffersDeps = {
 }
 
 /**
- * Sweeps one store's catalogue for a list of terms and records what it finds.
+ * Sweeps one store's catalogue and records what it finds.
+ *
+ * Knows nothing about *how* the catalogue is read — the source decides
+ * whether that is a list of search terms or a walk of the category tree —
+ * so adding a third way to read a shop does not touch this class.
  *
  * A run is expected to be partly broken — stores rate-limit, change their
- * API, or go down mid-sweep — so a failed term is counted and the sweep
+ * API, or go down mid-sweep — so a failed unit is counted and the sweep
  * carries on. Returning a report rather than throwing is what makes "we
  * collected four of five stores last night" a visible fact instead of a
  * silent gap in the data.
@@ -49,20 +51,22 @@ export class CollectStoreOffers {
   constructor(private readonly deps: CollectStoreOffersDeps) {}
 
   /**
-   * Complexity: O(t) requests for t terms, then O(n) over the products found.
-   * Products are deduplicated through a hash keyed on match key, so
-   * recognising a product already seen in this run is O(1) rather than a scan
-   * of everything seen so far.
+   * Complexity: O(u) requests for u units, then O(n) over the products
+   * found. Products are deduplicated through a hash keyed on match key, so
+   * recognising a product already seen in this run is O(1) rather than a
+   * scan of everything seen so far. Memory is O(n) in distinct products,
+   * which is what lets one write cover the whole run.
    */
-  async execute(input: CollectStoreOffersInput): Promise<CollectionReport> {
-    const { gateway, writer, logger, metrics, clock } = this.deps
-    const runLogger = logger.child({ storeId: gateway.storeId })
+  async execute(): Promise<CollectionReport> {
+    const { source, writer, logger, metrics, clock } = this.deps
+    const runLogger = logger.child({ storeId: source.storeId })
     const startedAt = clock.now().getTime()
 
     const report: CollectionReport = {
-      storeId: gateway.storeId,
-      termsAttempted: input.terms.length,
-      termsFailed: 0,
+      storeId: source.storeId,
+      mode: source.mode,
+      unitsAttempted: 0,
+      unitsFailed: 0,
       productsSeen: 0,
       productsStored: 0,
       offersWritten: 0,
@@ -74,16 +78,18 @@ export class CollectStoreOffers {
     const products = new Map<string, ProductUpsert>()
     const pending: Array<{ matchKey: string; product: CatalogProduct }> = []
 
-    for (const term of input.terms) {
-      const result = await gateway.searchTerm(term)
+    for await (const page of source.pages()) {
+      report.unitsAttempted += 1
 
-      if (result.status !== 'ok') {
-        report.termsFailed += 1
-        metrics.increment('collector.term_failed', 1, { storeId: gateway.storeId })
+      if (page.status !== 'ok') {
+        report.unitsFailed += 1
+        metrics.increment('collector.unit_failed', 1, {
+          storeId: source.storeId,
+        })
         continue
       }
 
-      for (const found of result.products) {
+      for (const found of page.products) {
         report.productsSeen += 1
 
         const upsert = this.toUpsert(found, report)
@@ -101,15 +107,16 @@ export class CollectStoreOffers {
     report.offersWritten = offers.length > 0 ? await writer.insertOffers(offers) : 0
 
     metrics.timing('collector.store_ms', clock.now().getTime() - startedAt, {
-      storeId: gateway.storeId,
+      storeId: source.storeId,
     })
     metrics.increment('collector.offers_written', report.offersWritten, {
-      storeId: gateway.storeId,
+      storeId: source.storeId,
     })
     // Flattened on purpose: a nested object in a log line is not queryable.
     runLogger.info('collector.store_finished', {
-      termsAttempted: report.termsAttempted,
-      termsFailed: report.termsFailed,
+      mode: report.mode,
+      unitsAttempted: report.unitsAttempted,
+      unitsFailed: report.unitsFailed,
       productsSeen: report.productsSeen,
       productsStored: report.productsStored,
       offersWritten: report.offersWritten,
@@ -140,7 +147,7 @@ export class CollectStoreOffers {
     return {
       matchKey: matcher.keyFor({
         ean,
-        storeId: this.deps.gateway.storeId,
+        storeId: this.deps.source.storeId,
         name: found.name,
         size,
       }),
@@ -179,7 +186,7 @@ export class CollectStoreOffers {
 
       offers.set(productId, {
         productId,
-        storeId: this.deps.gateway.storeId,
+        storeId: this.deps.source.storeId,
         priceCents: price.cents,
         listPriceCents: listPrice && listPrice.cents > price.cents ? listPrice.cents : null,
         url: product.url,

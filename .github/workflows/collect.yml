@@ -46,3 +46,23 @@ jobs:
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           LOG_LEVEL: info
+
+      # Verdicts already decided are free to apply and must be applied: a
+      # grouping left unused is the duplicate back on somebody's screen.
+      # Judging is not here on purpose — it costs, so it stays a decision.
+      # The pending count printed here is what says when one is due.
+      #
+      # Runs even when the collection partly failed, because the products
+      # that did arrive still need putting in the right place.
+      - name: Reconcile
+        if: always()
+        run: npm run reconcile
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          # Rebuilding the feed ranking needs a direct connection: it runs
+          # for half a minute, well past the statement timeout the HTTP
+          # API allows.
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          LOG_LEVEL: info

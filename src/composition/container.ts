@@ -4,6 +4,7 @@ import type { RateLimiter } from '@/application/ports/RateLimiter'
 import { GetProductDetail } from '@/application/use-cases/GetProductDetail'
 import { GetProductFeed } from '@/application/use-cases/GetProductFeed'
 import { ListRegionStores } from '@/application/use-cases/ListRegionStores'
+import { GetCoveredArea } from '@/application/use-cases/GetCoveredArea'
 import { ResolveShoppingContext } from '@/application/use-cases/ResolveShoppingContext'
 import { SearchProducts } from '@/application/use-cases/SearchProducts'
 import { OfferComparator } from '@/domain/services/OfferComparator'
@@ -33,6 +34,7 @@ const SEARCH_BUCKET = new TokenBucket({ capacity: 30, refillPerSecond: 1 })
 const CEP_BUCKET = new TokenBucket({ capacity: 8, refillPerSecond: 0.2 })
 
 export type WebContainer = {
+  getCoveredArea: GetCoveredArea
   resolveShoppingContext: ResolveShoppingContext
   searchProducts: SearchProducts
   getProductDetail: GetProductDetail
@@ -71,6 +73,7 @@ export function getWebContainer(): WebContainer {
   const productRepository = new SupabaseProductRepository(client, logger)
 
   cached = {
+    getCoveredArea: new GetCoveredArea({ regionRepository, storeRepository, logger }),
     resolveShoppingContext: new ResolveShoppingContext({
       addressLookup: new ViaCepAddressLookup(http, logger),
       regionRepository,

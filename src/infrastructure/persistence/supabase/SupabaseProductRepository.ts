@@ -28,6 +28,12 @@ type SearchRow = {
   cheapest_collected_at: string | null
   dearest_price_cents: number | null
   available_store_count: number
+  offers: Array<{
+    store_id: string
+    price_cents: number
+    url: string
+    collected_at: string
+  }> | null
 }
 
 /** One row of product_feed. */
@@ -83,6 +89,7 @@ export class SupabaseProductRepository implements ProductRepository {
       p_region_id: criteria.regionId,
       p_store_ids: criteria.storeIds,
       p_limit: criteria.limit,
+      p_offset: criteria.offset,
     })
 
     if (error) {
@@ -100,8 +107,13 @@ export class SupabaseProductRepository implements ProductRepository {
    * Complexity: one round trip. The ranking and the two-store minimum are
    * applied in the query, so what comes back is already the page.
    */
-  async feed(criteria: FeedCriteria): Promise<readonly ProductFeedEntry[]> {
-    const { data, error } = await this.client.rpc('product_feed', {
+  async feed(criteria: FeedCriteria): Promise<readonly ProductFeedEntry[] | null> {
+    // feed_for, not product_feed: it serves the ranking built after the
+    // last collection when the shopper has every shop in the region
+    // ticked, and ranks live when they have not. Prices change once a
+    // day, so computing the ranking on every request was 130,594 offers
+    // and 60,238 products scanned to return 24 cards.
+    const { data, error } = await this.client.rpc('feed_for', {
       p_region_id: criteria.regionId,
       p_store_ids: criteria.storeIds,
       p_limit: criteria.limit,
@@ -113,7 +125,9 @@ export class SupabaseProductRepository implements ProductRepository {
         reason: error.message,
         regionId: criteria.regionId,
       })
-      return []
+      // Null, not an empty list: the caller has to be able to say "I could
+      // not read this" rather than "there is nothing here".
+      return null
     }
 
     return (data as FeedRow[]).flatMap((row) => {
@@ -173,6 +187,18 @@ export class SupabaseProductRepository implements ProductRepository {
     return {
       product: toProduct(row),
       cheapestOffer: this.toCheapestOffer(row),
+      offers: (row.offers ?? []).flatMap((offer) => {
+        const mapped = toOffer({
+          store_id: offer.store_id,
+          price_cents: offer.price_cents,
+          list_price_cents: null,
+          url: offer.url,
+          // The function only aggregates in-stock offers.
+          in_stock: true,
+          collected_at: offer.collected_at,
+        })
+        return mapped ? [mapped] : []
+      }),
       dearestPriceCents: row.dearest_price_cents,
       availableStoreCount: row.available_store_count,
     }

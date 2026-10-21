@@ -13,12 +13,32 @@ export type TendaStoreConfig = {
   /**
    * Branch whose shelf decides whether a product counts as in stock.
    *
-   * Tenda prices nationally but stocks per branch, and every search row
-   * carries the full `inventory` array, so the branch is the only thing that
-   * turns a chain-wide "in_stock" into an answer for a shopper at one CEP.
-   * Leave it unset to take the chain-wide flag instead.
+   * Every search row carries the full `inventory` array, so the branch is
+   * the only thing that turns a chain-wide "in_stock" into an answer for a
+   * shopper at one CEP. Leave it unset to take the chain-wide flag instead.
+   *
+   * This narrows stock only. It does not reach the price — see `cartId`.
    */
   branchId?: string
+  /**
+   * A cart of Tenda's, already bound to the branch we are collecting.
+   *
+   * Tenda prices per branch, and the cart is the only thing that says which
+   * branch. Their storefront creates one the moment a shopper gives a CEP,
+   * then passes its id to every catalogue call; the search endpoint reads it
+   * and quotes that branch. Measured on 2026-10-20 against a the second region cart:
+   * 7 of 117 matched products move, açúcar cristal Colombo 5kg by R$1.90,
+   * and 27% of the default listing is not carried there at all.
+   *
+   * Unset, the endpoint answers with the São Paulo list — Guarapiranga's,
+   * matched 160 of 160 on price. Right for São Paulo, wrong for anywhere
+   * else, and nothing in the response says which it gave you.
+   *
+   * Only ever a cart of ours. Ids are a global sequence and the neighbours
+   * are other shoppers' carts: 39875840 answers 200 and quotes a third
+   * branch. Reading one would be reading somebody's session.
+   */
+  cartId?: string
   /**
    * Minimum gap between requests to this store. Thirty search terms fired
    * back to back looks like an attack and gets the collector blocked, which
@@ -63,6 +83,11 @@ const USER_AGENT = 'precinho-collector/1.0 (+https://github.com/cavini/precinho)
  * Unlike Magento, this catalogue does publish a barcode, which is what lets
  * Tenda's rows merge with other stores' on a verified GTIN instead of
  * falling back to the approximate matcher.
+ *
+ * It prices per branch, which this adapter long recorded as national. The
+ * branch travels as `cartId` and nothing else: branchId, idFilial, filial,
+ * region_id and a dozen other spellings were all tried as parameters and
+ * headers, and the endpoint ignores every one of them.
  */
 export class TendaCatalogGateway implements StoreCatalogGateway {
   // Negative infinity, not zero: the first request to a store has nothing to
@@ -141,6 +166,11 @@ export class TendaCatalogGateway implements StoreCatalogGateway {
       // change of default upstream cannot quietly reorder our results.
       order: 'relevance',
     })
+
+    // What makes the answer one branch's rather than São Paulo's. Omitted
+    // when unset: an empty cartId is a cart Tenda does not know, and it
+    // answers 500 rather than falling back.
+    if (this.config.cartId) params.set('cartId', this.config.cartId)
 
     // Deliberately no `save=true`. The storefront sends it so the term feeds
     // Tenda's "most searched" list; a collector sweeping the same basket

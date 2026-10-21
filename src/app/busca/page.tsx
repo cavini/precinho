@@ -3,8 +3,7 @@ import { headers } from 'next/headers'
 import Link from 'next/link'
 import { getWebContainer } from '@/composition/container'
 import { ContextBar } from '@/presentation/components/ContextBar'
-import { PostalCodeGate } from '@/presentation/components/PostalCodeGate'
-import { ResultList } from '@/presentation/components/ResultList'
+import { InfiniteResults } from '@/presentation/components/InfiniteResults'
 import { SearchForm } from '@/presentation/components/SearchForm'
 import { ContextBarSkeleton, ResultListSkeleton } from '@/presentation/components/Skeletons'
 import { clientKeyFromHeaders } from '@/presentation/clientKey'
@@ -33,15 +32,18 @@ async function SearchBody({ searchParams }: Props) {
   const { q = '' } = await searchParams
   const context = await readPageContext()
 
-  if (context.status === 'needs-postal-code') {
-    return <PostalCodeGate />
+  if (context.status === 'no-coverage') {
+    return (
+      <p className="rounded-xl border border-rule p-4 text-sm text-ink-soft">
+        Nenhum mercado está sendo acompanhado no momento.
+      </p>
+    )
   }
 
   return (
     <>
       <ContextBar
-        postalCodeLabel={context.postalCodeLabel}
-        regionId={context.regionId}
+        regionName={context.regionName}
         stores={context.stores}
         picked={context.pickedStoreIds}
       />
@@ -78,7 +80,11 @@ async function Results({
     clientKey: clientKeyFromHeaders(await headers()),
   })
 
-  if (result.status === 'ok') return <ResultList query={query} items={result.items} />
+  if (result.status === 'ok') {
+    return (
+      <InfiniteResults query={query} initialItems={result.items} initialHasMore={result.hasMore} />
+    )
+  }
 
   return (
     <p className="rounded-xl border border-rule p-4 text-sm text-ink-soft">

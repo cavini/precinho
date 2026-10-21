@@ -1,4 +1,5 @@
 import type { Offer } from '@/domain/entities/Offer'
+import { ComparablePrices } from '@/domain/services/ComparablePrices'
 import type { Product } from '@/domain/entities/Product'
 import type { Region } from '@/domain/entities/Region'
 import type { Store } from '@/domain/entities/Store'
@@ -61,20 +62,23 @@ export class InMemoryProductRepository implements ProductRepository {
         criteria.query.tokens.every((token) => startsAWord(product.searchText, token)),
       )
       .map((product) => this.toHit(product, storeIds))
-      .sort(byAvailabilityThenName)
+      // Nothing the shopper can buy is nothing worth listing: a row with no
+      // price in any marked shop is a dead-end link.
+      .filter((hit) => hit.availableStoreCount > 0)
+      .sort(byComparability)
 
-    return hits.slice(0, criteria.limit)
+    return hits.slice(criteria.offset, criteria.offset + criteria.limit)
   }
 
-  async feed(criteria: FeedCriteria): Promise<readonly ProductFeedEntry[]> {
+  // Widened to match the port: a repository that cannot read says null,
+  // and this one is the contract in TypeScript.
+  async feed(criteria: FeedCriteria): Promise<readonly ProductFeedEntry[] | null> {
     const storeIds = this.storeIdsInRegion(criteria.regionId, criteria.storeIds)
 
     return (
       this.products
         .map((product) => {
-          const offers = this.currentOffers(product.id, storeIds)
-            .filter((offer) => offer.inStock)
-            .sort((a, b) => a.price.cents - b.price.cents || a.storeId.localeCompare(b.storeId))
+          const offers = this.comparableOffers(product.id, storeIds)
 
           const spreadCents = offers.length
             ? offers[offers.length - 1].price.cents - offers[0].price.cents
@@ -131,14 +135,35 @@ export class InMemoryProductRepository implements ProductRepository {
     return [...latestByStore.values()]
   }
 
-  private toHit(product: Product, storeIds: ReadonlySet<string>): ProductSearchHit {
-    const available = this.currentOffers(product.id, storeIds)
+  /**
+   * In-stock offers worth comparing, cheapest first.
+   *
+   * Applies the same refusal the SQL does: a price more than three times
+   * the cheapest is a different package sharing a barcode, not a worse
+   * deal. Search offered a Nivea bar at 1.99 against 24.91 and called the
+   * gap a 92% saving — the 24.91 is a box.
+   *
+   * Complexity: O(n log n) for the sort over one product's offers.
+   */
+  private comparableOffers(productId: string, storeIds: ReadonlySet<string>): Offer[] {
+    const available = this.currentOffers(productId, storeIds)
       .filter((offer) => offer.inStock)
       .sort((a, b) => a.price.cents - b.price.cents || a.storeId.localeCompare(b.storeId))
+
+    const kept = new ComparablePrices().keepComparable(available.map((offer) => offer.price))
+    const ceiling = kept.length > 0 ? kept[kept.length - 1].cents : 0
+
+    return available.filter((offer) => offer.price.cents <= ceiling)
+  }
+
+  private toHit(product: Product, storeIds: ReadonlySet<string>): ProductSearchHit {
+    const available = this.comparableOffers(product.id, storeIds)
 
     return {
       product,
       cheapestOffer: available[0] ?? null,
+      // Already cheapest-first, matching the order the SQL aggregates in.
+      offers: available,
       dearestPriceCents: available[available.length - 1]?.price.cents ?? null,
       availableStoreCount: available.length,
     }
@@ -167,10 +192,33 @@ function startsAWord(text: string, token: string): boolean {
  * stable order is worth more than a guessed one. Trigram ranking is a later
  * slice, and when it lands it lands in both implementations at once.
  */
-function byAvailabilityThenName(a: ProductSearchHit, b: ProductSearchHit): number {
-  const aHas = a.availableStoreCount > 0
-  const bHas = b.availableStoreCount > 0
-  if (aHas !== bHas) return aHas ? -1 : 1
+/**
+ * The same ranking search_products applies, because this repository is the
+ * contract in TypeScript and the SQL is the contract in Postgres — a
+ * difference between them is a bug in one of the two, which is what the
+ * contract test exists to catch.
+ *
+ * Most shops first, then the widest disagreement, then having a photo,
+ * then name. Alphabetical alone put Arroz Arbóreo Riso Scotti — one shop,
+ * no comparison — at the top of a search for "arroz".
+ */
+function byComparability(a: ProductSearchHit, b: ProductSearchHit): number {
+  if (a.availableStoreCount !== b.availableStoreCount) {
+    return b.availableStoreCount - a.availableStoreCount
+  }
+
+  const spread = spreadOf(b) - spreadOf(a)
+  if (spread !== 0) return spread
+
+  const aPhoto = a.product.imageUrl !== null
+  const bPhoto = b.product.imageUrl !== null
+  if (aPhoto !== bPhoto) return aPhoto ? -1 : 1
 
   return a.product.name.localeCompare(b.product.name) || a.product.id.localeCompare(b.product.id)
+}
+
+/** Dearest minus cheapest, or zero when there is nothing to compare. */
+function spreadOf(hit: ProductSearchHit): number {
+  if (hit.dearestPriceCents === null || !hit.cheapestOffer) return 0
+  return hit.dearestPriceCents - hit.cheapestOffer.price.cents
 }

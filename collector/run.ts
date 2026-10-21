@@ -26,10 +26,20 @@ loadEnv()
 
 import { CollectStoreOffers } from '@/application/use-cases/CollectStoreOffers'
 import type { Logger } from '@/application/ports/Logger'
+import type { CatalogBrowser } from '@/application/ports/CatalogBrowser'
+import type { CatalogSource } from '@/application/ports/CatalogSource'
 import type { StoreCatalogGateway } from '@/application/ports/StoreCatalogGateway'
+import { BrowsingCatalogSource } from '@/application/sources/BrowsingCatalogSource'
+import { TermCatalogSource } from '@/application/sources/TermCatalogSource'
+import { MagentoCatalogBrowser } from '@/infrastructure/gateways/magento/MagentoCatalogBrowser'
+import { VtexCatalogBrowser } from '@/infrastructure/gateways/vtex/VtexCatalogBrowser'
 import { GpaCatalogGateway } from '@/infrastructure/gateways/gpa/GpaCatalogGateway'
 import { MagentoCatalogGateway } from '@/infrastructure/gateways/magento/MagentoCatalogGateway'
+import { SfccCatalogGateway } from '@/infrastructure/gateways/sfcc/SfccCatalogGateway'
 import { TendaCatalogGateway } from '@/infrastructure/gateways/tenda/TendaCatalogGateway'
+import { VipCommerceCatalogBrowser } from '@/infrastructure/gateways/vipcommerce/VipCommerceCatalogBrowser'
+import { VipCommerceCatalogGateway } from '@/infrastructure/gateways/vipcommerce/VipCommerceCatalogGateway'
+import type { VipCommerceStoreConfig } from '@/infrastructure/gateways/vipcommerce/VipCommerceCatalogGateway'
 import { ProductMatcher } from '@/domain/services/ProductMatcher'
 import { ProductNameParser } from '@/domain/services/ProductNameParser'
 import { RequestBudget } from '@/domain/services/RequestBudget'
@@ -61,6 +71,8 @@ type StoreConfigRow = {
   storefront_host: string | null
   /** Requests this store has agreed to receive per day; null is no limit. */
   daily_request_budget: number | null
+  /** 'categories' walks the shop's own tree; 'terms' sweeps the basket. */
+  sweep_mode: 'terms' | 'categories'
   region_token: string | null
   regions: { slug: string; probe_cep: string } | null
 }
@@ -78,7 +90,9 @@ const STORE_CONCURRENCY = 4
 
 async function main(): Promise<void> {
   const env = readCollectorEnv()
-  const logger = new StructuredLogger({ level: env.logLevel }).child({ job: 'collector' })
+  const logger = new StructuredLogger({ level: env.logLevel }).child({
+    job: 'collector',
+  })
   const metrics = new LoggingMetrics(logger)
 
   const requested = process.argv.slice(2).filter((arg) => !arg.startsWith('-'))
@@ -92,7 +106,7 @@ async function main(): Promise<void> {
   const { data, error } = await client
     .from('stores')
     .select(
-      'id, slug, host, platform, sales_channel, path_prefix, store_view, min_interval_ms, storefront_host, daily_request_budget, region_token, regions(slug, probe_cep)',
+      'id, slug, host, platform, sales_channel, path_prefix, store_view, min_interval_ms, storefront_host, daily_request_budget, sweep_mode, region_token, regions(slug, probe_cep)',
     )
     .eq('active', true)
     .order('slug')
@@ -108,11 +122,16 @@ async function main(): Promise<void> {
   )
 
   if (stores.length === 0) {
-    logger.warn('collector.no_stores_selected', { requested: requested.join(',') })
+    logger.warn('collector.no_stores_selected', {
+      requested: requested.join(','),
+    })
     return
   }
 
-  logger.info('collector.run_started', { stores: stores.length, terms: BASIC_BASKET.length })
+  logger.info('collector.run_started', {
+    stores: stores.length,
+    terms: BASIC_BASKET.length,
+  })
 
   // Stores run concurrently because they are different hosts: collecting
   // Mambo and Atacadao at once adds nothing to either one's load. Within a
@@ -143,18 +162,18 @@ async function main(): Promise<void> {
       return { collected: false }
     }
 
-    const gateway = await buildGateway(store, http, storeLogger, budget)
-    if (!gateway) return { collected: false }
+    const source = await buildSource(store, http, storeLogger, budget)
+    if (!source) return { collected: false }
 
     const report = await new CollectStoreOffers({
-      gateway,
+      source,
       writer,
       nameParser,
       matcher,
       logger: storeLogger,
       metrics,
       clock: systemClock,
-    }).execute({ terms: BASIC_BASKET })
+    }).execute()
 
     if (store.daily_request_budget !== null) {
       await writeSpentToday(client, store.id, budget.spent, storeLogger)
@@ -171,11 +190,133 @@ async function main(): Promise<void> {
 
   const storesWithNothing = results.filter((result) => !result.collected).length
 
-  logger.info('collector.run_finished', { stores: stores.length, storesWithNothing })
+  logger.info('collector.run_finished', {
+    stores: stores.length,
+    storesWithNothing,
+  })
 
   // Every store producing nothing means the run is broken, not that the
   // shops are empty. One store sulking is a Tuesday.
   if (storesWithNothing === stores.length) process.exitCode = 1
+}
+
+/**
+ * Picks how this store's catalogue gets read.
+ *
+ * Browsing where the row asks for it and the platform supports it;
+ * otherwise the basket of search terms. A platform with a category
+ * endpoint we do not trust — Tenda — simply has no browser, so the row
+ * falls back rather than failing.
+ */
+async function buildSource(
+  store: StoreConfigRow,
+  http: FetchHttpClient,
+  logger: Logger,
+  budget: RequestBudget,
+): Promise<CatalogSource | null> {
+  if (store.sweep_mode === 'categories') {
+    const browser = buildBrowser(store, http, logger, budget)
+    if (browser) return new BrowsingCatalogSource(browser, logger)
+
+    logger.warn('collector.no_browser_for_platform', {
+      slug: store.slug,
+      platform: store.platform,
+    })
+  }
+
+  const gateway = await buildGateway(store, http, logger, budget)
+  return gateway ? new TermCatalogSource(gateway, BASIC_BASKET) : null
+}
+
+/** Null where the platform has no category browser worth using. */
+function buildBrowser(
+  store: StoreConfigRow,
+  http: FetchHttpClient,
+  logger: Logger,
+  budget: RequestBudget,
+): CatalogBrowser | null {
+  const minIntervalMs = store.min_interval_ms ?? MIN_INTERVAL_MS
+
+  if (store.platform === 'magento-graphql') {
+    return new MagentoCatalogBrowser(
+      {
+        storeId: store.id,
+        host: store.host,
+        storeView: store.store_view ?? undefined,
+        budget,
+        minIntervalMs,
+      },
+      http,
+      logger,
+    )
+  }
+
+  if (store.platform === 'vtex-legacy') {
+    return new VtexCatalogBrowser(
+      {
+        storeId: store.id,
+        host: store.host,
+        storefrontHost: store.storefront_host ?? undefined,
+        pathPrefix: store.path_prefix ?? undefined,
+        salesChannel: store.sales_channel ?? undefined,
+        regionToken: store.region_token ?? undefined,
+        minIntervalMs,
+      },
+      http,
+      logger,
+    )
+  }
+
+  if (store.platform === 'vipcommerce') {
+    const config = vipCommerceConfig(store, minIntervalMs, logger)
+    return config ? new VipCommerceCatalogBrowser(config, http, logger) : null
+  }
+
+  return null
+}
+
+/**
+ * The four things a VipCommerce row has to carry, or null when it does not.
+ *
+ * Shared by the gateway and the browser so a half-configured row fails the
+ * same way whichever mode it is swept in.
+ */
+function vipCommerceConfig(
+  store: StoreConfigRow,
+  minIntervalMs: number,
+  logger: Logger,
+): VipCommerceStoreConfig | null {
+  const organizationId = store.sales_channel
+  const branchId = store.store_view
+  const distributionCenterId = store.region_token
+  const storefrontHost = store.storefront_host
+
+  if (!organizationId || !branchId || !distributionCenterId || !storefrontHost) {
+    // Without the distribution centre the API answers for whichever branch
+    // the storefront defaults to, and those are not this region's prices.
+    logger.warn('collector.vipcommerce_row_incomplete', {
+      slug: store.slug,
+      organizationId,
+      branchId,
+      distributionCenterId,
+      storefrontHost,
+    })
+    return null
+  }
+
+  return {
+    storeId: store.id,
+    apiHost: store.host,
+    organizationId,
+    branchId,
+    distributionCenterId,
+    // The tenant key is the storefront's domain without its subdomain
+    // prefix — the platform's own bundle derives it exactly this way,
+    // stripping www./site./cdn. before asking who it is talking to.
+    domainKey: storefrontHost.replace(/^(?:www|site|rc|site-cdn|cdn)\./, ''),
+    storefrontHost,
+    minIntervalMs,
+  }
 }
 
 /**
@@ -194,11 +335,21 @@ async function buildGateway(
   // One chain's rate limit is no reason to crawl the rest this slowly.
   const minIntervalMs = store.min_interval_ms ?? MIN_INTERVAL_MS
   if (store.platform === 'tenda-api') {
+    if (!store.region_token) {
+      // Without a branch-bound cart the endpoint answers with São Paulo's
+      // list whatever region the row claims, and nothing in the response
+      // says so. That is right for a São Paulo row and wrong everywhere
+      // else, so it warns rather than skipping: the one store this
+      // currently covers is correct, and the next one would not be.
+      logger.warn('collector.tenda_cart_missing', { slug: store.slug })
+    }
+
     return new TendaCatalogGateway(
       {
         storeId: store.id,
         apiHost: store.host,
         branchId: store.store_view ?? undefined,
+        cartId: store.region_token ?? undefined,
         minIntervalMs,
       },
       http,
@@ -234,6 +385,36 @@ async function buildGateway(
         host: store.host,
         storeView: store.store_view ?? undefined,
         budget,
+        minIntervalMs,
+      },
+      http,
+      logger,
+    )
+  }
+
+  if (store.platform === 'vipcommerce') {
+    const config = vipCommerceConfig(store, minIntervalMs, logger)
+    return config ? new VipCommerceCatalogGateway(config, http, logger) : null
+  }
+
+  if (store.platform === 'sfcc') {
+    if (!store.store_view || !store.region_token) {
+      // The branch lives in a Demandware session keyed to that branch;
+      // without it the catalogue quotes whichever one it defaults to.
+      logger.warn('collector.sfcc_row_incomplete', {
+        slug: store.slug,
+        siteId: store.store_view,
+        sfccStoreId: store.region_token,
+      })
+      return null
+    }
+
+    return new SfccCatalogGateway(
+      {
+        storeId: store.id,
+        host: store.host,
+        siteId: store.store_view,
+        sfccStoreId: store.region_token,
         minIntervalMs,
       },
       http,

@@ -33,12 +33,21 @@ const PRODUCTS = [
   BANANA,
 ]
 
-function build(options: { denied?: boolean } = {}) {
+/** A repository that cannot read, which is not the same as having nothing. */
+class UnreadableProductRepository extends InMemoryProductRepository {
+  async feed() {
+    return null
+  }
+}
+
+function build(options: { denied?: boolean; unreadable?: boolean } = {}) {
   const logger = new RecordingLogger()
   const metrics = new RecordingMetrics()
 
   const useCase = new GetProductFeed({
-    productRepository: new InMemoryProductRepository(PRODUCTS, OFFERS, STORES),
+    productRepository: options.unreadable
+      ? new UnreadableProductRepository(PRODUCTS, OFFERS, STORES)
+      : new InMemoryProductRepository(PRODUCTS, OFFERS, STORES),
     storeRepository: new InMemoryStoreRepository(STORES),
     rateLimiter: options.denied ? new DenyingRateLimiter(10) : new AllowingRateLimiter(),
     logger,
@@ -51,6 +60,38 @@ function build(options: { denied?: boolean } = {}) {
 function feed(useCase: GetProductFeed, storeIds = SP_STORES) {
   return useCase.execute({ regionId: REGION_SP.id, storeIds, clientKey: 'ip-hash' })
 }
+
+describe('GetProductFeed when the read fails', () => {
+  it('says it could not read rather than that there is nothing', async () => {
+    // The site told its first visitor, every time, that no shop near them
+    // sold anything worth comparing. The query had simply failed on a cold
+    // start, and a failure returned as an empty list reads as a claim
+    // about the shops instead of a claim about us.
+    const { useCase } = build({ unreadable: true })
+
+    expect(await feed(useCase)).toEqual({ status: 'unavailable' })
+  })
+
+  it('logs it at error, because nobody is going to report this', async () => {
+    // A visitor who sees an empty home page leaves; they do not open an
+    // issue. The log is the only place this can surface.
+    const { useCase, logger } = build({ unreadable: true })
+    await feed(useCase)
+
+    const complaints = logger.lines.filter((line) => line.level === 'error')
+    expect(complaints.map((line) => line.message)).toContain('feed.unreadable')
+  })
+
+  it('does not report it as a successful empty feed', async () => {
+    // The metric is what would have shown this on a dashboard: a healthy
+    // feed and an unreadable one must not both count as ok.
+    const { useCase, metrics } = build({ unreadable: true })
+    await feed(useCase)
+
+    expect(metrics.total('feed.execute', ['status', 'ok'])).toBe(0)
+    expect(metrics.total('feed.execute', ['status', 'unavailable'])).toBe(1)
+  })
+})
 
 describe('GetProductFeed', () => {
   describe('the cards', () => {
@@ -263,9 +304,7 @@ describe('GetProductFeed', () => {
       const explicit = await page(useCase, 0)
       if (explicit.status !== 'ok') throw new Error(explicit.status)
 
-      expect(implicit.cards.map((c) => c.productId)).toEqual(
-        explicit.cards.map((c) => c.productId),
-      )
+      expect(implicit.cards.map((c) => c.productId)).toEqual(explicit.cards.map((c) => c.productId))
     })
   })
 

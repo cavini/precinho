@@ -10,6 +10,7 @@ import type { CatalogWriter, OfferInsert, ProductUpsert } from '../ports/Catalog
 import { FixedClock } from '../testing/FixedClock'
 import { RecordingLogger } from '../testing/RecordingLogger'
 import { RecordingMetrics } from '../testing/RecordingMetrics'
+import { TermCatalogSource } from '@/application/sources/TermCatalogSource'
 import { CollectStoreOffers } from './CollectStoreOffers'
 
 const NOW = new Date('2026-10-19T06:00:00Z')
@@ -67,20 +68,29 @@ function build(byTerm: Record<string, CatalogSearchResult>) {
   const logger = new RecordingLogger()
   const metrics = new RecordingMetrics()
 
-  const useCase = new CollectStoreOffers({
-    gateway,
-    writer,
-    nameParser: new ProductNameParser(),
-    matcher: new ProductMatcher(),
-    logger,
-    metrics,
-    clock: new FixedClock(NOW),
-  })
+  // These tests are about ingestion, so the source is the simplest one
+  // there is. TermCatalogSource and BrowsingCatalogSource are covered on
+  // their own.
+  const useCase = {
+    execute: ({ terms }: { terms: readonly string[] }) =>
+      new CollectStoreOffers({
+        source: new TermCatalogSource(gateway, terms),
+        writer,
+        nameParser: new ProductNameParser(),
+        matcher: new ProductMatcher(),
+        logger,
+        metrics,
+        clock: new FixedClock(NOW),
+      }).execute(),
+  }
 
   return { useCase, gateway, writer, logger, metrics }
 }
 
-const ok = (products: CatalogProduct[]): CatalogSearchResult => ({ status: 'ok', products })
+const ok = (products: CatalogProduct[]): CatalogSearchResult => ({
+  status: 'ok',
+  products,
+})
 
 describe('CollectStoreOffers', () => {
   describe('what it stores', () => {
@@ -123,8 +133,16 @@ describe('CollectStoreOffers', () => {
     it('records a promotion only when the list price is higher', async () => {
       const { useCase, writer } = build({
         coca: ok([
-          aCatalogProduct({ ean: '7894900027013', priceReais: 10.49, listPriceReais: 14.98 }),
-          aCatalogProduct({ ean: '7898215152002', priceReais: 10.49, listPriceReais: 9.99 }),
+          aCatalogProduct({
+            ean: '7894900027013',
+            priceReais: 10.49,
+            listPriceReais: 14.98,
+          }),
+          aCatalogProduct({
+            ean: '7898215152002',
+            priceReais: 10.49,
+            listPriceReais: 9.99,
+          }),
         ]),
       })
       await useCase.execute({ terms: ['coca'] })
@@ -133,7 +151,9 @@ describe('CollectStoreOffers', () => {
     })
 
     it('keeps an out-of-stock product, flagged', async () => {
-      const { useCase, writer } = build({ coca: ok([aCatalogProduct({ inStock: false })]) })
+      const { useCase, writer } = build({
+        coca: ok([aCatalogProduct({ inStock: false })]),
+      })
       await useCase.execute({ terms: ['coca'] })
 
       expect(writer.inserted[0].inStock).toBe(false)
@@ -160,7 +180,10 @@ describe('CollectStoreOffers', () => {
       const { useCase, writer } = build({
         leite: ok([
           aCatalogProduct({ ean: '7894900027013', name: 'Coca 2L' }),
-          aCatalogProduct({ ean: '7898215152002', name: 'Leite Condensado 395g' }),
+          aCatalogProduct({
+            ean: '7898215152002',
+            name: 'Leite Condensado 395g',
+          }),
         ]),
       })
 
@@ -208,7 +231,10 @@ describe('CollectStoreOffers', () => {
     it.each([
       { label: 'a zero price', product: { priceReais: 0 } },
       { label: 'a negative price', product: { priceReais: -1 } },
-      { label: 'a price that is not a number', product: { priceReais: Number.NaN } },
+      {
+        label: 'a price that is not a number',
+        product: { priceReais: Number.NaN },
+      },
       { label: 'no name', product: { name: '' } },
     ])('discards $label and says so in the report', async ({ product }) => {
       const { useCase, writer } = build({ x: ok([aCatalogProduct(product)]) })
@@ -231,8 +257,8 @@ describe('CollectStoreOffers', () => {
 
       const report = await useCase.execute({ terms: ['coca', 'leite'] })
 
-      expect(report.termsAttempted).toBe(2)
-      expect(report.termsFailed).toBe(1)
+      expect(report.unitsAttempted).toBe(2)
+      expect(report.unitsFailed).toBe(1)
       expect(writer.upserted).toHaveLength(1)
     })
 
@@ -243,14 +269,16 @@ describe('CollectStoreOffers', () => {
 
       const report = await useCase.execute({ terms: ['coca'] })
 
-      expect(report.termsFailed).toBe(1)
+      expect(report.unitsFailed).toBe(1)
       expect(report.offersWritten).toBe(0)
       expect(writer.inserted).toEqual([])
     })
 
     it('does not call the writer with an empty offer list', async () => {
       // Avoids a pointless round trip on a fully failed store.
-      const { useCase, writer } = build({ coca: { status: 'unavailable', reason: 'timeout' } })
+      const { useCase, writer } = build({
+        coca: { status: 'unavailable', reason: 'timeout' },
+      })
       await useCase.execute({ terms: ['coca'] })
 
       expect(writer.inserted).toEqual([])
@@ -272,10 +300,12 @@ describe('CollectStoreOffers', () => {
     })
 
     it('counts a failed term so a bad night is visible the next morning', async () => {
-      const { useCase, metrics } = build({ coca: { status: 'unavailable', reason: 'timeout' } })
+      const { useCase, metrics } = build({
+        coca: { status: 'unavailable', reason: 'timeout' },
+      })
       await useCase.execute({ terms: ['coca'] })
 
-      expect(metrics.total('collector.term_failed')).toBe(1)
+      expect(metrics.total('collector.unit_failed')).toBe(1)
     })
 
     it('times each store', async () => {

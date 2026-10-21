@@ -69,8 +69,12 @@ on conflict (slug) do nothing;
 update stores set storefront_host = 'www.oba.com.br'           where slug = 'oba';
 update stores set storefront_host = 'mercado.carrefour.com.br' where slug = 'carrefour';
 
--- Tauste: their legal department granted access from tauste.com.br on
--- condition of twenty requests a day, a figure their technical coordinator
--- set to keep the system stable. The limit is enforced in code rather than
--- intended — see RequestBudget and store_request_log.
-update stores set active = true, daily_request_budget = 20 where slug = 'tauste';
+-- Tauste: their legal department granted access from tauste.com.br, and
+-- later lifted the hard twenty-a-day cap in favour of "com parcimonia".
+-- A constraint with no number is one nobody keeps, so the budget stays and
+-- the number is ours to defend. Measured: 18,791 products over 115
+-- categories needs 187 requests, so 200 a day at two seconds apart — under
+-- seven minutes, against 400-1,250 requests for every other chain.
+update stores
+   set active = true, daily_request_budget = 200, min_interval_ms = 2000
+ where slug = 'tauste';

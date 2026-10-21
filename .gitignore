@@ -44,3 +44,18 @@ next-env.d.ts
 
 # Coverage output
 /coverage
+
+# Collector and dev-server output: useful locally, noise in history.
+.logs/
+
+# Judging work files: pairs exported for review and the verdicts coming back.
+pairs-to-judge.jsonl
+verdicts.jsonl
+
+# Judging run: batches, verdicts and import markers. The decisions live in
+# the database (product_equivalences, product_merges); these are scratch.
+.judging/lote-*
+.judging/veredito-*
+.judging/.importado-*
+.judging/*.log
+.judging/importar.jsonl

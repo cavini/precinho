@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { RecordingLogger } from '@/application/testing/RecordingLogger'
-import { VtexCatalogBrowser, VTEX_SLICE_CEILING } from '@/infrastructure/gateways/vtex/VtexCatalogBrowser'
+import {
+  VtexCatalogBrowser,
+  VTEX_SLICE_CEILING,
+} from '@/infrastructure/gateways/vtex/VtexCatalogBrowser'
 import type { FakeResponse } from '@/infrastructure/testing/FakeHttpClient'
 import { FakeHttpClient } from '@/infrastructure/testing/FakeHttpClient'
 
@@ -73,10 +76,7 @@ const EMPTY_PAGE = { status: 'ok', statusCode: 206, body: [] } as const
 
 describe('VtexCatalogBrowser planning a sweep', () => {
   it('keeps a category that fits under the ceiling whole', async () => {
-    const { browser } = fakeStore(
-      { 'C:/1589/1592/': 985, 'C:/1589/1595/': 1873 },
-      EMPTY_PAGE,
-    )
+    const { browser } = fakeStore({ 'C:/1589/1592/': 985, 'C:/1589/1595/': 1873 }, EMPTY_PAGE)
 
     const plan = await browser.planSweep()
     if (plan.status !== 'ok') throw new Error(plan.reason)
@@ -127,10 +127,7 @@ describe('VtexCatalogBrowser planning a sweep', () => {
   })
 
   it('never probes the root, which can never fit', async () => {
-    const { browser, http } = fakeStore(
-      { 'C:/1589/1592/': 10, 'C:/1589/1595/': 10 },
-      EMPTY_PAGE,
-    )
+    const { browser, http } = fakeStore({ 'C:/1589/1592/': 10, 'C:/1589/1595/': 10 }, EMPTY_PAGE)
 
     await browser.planSweep()
     const probedRoot = http.requests.some((r) => decodeURIComponent(r.url).includes('fq=C:/1589/&'))

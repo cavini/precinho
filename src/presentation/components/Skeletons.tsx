@@ -101,7 +101,11 @@ export function ResultListSkeleton({ rows = 6 }: { rows?: number }) {
 /** The product page: photo beside the name, then the price table. */
 export function ProductDetailSkeleton() {
   return (
-    <div className="flex animate-pulse flex-col gap-6" aria-busy="true" aria-label="Carregando produto">
+    <div
+      className="flex animate-pulse flex-col gap-6"
+      aria-busy="true"
+      aria-label="Carregando produto"
+    >
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
         <Bar className="h-44 w-44 shrink-0 self-center rounded-xl sm:self-start" />
         <div className="flex min-w-0 flex-1 flex-col gap-2">

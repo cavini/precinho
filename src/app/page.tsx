@@ -1,8 +1,8 @@
 import { Suspense } from 'react'
+import { RetryButton } from '@/presentation/components/RetryButton'
 import { headers } from 'next/headers'
 import { getWebContainer } from '@/composition/container'
 import { ContextBar } from '@/presentation/components/ContextBar'
-import { PostalCodeGate } from '@/presentation/components/PostalCodeGate'
 import { InfiniteFeed } from '@/presentation/components/InfiniteFeed'
 import { SearchForm } from '@/presentation/components/SearchForm'
 import { ContextBarSkeleton, FeedSkeleton } from '@/presentation/components/Skeletons'
@@ -36,21 +36,24 @@ export default function HomePage() {
 async function HomeBody() {
   const context = await readPageContext()
 
-  if (context.status === 'needs-postal-code') {
-    return <PostalCodeGate />
+  if (context.status === 'no-coverage') {
+    return (
+      <p className="rounded-xl border border-rule p-4 text-sm text-ink-soft">
+        Nenhum mercado está sendo acompanhado no momento.
+      </p>
+    )
   }
 
   return (
     <>
       <ContextBar
-        postalCodeLabel={context.postalCodeLabel}
-        regionId={context.regionId}
+        regionName={context.regionName}
         stores={context.stores}
         picked={context.pickedStoreIds}
       />
 
       <section className="flex flex-col gap-3">
-        <h1 className="text-2xl font-semibold tracking-tight">O que você quer comparar?</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Ofertas em {context.regionName}</h1>
         <SearchForm autoFocus />
       </section>
 
@@ -86,7 +89,21 @@ async function FeedSection({
     )
   }
 
-  if (feed.status !== 'ok') return null
+  if (feed.status === 'unavailable') {
+    return (
+      <p className="rounded-xl border border-rule p-4 text-sm text-ink-soft">
+        Não consegui carregar os preços agora. <RetryButton label="Tentar de novo" />
+      </p>
+    )
+  }
+
+  if (feed.status === 'rate-limited') {
+    return (
+      <p className="rounded-xl border border-rule p-4 text-sm text-ink-soft">
+        Muitas consultas em pouco tempo. Tente de novo em {feed.retryAfterSeconds}s.
+      </p>
+    )
+  }
 
   return <InfiniteFeed initialCards={feed.cards} initialHasMore={feed.hasMore} />
 }

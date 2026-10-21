@@ -30,6 +30,34 @@ function build(response: FakeResponse, config: Partial<MagentoStoreConfig> = {})
 
 const okWithFixture = { status: 'ok', statusCode: 200, body: TAUSTE_ARROZ } as const
 
+describe('MagentoCatalogGateway product links', () => {
+  it('puts the store view in the path, so the link opens the right town', async () => {
+    // Magento serves each store view under its own segment. Without it the
+    // shop falls back to its default, so a the second region price linked to
+    // tauste.com.br/{produto}.html opens Marília's page — a different price
+    // for the same product.
+    const { gateway } = build(okWithFixture, { host: 'www.tauste.com.br', storeView: 'taubate' })
+
+    const result = await gateway.searchTerm('arroz')
+    if (result.status !== 'ok') throw new Error(result.reason)
+
+    expect(result.products[0].url).toBe(
+      'https://www.tauste.com.br/taubate/arroz-tio-joao-integral-cozinha-facil-1kg.html',
+    )
+  })
+
+  it('leaves the path alone for a shop with a single store view', async () => {
+    const { gateway } = build(okWithFixture, { host: 'www.example.test' })
+
+    const result = await gateway.searchTerm('arroz')
+    if (result.status !== 'ok') throw new Error(result.reason)
+
+    expect(result.products[0].url).toBe(
+      'https://www.example.test/arroz-tio-joao-integral-cozinha-facil-1kg.html',
+    )
+  })
+})
+
 describe('MagentoCatalogGateway against a recorded Tauste response', () => {
   it('maps every priced product', async () => {
     const { gateway } = build(okWithFixture)

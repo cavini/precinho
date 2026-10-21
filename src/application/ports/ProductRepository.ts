@@ -18,6 +18,13 @@ export type ProductSearchHit = {
   product: Product
   /** Null when no store the shopper picked has it in stock. */
   cheapestOffer: Offer | null
+  /**
+   * Every in-stock offer, cheapest first.
+   *
+   * The listing shows the stores under the name the way the feed does, so
+   * a single price would hide the gap the comparison exists to show.
+   */
+  offers: readonly Offer[]
   /** Dearest in-stock price in cents; equals the cheapest when one store has it. */
   dearestPriceCents: number | null
   /** How many of the picked stores have it in stock. */
@@ -30,6 +37,8 @@ export type SearchCriteria = {
   /** The stores the shopper picked. Never empty — the caller resolves the default. */
   storeIds: readonly string[]
   limit: number
+  /** How many results to skip. The ranking is stable, so this is safe. */
+  offset: number
 }
 
 /**
@@ -63,7 +72,16 @@ export interface ProductRepository {
    * picked stores — a single price is not a comparison — and must leave out
    * out-of-stock offers, as everywhere else.
    */
-  feed(criteria: FeedCriteria): Promise<readonly ProductFeedEntry[]>
+  /**
+   * Null when the read failed.
+   *
+   * Deliberately distinct from an empty list. A failed query returned as
+   * "no results" reaches the screen as "no shop near you sells anything
+   * worth comparing", which is a different and far more damaging claim —
+   * and it is what the site told its first visitor, every time, because
+   * the cold start was slow enough to fail.
+   */
+  feed(criteria: FeedCriteria): Promise<readonly ProductFeedEntry[] | null>
 
   /**
    * Products matching every token of the query, ranked by how well they

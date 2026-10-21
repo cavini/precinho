@@ -1,0 +1,162 @@
+{
+  "action": "Search-UpdateGrid",
+  "locale": "pt_BR",
+  "count": 4,
+  "productsSearchResult": [
+    {
+      "id": "198943",
+      "productName": "Arroz T 1 Momiji 5Kg",
+      "brand": "MOMIJI",
+      "available": true,
+      "images": {
+        "medium": [
+          {
+            "alt": "https://ngostpubprd001.blob.core.windows.net/produtos/assets/ofertas-ecommerce/198943.webp",
+            "url": "/on/demandware.static/-/Sites-storefront-catalog-ngm/pt_BR/v1792445425110/https://ngostpubprd001.blob.core.windows.net/produtos/assets/ofertas-ecommerce/198943.webp",
+            "index": "0",
+            "title": "Arroz T 1 Momiji 5Kg",
+            "absURL": "https://www.nagumo.com.br/on/demandware.static/-/Sites-storefront-catalog-ngm/pt_BR/v1792445425110/https://ngostpubprd001.blob.core.windows.net/produtos/assets/ofertas-ecommerce/198943.webp",
+            "src": {
+              "disUrl": "https://ngostpubprd001.blob.core.windows.net/produtos/assets/ofertas-ecommerce/198943.webp"
+            }
+          }
+        ]
+      },
+      "price": {
+        "sales": {
+          "value": 49.9,
+          "currency": "BRL",
+          "formatted": "R$ 49,90",
+          "decimalPrice": "49.90"
+        },
+        "list": null,
+        "priceDiff": {
+          "value": 0,
+          "currency": "BRL",
+          "formatted": "R$ 0,00",
+          "decimalPrice": "0.00"
+        },
+        "quantityValue": 0,
+        "quantityValueFormatted": "0.0"
+      },
+      "productShowFullUrl": "https://www.nagumo.com.br/categoria/departamentos/basicos-e-matinais/commodities/arroz/arroz-t-1-momiji-5kg-198943.html",
+      "ATSInCurrentStore": 9
+    },
+    {
+      "id": "205778",
+      "productName": "ARROZ ORIENTAL GRAOS CURTOS AZUL MOMIJI 1KG",
+      "brand": "MOMIJI",
+      "available": false,
+      "images": {
+        "medium": [
+          {
+            "alt": "https://ngostpubprd001.blob.core.windows.net/produtos/assets/ofertas-ecommerce/205778.webp",
+            "url": "/on/demandware.static/-/Sites-storefront-catalog-ngm/pt_BR/v1792445425110/https://ngostpubprd001.blob.core.windows.net/produtos/assets/ofertas-ecommerce/205778.webp",
+            "index": "0",
+            "title": "ARROZ ORIENTAL GRAOS CURTOS AZUL MOMIJI 1KG",
+            "absURL": "https://www.nagumo.com.br/on/demandware.static/-/Sites-storefront-catalog-ngm/pt_BR/v1792445425110/https://ngostpubprd001.blob.core.windows.net/produtos/assets/ofertas-ecommerce/205778.webp",
+            "src": {
+              "disUrl": "https://ngostpubprd001.blob.core.windows.net/produtos/assets/ofertas-ecommerce/205778.webp"
+            }
+          }
+        ]
+      },
+      "price": {
+        "sales": {
+          "value": 17.98,
+          "currency": "BRL",
+          "formatted": "R$ 17,98",
+          "decimalPrice": "17.98"
+        },
+        "list": null,
+        "priceDiff": {
+          "value": 0,
+          "currency": "BRL",
+          "formatted": "R$ 0,00",
+          "decimalPrice": "0.00"
+        },
+        "quantityValue": 0,
+        "quantityValueFormatted": "0.0"
+      },
+      "productShowFullUrl": "https://www.nagumo.com.br/categoria/departamentos/basicos-e-matinais/commodities/arroz/arroz-oriental-graos-curtos-azul-momiji-1kg-205778.html"
+    },
+    {
+      "id": "725903",
+      "productName": "Arroz Oriental Graos Longos Momiji 1Kg",
+      "brand": "MOMIJI",
+      "available": false,
+      "images": {
+        "medium": [
+          {
+            "alt": "https://ngostpubprd001.blob.core.windows.net/produtos/assets/ofertas-ecommerce/725903.webp",
+            "url": "/on/demandware.static/-/Sites-storefront-catalog-ngm/pt_BR/v1792445425110/https://ngostpubprd001.blob.core.windows.net/produtos/assets/ofertas-ecommerce/725903.webp",
+            "index": "0",
+            "title": "Arroz Oriental Graos Longos Momiji 1Kg",
+            "absURL": "https://www.nagumo.com.br/on/demandware.static/-/Sites-storefront-catalog-ngm/pt_BR/v1792445425110/https://ngostpubprd001.blob.core.windows.net/produtos/assets/ofertas-ecommerce/725903.webp",
+            "src": {
+              "disUrl": "https://ngostpubprd001.blob.core.windows.net/produtos/assets/ofertas-ecommerce/725903.webp"
+            }
+          }
+        ]
+      },
+      "price": {
+        "sales": {
+          "value": 10.9,
+          "currency": "BRL",
+          "formatted": "R$ 10,90",
+          "decimalPrice": "10.90"
+        },
+        "list": null,
+        "priceDiff": {
+          "value": 0,
+          "currency": "BRL",
+          "formatted": "R$ 0,00",
+          "decimalPrice": "0.00"
+        },
+        "quantityValue": 0,
+        "quantityValueFormatted": "0.0"
+      },
+      "productShowFullUrl": "https://www.nagumo.com.br/categoria/departamentos/basicos-e-matinais/commodities/arroz/arroz-oriental-graos-longos-momiji-1kg-725903.html",
+      "ATSInCurrentStore": 1
+    },
+    {
+      "id": "205781",
+      "productName": "Arroz Japonês Momiji Tipo 1 Grão Curto Azul Pacote 5Kg",
+      "brand": "MOMIJI",
+      "available": false,
+      "images": {
+        "medium": [
+          {
+            "alt": "https://ngostpubprd001.blob.core.windows.net/produtos/assets/ofertas-ecommerce/205781.webp",
+            "url": "/on/demandware.static/-/Sites-storefront-catalog-ngm/pt_BR/v1792445425110/https://ngostpubprd001.blob.core.windows.net/produtos/assets/ofertas-ecommerce/205781.webp",
+            "index": "0",
+            "title": "Arroz Japonês Momiji Tipo 1 Grão Curto Azul Pacote 5Kg",
+            "absURL": "https://www.nagumo.com.br/on/demandware.static/-/Sites-storefront-catalog-ngm/pt_BR/v1792445425110/https://ngostpubprd001.blob.core.windows.net/produtos/assets/ofertas-ecommerce/205781.webp",
+            "src": {
+              "disUrl": "https://ngostpubprd001.blob.core.windows.net/produtos/assets/ofertas-ecommerce/205781.webp"
+            }
+          }
+        ]
+      },
+      "price": {
+        "sales": {
+          "value": 69.9,
+          "currency": "BRL",
+          "formatted": "R$ 69,90",
+          "decimalPrice": "69.90"
+        },
+        "list": null,
+        "priceDiff": {
+          "value": 0,
+          "currency": "BRL",
+          "formatted": "R$ 0,00",
+          "decimalPrice": "0.00"
+        },
+        "quantityValue": 0,
+        "quantityValueFormatted": "0.0"
+      },
+      "productShowFullUrl": "https://www.nagumo.com.br/categoria/departamentos/basicos-e-matinais/commodities/arroz/arroz-japon%C3%AAs-momiji-tipo-1-gr%C3%A3o-curto-azul-pacote-5kg-205781.html",
+      "ATSInCurrentStore": 4
+    }
+  ]
+}

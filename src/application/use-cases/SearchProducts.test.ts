@@ -29,7 +29,26 @@ const PACOCA = aProduct({
   searchText: 'pacoca rolha santa helena 1kg',
 })
 
-const PRODUCTS = [COCA_COLA_2L, CONDENSED_MILK, BANANA, PACOCA]
+/**
+ * A bar of soap that one shop also lists as a box under the same barcode,
+ * which is how the listing came to announce a 92% saving on a Nivea bar:
+ * 1.99 in Atacadão against 24.91 in Sam's Club.
+ */
+const SOAP = aProduct({
+  id: 'soap',
+  name: 'Sabonete em Barra Nivea Lavanda 85g',
+  searchText: 'sabonete em barra nivea lavanda 85g',
+})
+
+/** Weighed goods: a real price, and no pack size to divide it by. */
+const TOMATO = aProduct({
+  id: 'tomato',
+  name: 'Tomate Italiano',
+  searchText: 'tomate italiano',
+  size: null,
+})
+
+const PRODUCTS = [COCA_COLA_2L, CONDENSED_MILK, BANANA, PACOCA, SOAP, TOMATO]
 
 const OFFERS = [
   anOffer(COCA_COLA_2L.id, 'mambo', 14.98),
@@ -37,6 +56,11 @@ const OFFERS = [
   anOffer(CONDENSED_MILK.id, 'mambo', 7.69),
   anOffer(CONDENSED_MILK.id, 'naturaldaterra', 10.79),
   anOffer(BANANA.id, 'mambo', 5.99, { inStock: false }),
+  anOffer(SOAP.id, 'mambo', 1.99),
+  // 12.5x the bar: a box, not a worse deal.
+  anOffer(SOAP.id, 'hortifruti', 24.91),
+  anOffer(SOAP.id, 'naturaldaterra', 2.49),
+  anOffer(TOMATO.id, 'mambo', 8.9),
 ]
 
 const SP_STORES = ['mambo', 'hortifruti', 'naturaldaterra']
@@ -133,12 +157,13 @@ describe('SearchProducts', () => {
     })
 
     it('omits the price per unit when the size is unknown', async () => {
+      // Weighed goods have a price and nothing to divide it by.
       const { useCase } = build()
-      const result = await search(useCase, 'banana')
+      const result = await search(useCase, 'tomate')
 
       if (result.status !== 'ok') throw new Error(result.status)
       expect(result.items[0].size).toBeNull()
-      expect(result.items[0].cheapest).toBeNull()
+      expect(result.items[0].cheapest?.unitPriceLabel).toBeNull()
     })
 
     it('links straight to the product page at that store', async () => {
@@ -147,6 +172,65 @@ describe('SearchProducts', () => {
 
       if (result.status !== 'ok') throw new Error(result.status)
       expect(result.items[0].cheapest?.url).toBe('https://example.com/hortifruti/coca-2l')
+    })
+  })
+
+  describe('products nobody nearby sells', () => {
+    it('leaves out a product with no price in any marked store', async () => {
+      // A juice collected only in São Paulo turned up in a search from
+      // the second region, and clicking it reached a page saying no marked shop had
+      // a price. Both screens were right; the row should not have been
+      // listed.
+      const { useCase } = build()
+      const result = await search(useCase, 'banana')
+      if (result.status !== 'ok') throw new Error(result.status)
+
+      // The only banana offer in the fixtures is out of stock, so no marked
+      // shop can sell it.
+      expect(result.items.map((item) => item.productId)).not.toContain(BANANA.id)
+    })
+
+    it('keeps a product that exactly one marked store sells', async () => {
+      // One price is a price. Zero is not.
+      const { useCase } = build()
+      const result = await search(useCase, 'leite condensado', ['mambo'])
+      if (result.status !== 'ok') throw new Error(result.status)
+
+      const item = result.items.find((hit) => hit.productId === CONDENSED_MILK.id)
+      expect(item?.offers).toHaveLength(1)
+    })
+  })
+
+  describe('prices that are not prices for this product', () => {
+    it('leaves out a price more than three times the cheapest', async () => {
+      // One shop lists the box under the barcode of the bar. Comparing a
+      // box with a bar and calling the difference a saving is the single
+      // most damaging thing a price comparator can do.
+      const { useCase } = build()
+      const result = await search(useCase, 'sabonete nivea')
+      if (result.status !== 'ok') throw new Error(result.status)
+
+      const soap = result.items.find((item) => item.productId === SOAP.id)
+      expect(soap?.offers.map((offer) => offer.storeName)).toEqual(['Mambo', 'Natural da Terra'])
+    })
+
+    it('does not announce a saving that comes from the package', async () => {
+      const { useCase } = build()
+      const result = await search(useCase, 'sabonete nivea')
+      if (result.status !== 'ok') throw new Error(result.status)
+
+      const soap = result.items.find((item) => item.productId === SOAP.id)
+      // 2.49 against 1.99, not 24.91 against 1.99.
+      expect(plainSpaces(soap?.spread?.amountLabel ?? '')).toBe('R$ 0,50')
+    })
+
+    it('still counts only the stores whose price can be compared', async () => {
+      const { useCase } = build()
+      const result = await search(useCase, 'sabonete nivea')
+      if (result.status !== 'ok') throw new Error(result.status)
+
+      const soap = result.items.find((item) => item.productId === SOAP.id)
+      expect(soap?.availableStoreCount).toBe(2)
     })
   })
 

@@ -8,8 +8,6 @@ import { writePreferencesCookie } from '../preferencesCookie'
 type Props = {
   stores: readonly ShoppingContextStore[]
   picked: readonly string[]
-  postalCode: string
-  regionId: string
 }
 
 /**
@@ -29,21 +27,19 @@ type Props = {
  * render, but setting it needs no round trip, so the chips respond at once
  * and the page refreshes behind them.
  */
-export function StorePicker({ stores, picked, postalCode, regionId }: Props) {
+export function StorePicker({ stores, picked }: Props) {
   const router = useRouter()
   const [selected, setSelected] = useState<readonly string[]>(picked)
 
   function apply(storeIds: readonly string[]) {
     setSelected(storeIds)
-    writePreferencesCookie({ postalCode, regionId, storeIds })
+    writePreferencesCookie({ storeIds })
     router.refresh()
   }
 
   function toggle(storeId: string) {
     apply(
-      selected.includes(storeId)
-        ? selected.filter((id) => id !== storeId)
-        : [...selected, storeId],
+      selected.includes(storeId) ? selected.filter((id) => id !== storeId) : [...selected, storeId],
     )
   }
 
