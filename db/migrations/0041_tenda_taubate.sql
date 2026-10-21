@@ -1,4 +1,4 @@
--- Tenda in Taubaté, branch 13 (CT15), Av. Charles Schneider 850.
+-- Tenda in the second region, branch 13 (CT15).
 --
 -- The branch reaches the API as a cart id and nothing else — every other
 -- spelling is ignored, which 0040 records. So region_token here is a
@@ -7,7 +7,7 @@
 --
 -- Verified before writing it down rather than after: the same search for
 -- Açúcar cristal Colombo 5kg answers 13.99 through this cart and 15.89
--- through none, and the live site set to collect at Taubaté shows 13,99.
+-- through none, and the live site set to collect in the second region shows 13,99.
 --
 -- The São Paulo row keeps no cart on purpose. The default list was
 -- measured against the Guarapiranga branch — which is what their own zip
@@ -18,7 +18,7 @@
 -- A cart that Tenda no longer recognises makes the search fail rather
 -- than quietly answer with the default, so an expired one costs the term
 -- and shows up in the run report instead of filing São Paulo prices
--- under Taubaté.
+-- under the second region.
 
 insert into stores (slug, name, chain, region_id, platform, host, region_token, min_interval_ms)
 select 'tenda-taubate', 'Tenda Atacado', 'Tenda', r.id,

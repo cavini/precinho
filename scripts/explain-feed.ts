@@ -11,9 +11,9 @@ async function main(): Promise<void> {
   const result = await client.query(`
     explain (analyze, buffers)
     select * from product_feed(
-      (select id from regions where slug = 'taubate-sp'),
+      (select id from regions where slug = 'sp-2'),
       array(select id from stores
-            where region_id = (select id from regions where slug = 'taubate-sp')
+            where region_id = (select id from regions where slug = 'sp-2')
               and active),
       24, 0
     )

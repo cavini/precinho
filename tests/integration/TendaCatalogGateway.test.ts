@@ -176,7 +176,7 @@ describe('TendaCatalogGateway request assembly', () => {
   })
 
   it('sends the configured cart, which is what makes the price a branch price', async () => {
-    // Measured on 2026-10-20: the same term under a Taubaté cart and under
+    // Measured on 2026-10-20: the same term under a the second region cart and under
     // no cart differ on 7 of 117 matched products — açúcar cristal Colombo
     // 5kg is 13.99 against 15.89. Without this parameter every branch reads
     // back São Paulo's list.

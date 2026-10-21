@@ -16,7 +16,7 @@ export const MAX_PRICE_RATIO = 3
  * to say where the middle is.
  *
  * Anchoring on the cheapest cannot tell a real spread from one bad row,
- * because both widen the same end. Read off the Taubaté feed, the two
+ * because both widen the same end. Read off the second region's feed, the two
  * look nothing alike:
  *
  *   real      12,98 / 22,49 / 29,90 / 34,99   a gradient across four shops
@@ -28,7 +28,7 @@ export const MAX_PRICE_RATIO = 3
  * 11,99 / 18,49 / 18,99 / 19,99 and 34,98 at Sam's Club — put its
  * multipack 1.84x above the middle and reached the top of the feed at
  * "economize R$22,99". The cost of tightening is small and was measured
- * rather than feared: across Taubaté it refuses 106 prices out of
+ * rather than feared: across the second region it refuses 106 prices out of
  * 15,869 against 84 at 2x, 0.7% either way, and the genuinely wide
  * survive — that chicken breast sits at 1.25x.
  */

@@ -22,8 +22,9 @@ export type VipCommerceStoreConfig = {
   /**
    * The branch whose shelf is being read ("centro de distribuição").
    *
-   * This is the regional lever, and the only one: Taubaté is centre 10 and
-   * Caçapava is 11, and the two return different assortments. A sweep
+   * This is the regional lever, and the only one: the second region is centre 10 and
+   * A neighbouring one is 11, and the two return different
+   * assortments. A sweep
    * without it reads whichever centre the storefront happens to default to.
    */
   distributionCenterId: string
@@ -88,11 +89,11 @@ const USER_AGENT = 'precinho-collector/1.0 (+https://github.com/cavini/precinho)
  * than quietly giving the default one's prices, which is how the VTEX
  * gateway spent weeks storing Carrefour's national price list.
  *
- * Checked rather than assumed, on 2026-10-19: centre 10 (Taubaté) and
- * centre 11 (Caçapava) return different assortments for "arroz", and
- * switching the shop's own storefront to the Taubaté branch reproduced
- * centre 10's list exactly, down to the 4.49 Raroz 1kg that only Taubaté
- * stocks. The prices themselves match between the two centres — Shibata
+ * Checked rather than assumed, on 2026-10-19: centre 10 and
+ * centre 11 return different assortments for "arroz", and
+ * switching the shop's own storefront to the second
+ * region's branch reproduced centre 10's list exactly, down to a 4.49
+ * rice that only it stocks. The prices themselves match between the two centres — Shibata
  * prices its Vale do Paraíba branches alike — but that is the chain's
  * pricing, confirmed against its own screen, not a parameter being ignored.
  */
@@ -238,7 +239,7 @@ export class VipCommerceCatalogGateway implements StoreCatalogGateway, StoreRegi
    * Unlike a VTEX account, which hands back a region id for almost any
    * address, this answers an empty list where the chain does not deliver —
    * São Paulo capital and the Rio Branco control both come back empty while
-   * Taubaté names branch 10. That is what makes a positive answer mean
+   * the second region names branch 10. That is what makes a positive answer mean
    * something.
    *
    * Complexity: one request; O(1) parsing.

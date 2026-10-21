@@ -14,7 +14,7 @@ async function main(): Promise<void> {
            jsonb_array_length(f.offers) as lojas
     from feed_cache f join regions g on g.id = f.region_id
     where g.slug = $1 order by f.position limit 10`,
-    [process.argv[2] ?? 'taubate-sp'],
+    [process.argv[2] ?? 'sp-2'],
   )
 
   for (const row of r.rows) {

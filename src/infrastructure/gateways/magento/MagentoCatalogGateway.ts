@@ -187,7 +187,7 @@ export class MagentoCatalogGateway implements StoreCatalogGateway {
    * A product link that lands in the right town.
    *
    * Magento serves each store view under its own path segment, and
-   * without it the shop falls back to its default: a Taubaté price linked
+   * without it the shop falls back to its default: a the second region price linked
    * to tauste.com.br/{produto}.html opens Marília's page, which is a
    * different price for the same product. Verified in a browser — a
    * plain fetch of either form is redirected home by their branch module,

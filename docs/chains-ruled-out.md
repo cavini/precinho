@@ -15,9 +15,9 @@ answer.
 Its site is per-branch promotional flyers. There is no priced catalogue
 behind them.
 
-## Bacana (Taubaté)
+## Bacana
 
-The chain is real — three units in Taubaté, CNPJs `58.259.050/0001-78` and
+The chain is real — three units in the second region, CNPJs `58.259.050/0001-78` and
 `58.303.774/0001-71`, both registered at Praça Santa Terezinha 185 under
 one owner, opened November and December 2024.
 
@@ -26,10 +26,10 @@ is the Bacana of Salto de Pirapora, 250km away in the Sorocaba region: area
 code 15 rather than 12, a different Instagram account, and a page
 advertising "120 anos de história", which a company registered in November
 2024 cannot have. Collecting from it would have filed Sorocaba-region
-prices under a Taubaté label, which is precisely the failure this project
+prices under a the second region label, which is precisely the failure this project
 spent a day removing from the VTEX chains.
 
-Taubaté's Bacana serves no host of its own: every plausible domain is
+the second region's Bacana serves no host of its own: every plausible domain is
 NXDOMAIN, and it is a tenant of no white-label grocery platform (checked
 against instabuy, mercadapp, vipcommerce, mercashop, superon and
 mercafacil, with a control that answers). Its app is CresceVendas, a
@@ -54,10 +54,10 @@ The clearest single fact: `mercadooxxo.com.br` now redirects to the
 brochure site. The storefront existed and was retired.
 
 There is also no region dimension to find. The offers JSON requested with a
-Taubaté CEP and with a Rio Branco, Acre CEP came back byte-identical — same
+the second region CEP and with a Rio Branco, Acre CEP came back byte-identical — same
 sha256, same content-md5 — and the site has no address input anywhere to
 set one with. Their own `lojas.json` lists 36 shops, all in São Paulo
-capital, while the press reports three OXXO units in Taubaté; nothing they
+capital, while the press reports three OXXO units in the second region; nothing they
 publish ties a price to a shop.
 
 Worth knowing even if it were collectable: alcohol, confectionery, snacks
@@ -73,4 +73,4 @@ not shelf prices in any case. Rappi's robots.txt disallows `/api`,
 **Revisit when:** OXXO has announced a first-party ordering app with
 click-and-collect and delivery, enabled on roughly 75 of 600+ shops as of
 early 2025. A public HTTP API there would be a per-shop endpoint, which is
-exactly what a Taubaté row needs.
+exactly what a the second region row needs.

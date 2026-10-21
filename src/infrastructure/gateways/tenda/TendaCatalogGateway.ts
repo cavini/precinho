@@ -26,7 +26,7 @@ export type TendaStoreConfig = {
    * Tenda prices per branch, and the cart is the only thing that says which
    * branch. Their storefront creates one the moment a shopper gives a CEP,
    * then passes its id to every catalogue call; the search endpoint reads it
-   * and quotes that branch. Measured on 2026-10-20 against a Taubaté cart:
+   * and quotes that branch. Measured on 2026-10-20 against a the second region cart:
    * 7 of 117 matched products move, açúcar cristal Colombo 5kg by R$1.90,
    * and 27% of the default listing is not carried there at all.
    *

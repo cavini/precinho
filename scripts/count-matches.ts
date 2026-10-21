@@ -7,7 +7,7 @@ import { createWriteClient } from '@/infrastructure/persistence/supabase/supabas
 async function main(): Promise<void> {
   const client = createWriteClient(readCollectorEnv())
   const token = process.argv[2] ?? 'sabonete'
-  const regionSlug = process.argv[3] ?? 'taubate-sp'
+  const regionSlug = process.argv[3] ?? 'sp-2'
 
   const { data: region } = await client.from('regions').select('id').eq('slug', regionSlug).single()
   const { data: stores } = await client

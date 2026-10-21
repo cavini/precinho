@@ -51,7 +51,7 @@ describe('ComparablePrices', () => {
 
   describe('when there are enough prices to find the middle', () => {
     it('keeps a wide spread that every shop agrees on', () => {
-      // Chocolate em pó Fleischmann across four shops in Taubaté. A 2.7x
+      // Chocolate em pó Fleischmann across four shops in the second region. A 2.7x
       // gap, and real: the prices climb steadily rather than one sitting
       // apart from the rest.
       expect(asReais(policy.keepComparable(reais(12.98, 22.49, 29.9, 34.99)))).toEqual([

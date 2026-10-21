@@ -17,7 +17,7 @@ export type SfccStoreConfig = {
   /**
    * The chain's own numeric branch, and the regional lever.
    *
-   * Nagumo quotes 49.90 for a 5kg Momiji at branch 25 (Taubaté) and 59.90
+   * Nagumo quotes 49.90 for a 5kg Momiji at branch 25 and 59.90
    * at 7, 46 and 20 around São Paulo. Without it the catalogue answers for
    * whichever branch Demandware defaults to, which is nobody's region.
    */
@@ -253,7 +253,7 @@ function toCatalogProduct(raw: unknown): CatalogProduct | null {
     // field exists and costs nothing to honour.
     listPriceReais: listPrice !== null && listPrice > price ? listPrice : null,
     // The flag, not the count behind it: three Momiji lines carried a
-    // non-zero ATSInCurrentStore at Taubaté and the shop's own page showed
+    // non-zero ATSInCurrentStore in the second region and the shop's own page showed
     // all three as "Produto Indisponível".
     inStock: raw.available !== false,
   }

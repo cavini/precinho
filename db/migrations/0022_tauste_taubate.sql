@@ -5,13 +5,13 @@
 -- availableStores, which answers in the context of the store you are
 -- already in and so reported one. Their own homepage carries the real
 -- list in window.availableCities: Marília, Bauru, Jundiaí, Sorocaba,
--- São José dos Campos, Campinas and Taubaté, each with a Magento store
+-- São José dos Campos, Campinas and the second region, each with a Magento store
 -- view code.
 --
 -- Checked rather than assumed this time. Same products, two store views:
 --
---   Arroz Tio João Integral     Marília 11.79   Taubaté 10.77
---   Arroz Paganini Caixa 1000g  Marília 28.98   Taubaté 29.47
+--   Arroz Tio João Integral     Marília 11.79   the second region 10.77
+--   Arroz Paganini Caixa 1000g  Marília 28.98   the second region 29.47
 --
 -- Arthur said he doubted any chain priced a whole state from one list and
 -- told me to look properly. He was right, and not only about Tauste.

@@ -6,11 +6,7 @@ import { createClient } from '@supabase/supabase-js'
 /** Times the read path the website actually uses, with the key it uses. */
 async function main(): Promise<void> {
   const client = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_ANON_KEY!)
-  const { data: region } = await client
-    .from('regions')
-    .select('id')
-    .eq('slug', 'taubate-sp')
-    .single()
+  const { data: region } = await client.from('regions').select('id').eq('slug', 'sp-2').single()
   const regionId = (region as { id: string }).id
   const { data: stores } = await client
     .from('stores')

@@ -178,7 +178,7 @@ describe('SearchProducts', () => {
   describe('products nobody nearby sells', () => {
     it('leaves out a product with no price in any marked store', async () => {
       // A juice collected only in São Paulo turned up in a search from
-      // Taubaté, and clicking it reached a page saying no marked shop had
+      // the second region, and clicking it reached a page saying no marked shop had
       // a price. Both screens were right; the row should not have been
       // listed.
       const { useCase } = build()

@@ -13,7 +13,7 @@ const NAGUMO_ARROZ: unknown = JSON.parse(
   readFileSync(join(import.meta.dirname, '../fixtures/nagumo-arroz-search.json'), 'utf8'),
 )
 
-/** The same chain's Taubaté branch, where the Momiji 5kg is ten reais cheaper. */
+/** The same chain's second region's branch, where the Momiji 5kg is ten reais cheaper. */
 const NAGUMO_MOMIJI: unknown = JSON.parse(
   readFileSync(join(import.meta.dirname, '../fixtures/nagumo-momiji-taubate-search.json'), 'utf8'),
 )
@@ -119,7 +119,7 @@ describe('SfccCatalogGateway against a recorded Nagumo response', () => {
 
   it('trusts the availability flag over the stock count behind it', async () => {
     // Three of these carry a non-zero ATSInCurrentStore and are still
-    // flagged unavailable at the Taubaté branch. The flag is what the
+    // flagged unavailable at the second region's branch. The flag is what the
     // shop's own page honours — it shows "Produto Indisponível" on all
     // three — so counting stock instead would list things nobody can buy.
     const { gateway } = build({ status: 'ok', statusCode: 200, body: NAGUMO_MOMIJI })
@@ -129,9 +129,9 @@ describe('SfccCatalogGateway against a recorded Nagumo response', () => {
   })
 
   it('prices from the branch it was told to, which is the whole point', async () => {
-    // Store 25 is Taubaté and quotes 49.90 for the Momiji 5kg; stores 7, 46
+    // Store 25 is the second region and quotes 49.90 for the Momiji 5kg; stores 7, 46
     // and 20 around São Paulo all quote 59.90. Verified against the shop's
-    // own storefront after switching its branch selector to Taubaté.
+    // own storefront after switching its branch selector to the second region.
     const { gateway } = build({ status: 'ok', statusCode: 200, body: NAGUMO_MOMIJI })
     const products = await search(gateway)
 

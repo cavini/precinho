@@ -46,7 +46,7 @@ const HERE = PostalCode.tryParse('01310100')! // São Paulo, Avenida Paulista
 const THERE = PostalCode.tryParse('22071900')! // Rio de Janeiro, kept for reference
 
 /** GPA prices by numeric store, so the pair is two stores rather than two CEPs. */
-const GPA_PAIR = { here: 461, there: 1384 } // Ricardo Jafet (SP) and Independência (Taubaté)
+const GPA_PAIR = { here: 461, there: 1384 } // Ricardo Jafet (SP) and Independência
 
 type Verdict = {
   slug: string
@@ -191,7 +191,7 @@ async function audit(store: StoreRow, http: FetchHttpClient, logger: Logger): Pr
     const row = vipCommerceRow(store)
     if (!row) return inconclusive(store, 'row is missing the ids the platform needs')
 
-    // Taubaté against Caçapava: two branches of the same chain, which is
+    // one branch against a neighbouring one: the same chain twice, which is
     // the only lever VipCommerce has. The pair is hard-coded because the
     // point is to re-check the finding, not to discover a new one.
     return branchComparison(
@@ -201,7 +201,7 @@ async function audit(store: StoreRow, http: FetchHttpClient, logger: Logger): Pr
         new VipCommerceCatalogGateway({ ...row, distributionCenterId: '10' }, http, logger),
         new VipCommerceCatalogGateway({ ...row, distributionCenterId: '11' }, http, logger),
       ),
-      'centres 10 (Taubaté) and 11 (Caçapava)',
+      'centres 10 and 11',
     )
   }
 
@@ -217,7 +217,7 @@ async function audit(store: StoreRow, http: FetchHttpClient, logger: Logger): Pr
         new SfccCatalogGateway({ ...site, sfccStoreId: '25' }, http, logger),
         new SfccCatalogGateway({ ...site, sfccStoreId: '7' }, http, logger),
       ),
-      'branches 25 (Taubaté) and 7 (São Paulo)',
+      'branches 25 and 7 (São Paulo)',
     )
   }
 

@@ -7,7 +7,7 @@
 -- offered a Heinz ketchup at "economize R$22,99" — 11,99 in one shop and
 -- 34,98 in another, which is not one product.
 --
--- Read off the Taubaté feed, real and bad look nothing alike once there
+-- Read off the second region's feed, real and bad look nothing alike once there
 -- are three prices to judge by:
 --
 --   real   12,98 / 22,49 / 29,90 / 34,99   1.35x the median

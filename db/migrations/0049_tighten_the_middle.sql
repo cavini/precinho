@@ -5,7 +5,7 @@
 -- at 1.84x the middle it cleared a threshold of 2 and reached the top of
 -- the feed as "economize R$22,99".
 --
--- Measured before moving it, across Taubaté: 1.75 refuses 106 prices of
+-- Measured before moving it, across the second region: 1.75 refuses 106 prices of
 -- 15,869 against 84 at 2x — 0.7% either way — and the genuinely wide
 -- spreads survive, a Vapza chicken breast across seven shops sitting at
 -- 1.25x.

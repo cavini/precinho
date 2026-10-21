@@ -13,7 +13,7 @@ async function main(): Promise<void> {
             from jsonb_array_elements(f.offers) o
             join stores s on s.id = (o ->> 'store_id')::uuid) as precos
     from feed_cache f join regions g on g.id = f.region_id
-    where g.slug = 'taubate-sp' and f.position <= 5 order by f.position`)
+    where g.slug = 'sp-2' and f.position <= 5 order by f.position`)
   for (const row of r.rows) {
     console.log(`\n  ${row.position}. ${row.name.slice(0, 54)}`)
     console.log(`     ${row.precos}`)

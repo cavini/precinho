@@ -1,4 +1,4 @@
--- Taubaté, Vale do Paraíba.
+-- the second region, Vale do Paraíba.
 --
 -- Which chains go in was probed rather than assumed, and the first probe
 -- was wrong in a way worth recording: asking each chain's region endpoint
@@ -11,7 +11,7 @@
 -- CEP in Rio Branco, Acre — 3,000km from every chain here — four of the
 -- ten came back with their own branches:
 --
---   carrefour  19 sellers around Taubaté, none of them the capital's 35
+--   carrefour  19 sellers around the second region, none of them the capital's 35
 --   oba        obataubate, against obapamplona in São Paulo
 --   atacadao   its own branch sellers
 --   samsclub   samsclub4931 and samsclub6058
@@ -24,17 +24,17 @@
 -- names the branch and carries its numeric id. For 12010-000 that is
 -- "0186 - Independência Taubaté" (1384) and "5657 - Taubaté" (1647), both
 -- confirmed against /{banner}/stores/{id}/humanization. Worth recording
--- that the static locator JSON lists Pão de Açúcar in Taubaté but not
+-- that the static locator JSON lists Pão de Açúcar in the second region but not
 -- Extra, and the delivery endpoint shows Extra serving it anyway — the
 -- locator is a marketing page, the delivery endpoint is the system of
 -- record.
 --
 -- Sam's Club's branch is in São José dos Campos, 20km away, and is where
--- people in Taubaté actually shop, so it counts.
+-- people in the second region actually shop, so it counts.
 --
--- Still outstanding: Tenda and Tauste both have branches in Taubaté, but
+-- Still outstanding: Tenda and Tauste both have branches in the second region, but
 -- Tenda's search API returns no per-branch availability — one national
--- price list — so a Taubaté row would duplicate São Paulo's rather than
+-- price list — so a the second region row would duplicate São Paulo's rather than
 -- price the local shop. Tauste's town is set by a Magento store view that
 -- has not been identified yet. Both are left out until they can be
 -- priced locally rather than guessed.

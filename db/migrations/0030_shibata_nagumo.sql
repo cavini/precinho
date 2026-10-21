@@ -27,15 +27,15 @@
 -- once — storing a default price list under a regional label — and both
 -- came back clean, measured rather than assumed:
 --
---   Shibata  centre 10 (Taubaté) and centre 11 (Caçapava) return
+--   Shibata  centre 10 and centre 11 return
 --            different assortments for "arroz". Switching the shop's own
---            storefront to its Taubaté branch reproduced centre 10's list
---            exactly, down to the 4.49 Raroz 1kg only Taubaté stocks.
+--            storefront to its second region's branch reproduced centre 10's list
+--            exactly, down to the 4.49 Raroz 1kg only the second region stocks.
 --            Prices match between the two centres, but that is Shibata
 --            pricing its branches alike — confirmed on its own screen —
 --            not a parameter being ignored.
 --
---   Nagumo   Arroz T 1 Momiji 5kg is 49.90 at branch 25 (Taubaté) and
+--   Nagumo   Arroz T 1 Momiji 5kg is 49.90 at branch 25 and
 --            59.90 at 7, 46 and 20 around São Paulo. Reproduced across
 --            four branches, then confirmed on the storefront: selecting
 --            025-TAUBATE1 changed the number on the page from 59,90 to
@@ -43,7 +43,7 @@
 --
 -- Both resolvers answer nothing for the Rio Branco control (69900-000),
 -- which is what makes a positive answer mean anything. Shibata also
--- answers nothing for São Paulo capital, so it gets a Taubaté row only.
+-- answers nothing for São Paulo capital, so it gets a the second region row only.
 
 alter table stores
   drop constraint if exists stores_platform_known;

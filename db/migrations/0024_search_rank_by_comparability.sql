@@ -1,6 +1,6 @@
 -- Rank search results by how comparable they are, not alphabetically.
 --
--- Searching "arroz" in Taubaté returned Arroz Arbóreo Riso Scotti, Arroz
+-- Searching "arroz" in the second region returned Arroz Arbóreo Riso Scotti, Arroz
 -- Arborio La Pastina, Arroz Arbório Member's Mark — each sold by exactly
 -- one shop. They won because the ordering was `name asc` and A comes
 -- first, which is how a price comparator ends up showing a column of

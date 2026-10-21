@@ -10,7 +10,7 @@ import type { VipCommerceStoreConfig } from '@/infrastructure/gateways/vipcommer
 import type { FakeResponse } from '@/infrastructure/testing/FakeHttpClient'
 import { FakeHttpClient } from '@/infrastructure/testing/FakeHttpClient'
 
-/** Names, barcodes and prices are Shibata's Taubaté shelf, read on 2026-10-19. */
+/** Names, barcodes and prices are Shibata's the second region shelf, read on 2026-10-19. */
 const SHIBATA_CAFE: unknown = JSON.parse(
   readFileSync(join(import.meta.dirname, '../fixtures/shibata-cafe-search.json'), 'utf8'),
 )
@@ -231,7 +231,7 @@ describe('VipCommerceCatalogGateway resolving a region', () => {
     // The control that makes the answer mean something: Shibata answers an
     // empty list for Rio Branco, Acre, rather than falling back to a
     // default centre. A chain that answered the same for Acre as for
-    // Taubaté would be telling us nothing about coverage.
+    // the second region would be telling us nothing about coverage.
     const gateway = buildResolver({
       status: 'ok',
       statusCode: 200,
