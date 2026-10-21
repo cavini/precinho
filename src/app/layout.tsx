@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { coverageUnreadable } from '@/application/use-cases/GetCoveredArea'
 import { getWebContainer } from '@/composition/container'
 import './globals.css'
 
@@ -23,7 +24,7 @@ export async function generateMetadata(): Promise<Metadata> {
   // nothing to render for anybody.
   const area = await getWebContainer().getCoveredArea.execute()
 
-  if (!area) {
+  if (!area || coverageUnreadable(area)) {
     return { title: 'Precinho', description: 'Comparador de preços de mercado.' }
   }
 

@@ -1,6 +1,7 @@
 import { Suspense } from 'react'
 import { RetryButton } from '@/presentation/components/RetryButton'
 import { headers } from 'next/headers'
+import { connection } from 'next/server'
 import Link from 'next/link'
 import { getWebContainer } from '@/composition/container'
 import { ContextBar } from '@/presentation/components/ContextBar'
@@ -32,6 +33,14 @@ export default function SearchPage({ searchParams }: Props) {
 async function SearchBody({ searchParams }: Props) {
   const { q = '' } = await searchParams
   const context = await readPageContext()
+
+  if (context.status === 'unavailable') {
+    return (
+      <p className="rounded-xl border border-rule p-4 text-sm text-ink-soft">
+        Não consegui carregar agora. <RetryButton label="Tentar de novo" />
+      </p>
+    )
+  }
 
   if (context.status === 'no-coverage') {
     return (
@@ -74,6 +83,16 @@ async function Results({
   regionId: string
   storeIds: readonly string[]
 }) {
+  // Marks this as needing a request before the first query runs.
+  //
+  // Without it, the partial prerender attempts this segment speculatively
+  // and cancels the query the moment the static shell is done. Supabase
+  // surfaces that cancellation as an ordinary query error, so the screen
+  // reported a database that had never been asked: "nothing is being
+  // tracked", or a search that found nothing. Both cleared on a retry,
+  // which is exactly how it was reported.
+  await connection()
+
   const result = await getWebContainer().searchProducts.execute({
     rawQuery: query,
     regionId,
