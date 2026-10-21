@@ -93,6 +93,14 @@ describe('ComparablePrices', () => {
     })
   })
 
+  describe('two prices, where there is no middle to judge by', () => {
+    it('keeps the cheaper when the other is out of reach of it', () => {
+      // The loop that finds the cheapest has to work whichever order the
+      // two arrive in, and offers do not arrive sorted.
+      expect(asReais(policy.keepComparable(reais(31.56, 8.99)))).toEqual([8.99])
+    })
+  })
+
   describe('the boundary', () => {
     it('keeps a price exactly at the limit', () => {
       expect(asReais(policy.keepComparable(reais(10, 30)))).toEqual([10, 30])
