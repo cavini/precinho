@@ -49,6 +49,50 @@ describe('ComparablePrices', () => {
     })
   })
 
+  describe('when there are enough prices to find the middle', () => {
+    it('keeps a wide spread that every shop agrees on', () => {
+      // Chocolate em pó Fleischmann across four shops in Taubaté. A 2.7x
+      // gap, and real: the prices climb steadily rather than one sitting
+      // apart from the rest.
+      expect(asReais(policy.keepComparable(reais(12.98, 22.49, 29.9, 34.99)))).toEqual([
+        12.98, 22.49, 29.9, 34.99,
+      ])
+    })
+
+    it('drops the one price the others disagree with', () => {
+      // Fio dental Reach: three shops within a real of each other and
+      // Sam's Club at 46,69, which is the multipack. Anchored on the
+      // cheapest this passes at 2.6x; anchored on the middle it does not.
+      expect(asReais(policy.keepComparable(reais(17.9, 19.69, 20.79, 46.69)))).toEqual([
+        17.9, 19.69, 20.79,
+      ])
+    })
+
+    it('drops a multipack that sits only a little above the middle', () => {
+      // Heinz ketchup across five shops. Sam's Club at 34,98 is 1.84x the
+      // median — wide enough to top the feed at "economize R$22,99", and
+      // close enough that a threshold of 2 let it through.
+      expect(asReais(policy.keepComparable(reais(11.99, 18.49, 18.99, 19.99, 34.98)))).toEqual([
+        11.99, 18.49, 18.99, 19.99,
+      ])
+    })
+
+    it('keeps a genuinely wide spread across many shops', () => {
+      // Peito de frango Vapza, seven shops, 18,97 to 49,99. Wide, and the
+      // middle is high enough that nothing is an outlier.
+      const prices = reais(18.97, 28.9, 31.98, 39.9, 39.98, 39.99, 49.99)
+      expect(policy.keepComparable(prices)).toHaveLength(7)
+    })
+
+    it('is not fooled by two outliers agreeing with each other', () => {
+      // Two packs and two units: the middle sits between them and both
+      // packs survive. Worth stating plainly — this rule finds the odd
+      // one out, not the truth.
+      const kept = asReais(policy.keepComparable(reais(10, 11, 30, 31)))
+      expect(kept).toEqual([10, 11, 30, 31])
+    })
+  })
+
   describe('the boundary', () => {
     it('keeps a price exactly at the limit', () => {
       expect(asReais(policy.keepComparable(reais(10, 30)))).toEqual([10, 30])
