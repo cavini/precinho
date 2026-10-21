@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest'
 import { plainSpaces } from '@/testing/plainSpaces'
 import { OfferComparator } from '@/domain/services/OfferComparator'
 import { FixedClock } from '../testing/FixedClock'
-import { InMemoryProductRepository, InMemoryStoreRepository } from '../testing/InMemoryRepositories'
+import {
+  InMemoryProductRepository,
+  InMemoryStoreRepository,
+  UnreadableStoreRepository,
+} from '../testing/InMemoryRepositories'
 import { RecordingLogger } from '../testing/RecordingLogger'
 import { RecordingMetrics } from '../testing/RecordingMetrics'
 import { AllowingRateLimiter, DenyingRateLimiter } from '../testing/StubRateLimiter'
@@ -28,13 +32,15 @@ const OFFERS = [
   }),
 ]
 
-function build(options: { denied?: boolean; now?: Date } = {}) {
+function build(options: { denied?: boolean; now?: Date; namelessStores?: boolean } = {}) {
   const logger = new RecordingLogger()
   const metrics = new RecordingMetrics()
 
   const useCase = new GetProductDetail({
     productRepository: new InMemoryProductRepository([COCA_COLA_2L], OFFERS, STORES),
-    storeRepository: new InMemoryStoreRepository(STORES),
+    storeRepository: options.namelessStores
+      ? new UnreadableStoreRepository(STORES)
+      : new InMemoryStoreRepository(STORES),
     comparator: new OfferComparator(),
     rateLimiter: options.denied ? new DenyingRateLimiter(15) : new AllowingRateLimiter(),
     logger,
@@ -261,5 +267,13 @@ describe('GetProductDetail', () => {
       expect(line.fields.offerCount).toBe(3)
       expect(line.fields.productId).toBe(COCA_COLA_2L.id)
     })
+  })
+})
+
+describe('GetProductDetail when the shop list cannot be read', () => {
+  it('still answers, because that list only supplies the shop names', async () => {
+    const { useCase } = build({ namelessStores: true })
+
+    expect((await detail(useCase)).status).toBe('ok')
   })
 })

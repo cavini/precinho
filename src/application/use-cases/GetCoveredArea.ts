@@ -10,6 +10,23 @@ export type CoveredArea = {
   stores: readonly ShoppingContextStore[]
 }
 
+/**
+ * What the lookup found: the area, nothing covered anywhere, or a read
+ * that did not come back.
+ *
+ * The third case used to be folded into the second. During the prerender
+ * of /busca the region query is cancelled, the repository returned an
+ * empty list, and the page told the visitor that no shop anywhere was
+ * being tracked. Reloading a second later worked, which is exactly how it
+ * was reported: searched, got nothing, searched again, got results.
+ */
+export type CoverageLookup = CoveredArea | null | { status: 'unavailable' }
+
+/** Narrows the third case, which has no area to read. */
+export function coverageUnreadable(lookup: CoverageLookup): lookup is { status: 'unavailable' } {
+  return lookup !== null && 'status' in lookup
+}
+
 export type GetCoveredAreaDeps = {
   regionRepository: RegionRepository
   storeRepository: StoreRepository
@@ -33,11 +50,13 @@ export class GetCoveredArea {
   constructor(private readonly deps: GetCoveredAreaDeps) {}
 
   /** Complexity: one query for the regions, then one per region until a covered one. */
-  async execute(): Promise<CoveredArea | null> {
+  async execute(): Promise<CoverageLookup> {
     const regions = await this.deps.regionRepository.listAll()
+    if (regions === null) return this.unreadable('regions')
 
     for (const region of regions) {
       const stores = await this.deps.storeRepository.listByRegion(region.id)
+      if (stores === null) return this.unreadable('stores')
       if (stores.length === 0) continue
 
       return {
@@ -56,5 +75,15 @@ export class GetCoveredArea {
 
     this.deps.logger.warn('coverage.none', { regions: regions.length })
     return null
+  }
+
+  /**
+   * Logged apart from coverage.none and at error, because the two are
+   * different things to go and fix: one says nobody is collecting
+   * anywhere, the other says the database did not answer.
+   */
+  private unreadable(which: 'regions' | 'stores'): { status: 'unavailable' } {
+    this.deps.logger.error('coverage.unreadable', { which })
+    return { status: 'unavailable' }
   }
 }
