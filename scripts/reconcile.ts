@@ -31,6 +31,10 @@ function run(args: string[]): string {
 const merged = run(['--merge'])
 for (const line of merged.split('\n')) if (line.includes('grupos')) console.log(line.trim())
 
+// Then rebuild the ranking, because merging changes which products have
+// two prices and the feed is ranked on exactly that.
+execFileSync('npx', ['tsx', 'scripts/refresh-feed.ts'], { stdio: 'inherit' })
+
 const pending = run([])
 for (const line of pending.split('\n')) {
   if (line.includes('candidatos') || line.includes('pendentes') || line.includes('praça')) {

@@ -108,7 +108,12 @@ export class SupabaseProductRepository implements ProductRepository {
    * applied in the query, so what comes back is already the page.
    */
   async feed(criteria: FeedCriteria): Promise<readonly ProductFeedEntry[] | null> {
-    const { data, error } = await this.client.rpc('product_feed', {
+    // feed_for, not product_feed: it serves the ranking built after the
+    // last collection when the shopper has every shop in the region
+    // ticked, and ranks live when they have not. Prices change once a
+    // day, so computing the ranking on every request was 130,594 offers
+    // and 60,238 products scanned to return 24 cards.
+    const { data, error } = await this.client.rpc('feed_for', {
       p_region_id: criteria.regionId,
       p_store_ids: criteria.storeIds,
       p_limit: criteria.limit,

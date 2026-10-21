@@ -61,4 +61,8 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          # Rebuilding the feed ranking needs a direct connection: it runs
+          # for half a minute, well past the statement timeout the HTTP
+          # API allows.
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
           LOG_LEVEL: info
