@@ -16,9 +16,7 @@ async function main(): Promise<void> {
   const client = createWriteClient(readCollectorEnv())
   const since = process.argv[2] ?? new Date(Date.now() - 86_400_000).toISOString()
 
-  const { count: total } = await client
-    .from('products')
-    .select('*', { count: 'exact', head: true })
+  const { count: total } = await client.from('products').select('*', { count: 'exact', head: true })
   const { count: recent } = await client
     .from('products')
     .select('*', { count: 'exact', head: true })

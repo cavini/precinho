@@ -31,7 +31,8 @@ async function main(): Promise<void> {
         .range(from, from + 999)
       if (error) throw new Error(error.message)
       const page = (data ?? []) as Array<{ product_id: string; price_cents: number }>
-      for (const row of page) if (!prices.has(row.product_id)) prices.set(row.product_id, row.price_cents)
+      for (const row of page)
+        if (!prices.has(row.product_id)) prices.set(row.product_id, row.price_cents)
       if (page.length < 1000) break
     }
     return prices
@@ -46,12 +47,16 @@ async function main(): Promise<void> {
   console.log(`  ${slugA}: ${a.size} produtos | ${slugB}: ${b.size} produtos`)
   console.log(`  em comum: ${shared.length}`)
   console.log(`  com preço diferente: ${differing.length}`)
-  console.log(`  só em ${slugA}: ${a.size - shared.length} | só em ${slugB}: ${b.size - shared.length}`)
+  console.log(
+    `  só em ${slugA}: ${a.size - shared.length} | só em ${slugB}: ${b.size - shared.length}`,
+  )
 
   for (const id of differing.slice(0, 6)) {
     const { data } = await client.from('products').select('name').eq('id', id).single()
     const name = (data as { name: string }).name.slice(0, 44)
-    console.log(`     ${name.padEnd(46)} ${(a.get(id)! / 100).toFixed(2)} x ${(b.get(id)! / 100).toFixed(2)}`)
+    console.log(
+      `     ${name.padEnd(46)} ${(a.get(id)! / 100).toFixed(2)} x ${(b.get(id)! / 100).toFixed(2)}`,
+    )
   }
 }
 void main()

@@ -2,53 +2,57 @@ import { cache } from 'react'
 import { cookies } from 'next/headers'
 import type { ShoppingContextStore } from '@/application/use-cases/ResolveShoppingContext'
 import { getWebContainer } from '@/composition/container'
-import { PostalCode } from '@/domain/value-objects/PostalCode'
 import { PREFERENCES_COOKIE, parsePreferences } from '../preferences'
 
 /** What every page needs to know before it can show a price. */
 export type PageContext =
   | {
       status: 'ready'
-      postalCodeLabel: string
+      /** The covered area, named as the screens should name it. */
+      regionName: string
       regionId: string
       stores: readonly ShoppingContextStore[]
       /** The stores the shopper picked, in the region's order. */
       pickedStoreIds: readonly string[]
     }
-  /** No usable cookie: the shopper has not told us where they are. */
-  | { status: 'needs-postal-code' }
+  /** Nothing is being collected anywhere, so there is nothing to show. */
+  | { status: 'no-coverage' }
 
 /**
  * Reads the shopping context for a server-rendered page.
  *
- * This is why the preference is a cookie and not localStorage: the region is
- * known before the first byte is sent, so a page renders with the right
- * prices instead of flashing a CEP prompt and then correcting itself.
+ * The covered area is wherever shops are being collected, read from the
+ * database rather than written here: the screens name the place, and the
+ * code does not have to know which place it is.
  *
- * Complexity: O(s) over the region's stores, one query.
+ * A visitor is not asked where they are. There is one covered area and
+ * the screens say so, which answers the question a postcode used to —
+ * and answers it before somebody types anything, rather than after.
+ *
+ * The cookie now carries only which shops they want compared. Anyone
+ * arriving without one gets all of them, because a visitor who has
+ * expressed no preference wants the full comparison, while a visitor
+ * who cleared the picker meant to clear it.
+ *
+ * Complexity: one query for the region, one for its stores.
  */
 export const readPageContext = cache(async function readPageContext(): Promise<PageContext> {
-  const store = await cookies()
-  const preferences = parsePreferences(store.get(PREFERENCES_COOKIE)?.value)
+  const area = await getWebContainer().getCoveredArea.execute()
+  if (!area) return { status: 'no-coverage' }
 
-  if (!preferences) return { status: 'needs-postal-code' }
+  const cookieStore = await cookies()
+  const preferences = parsePreferences(cookieStore.get(PREFERENCES_COOKIE)?.value)
+  const known = new Set(area.stores.map((store) => store.id))
 
-  const stores = await getWebContainer().listRegionStores.execute(preferences.regionId)
-  if (stores.length === 0) {
-    // The region went away or has no active stores; asking again is better
-    // than rendering an empty comparison with no explanation.
-    return { status: 'needs-postal-code' }
-  }
-
-  const known = new Set(stores.map((candidate) => candidate.id))
+  // Filtered against the region, so a shop that closed cannot sit in a
+  // cookie forever narrowing somebody's results invisibly.
+  const picked = preferences?.storeIds.filter((id) => known.has(id))
 
   return {
     status: 'ready',
-    postalCodeLabel: PostalCode.tryParse(preferences.postalCode)?.formatted ?? '',
-    regionId: preferences.regionId,
-    stores,
-    // Filtered against the region, so a store that closed or moved cannot
-    // sit in a cookie forever narrowing somebody's results invisibly.
-    pickedStoreIds: preferences.storeIds.filter((id) => known.has(id)),
+    regionName: area.regionName,
+    regionId: area.regionId,
+    stores: area.stores,
+    pickedStoreIds: picked && picked.length > 0 ? picked : [...known],
   }
 })

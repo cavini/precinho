@@ -1,9 +1,9 @@
 -- Search stops returning products nobody nearby sells.
 --
--- "Suco Integral Uva Tinto Aurora 500ml" came up in a search from Taubaté
+-- "Suco Integral Uva Tinto Aurora 500ml" came up in a search from the second region
 -- and the product page then said no marked shop had a price for it. Both
 -- screens were right: its only offer is from Pão de Açúcar in São Paulo.
--- The row had no business being in a Taubaté listing.
+-- The row had no business being in a the second region listing.
 --
 -- These rows were always returned — the laterals are left joins and the
 -- ordering only pushed zero-availability to the end. That was invisible

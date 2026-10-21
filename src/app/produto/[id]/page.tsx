@@ -6,7 +6,6 @@ import { notFound } from 'next/navigation'
 import { getWebContainer } from '@/composition/container'
 import { ContextBar } from '@/presentation/components/ContextBar'
 import { OfferTable } from '@/presentation/components/OfferTable'
-import { PostalCodeGate } from '@/presentation/components/PostalCodeGate'
 import { ContextBarSkeleton, ProductDetailSkeleton } from '@/presentation/components/Skeletons'
 import { clientKeyFromHeaders } from '@/presentation/clientKey'
 import { readPageContext } from '@/presentation/server/shoppingContext'
@@ -34,8 +33,12 @@ async function ProductBody({ params }: Props) {
   const { id } = await params
   const context = await readPageContext()
 
-  if (context.status === 'needs-postal-code') {
-    return <PostalCodeGate />
+  if (context.status === 'no-coverage') {
+    return (
+      <p className="rounded-xl border border-rule p-4 text-sm text-ink-soft">
+        Nenhum mercado está sendo acompanhado no momento.
+      </p>
+    )
   }
 
   const result = await getWebContainer().getProductDetail.execute({
@@ -50,8 +53,7 @@ async function ProductBody({ params }: Props) {
   return (
     <>
       <ContextBar
-        postalCodeLabel={context.postalCodeLabel}
-        regionId={context.regionId}
+        regionName={context.regionName}
         stores={context.stores}
         picked={context.pickedStoreIds}
       />

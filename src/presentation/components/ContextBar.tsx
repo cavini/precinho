@@ -1,52 +1,31 @@
 'use client'
 
-import { useState } from 'react'
 import type { ShoppingContextStore } from '@/application/use-cases/ResolveShoppingContext'
-import { PostalCodeForm } from './PostalCodeForm'
 import { StorePicker } from './StorePicker'
 
 type Props = {
-  postalCodeLabel: string
-  regionId: string
+  /** The covered area, named as the database holds it. */
+  regionName: string
   stores: readonly ShoppingContextStore[]
   picked: readonly string[]
 }
 
 /**
- * Where the shopper is, and which stores they are comparing.
+ * Where these prices are from, and which shops are being compared.
  *
- * Both sit at the top of every page because both change every price below
- * them. Hiding either would leave somebody reading prices for a city or a
- * chain they did not choose.
+ * The place is stated rather than asked for. One area is collected, and
+ * somebody reading a price is owed the knowledge of where it applies —
+ * a visitor from elsewhere should be able to tell at a glance that this
+ * is not for them, without typing a postcode to find out.
  */
-export function ContextBar({ postalCodeLabel, regionId, stores, picked }: Props) {
-  const [editing, setEditing] = useState(false)
-
+export function ContextBar({ regionName, stores, picked }: Props) {
   return (
     <div className="flex flex-col gap-3 border-b border-rule pb-4">
-      <div className="flex flex-wrap items-center gap-2 text-sm">
-        <span className="text-ink-soft">Preços para o CEP</span>
-        <span className="font-medium tabular-nums text-ink">{postalCodeLabel}</span>
+      <p className="text-sm text-ink-soft">
+        Preços dos mercados de <span className="font-medium text-ink">{regionName}</span>
+      </p>
 
-        {editing ? (
-          <PostalCodeForm current={postalCodeLabel} onDone={() => setEditing(false)} />
-        ) : (
-          <button
-            type="button"
-            onClick={() => setEditing(true)}
-            className="text-ink-soft underline underline-offset-2 hover:text-ink"
-          >
-            trocar
-          </button>
-        )}
-      </div>
-
-      <StorePicker
-        stores={stores}
-        picked={picked}
-        postalCode={postalCodeLabel.replace(/\D/g, '')}
-        regionId={regionId}
-      />
+      <StorePicker stores={stores} picked={picked} />
     </div>
   )
 }

@@ -1,5 +1,3 @@
-import { PostalCode } from '@/domain/value-objects/PostalCode'
-
 /** Cookie name. Read during server rendering, so the first paint is already regional. */
 export const PREFERENCES_COOKIE = 'precinho_ctx'
 
@@ -17,27 +15,23 @@ export const MAX_PICKED_STORES = 40
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 /**
- * What the shopper has chosen: where they are, and which stores they care
- * about.
+ * Which shops the visitor wants compared.
  *
- * Kept in a cookie rather than the database. There is no login, so there is
- * nobody for a stored preference to belong to — and a cookie is readable
- * during server rendering, where localStorage is not, so the first paint is
- * already showing the right region instead of flashing a CEP prompt.
+ * Only that, now. It used to carry a postcode and a region as well, from
+ * when a visitor had to say where they were; there is one covered area
+ * and the screens name it, so the question is gone and so is the answer.
+ *
+ * Kept in a cookie rather than the database. There is no login, so there
+ * is nobody for a stored preference to belong to — and a cookie is
+ * readable during server rendering, where localStorage is not, so the
+ * first paint already shows the right shops instead of correcting itself.
  */
 export type ShoppingPreferences = {
-  /** Eight digits, unformatted. */
-  postalCode: string
-  regionId: string
   storeIds: readonly string[]
 }
 
 export function serializePreferences(preferences: ShoppingPreferences): string {
-  return JSON.stringify({
-    cep: preferences.postalCode,
-    region: preferences.regionId,
-    stores: preferences.storeIds,
-  })
+  return JSON.stringify({ stores: preferences.storeIds })
 }
 
 /**
@@ -65,16 +59,10 @@ export function parsePreferences(raw: string | undefined | null): ShoppingPrefer
   if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return null
   const candidate = parsed as Record<string, unknown>
 
-  const postalCode = PostalCode.tryParse(typeof candidate.cep === 'string' ? candidate.cep : null)
-  if (!postalCode) return null
-
-  const regionId = typeof candidate.region === 'string' ? candidate.region : ''
-  if (!UUID.test(regionId)) return null
-
   if (!Array.isArray(candidate.stores)) return null
   const storeIds = candidate.stores
     .filter((id): id is string => typeof id === 'string' && UUID.test(id))
     .slice(0, MAX_PICKED_STORES)
 
-  return { postalCode: postalCode.digits, regionId, storeIds }
+  return { storeIds }
 }
