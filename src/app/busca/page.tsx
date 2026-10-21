@@ -1,4 +1,5 @@
 import { Suspense } from 'react'
+import { RetryButton } from '@/presentation/components/RetryButton'
 import { headers } from 'next/headers'
 import Link from 'next/link'
 import { getWebContainer } from '@/composition/container'
@@ -83,6 +84,14 @@ async function Results({
   if (result.status === 'ok') {
     return (
       <InfiniteResults query={query} initialItems={result.items} initialHasMore={result.hasMore} />
+    )
+  }
+
+  if (result.status === 'unavailable') {
+    return (
+      <p className="rounded-xl border border-rule p-4 text-sm text-ink-soft">
+        Não consegui buscar agora. <RetryButton label="Tentar de novo" />
+      </p>
     )
   }
 

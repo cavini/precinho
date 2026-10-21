@@ -42,6 +42,12 @@ export async function GET(request: Request): Promise<NextResponse> {
     )
   }
 
+  if (result.status === 'unavailable') {
+    // Not an empty page: the scroll would read that as the end of the
+    // results and stop, quietly, as though there were nothing more.
+    return NextResponse.json({ error: 'indisponível' }, { status: 503 })
+  }
+
   if (result.status !== 'ok') {
     return NextResponse.json({ items: [], hasMore: false })
   }
