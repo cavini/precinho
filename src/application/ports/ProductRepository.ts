@@ -88,7 +88,16 @@ export interface ProductRepository {
    * match. Implementations must exclude out-of-stock offers from
    * `cheapestOffer`, which the repository contract test enforces.
    */
-  search(criteria: SearchCriteria): Promise<readonly ProductSearchHit[]>
+  /**
+   * Null when the read failed.
+   *
+   * Same distinction the feed needs, for the same reason: a failed query
+   * returned as an empty list reaches the screen as "não achei nada para
+   * X", which is a claim about the catalogue. On a cold start that claim
+   * was false, and searching again worked — which is exactly what it
+   * looks like from the other side of the screen.
+   */
+  search(criteria: SearchCriteria): Promise<readonly ProductSearchHit[] | null>
 
   findById(productId: string): Promise<Product | null>
 

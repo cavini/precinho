@@ -71,7 +71,7 @@ class CountingProductRepository implements ProductRepository {
 
   constructor(private readonly inner: ProductRepository) {}
 
-  async search(criteria: SearchCriteria): Promise<readonly ProductSearchHit[]> {
+  async search(criteria: SearchCriteria): Promise<readonly ProductSearchHit[] | null> {
     this.searches += 1
     return this.inner.search(criteria)
   }
@@ -89,9 +89,18 @@ class CountingProductRepository implements ProductRepository {
   }
 }
 
-function build(options: { denied?: boolean } = {}) {
+/** A repository that cannot read, which is not the same as finding nothing. */
+class UnreadableProductRepository extends InMemoryProductRepository {
+  async search() {
+    return null
+  }
+}
+
+function build(options: { denied?: boolean; unreadable?: boolean } = {}) {
   const repository = new CountingProductRepository(
-    new InMemoryProductRepository(PRODUCTS, OFFERS, STORES),
+    options.unreadable
+      ? new UnreadableProductRepository(PRODUCTS, OFFERS, STORES)
+      : new InMemoryProductRepository(PRODUCTS, OFFERS, STORES),
   )
   const logger = new RecordingLogger()
   const metrics = new RecordingMetrics()
@@ -116,6 +125,37 @@ function search(useCase: SearchProducts, rawQuery: string, storeIds = SP_STORES)
     clientKey: 'ip-hash',
   })
 }
+
+describe('SearchProducts when the read fails', () => {
+  it('says it could not read rather than that nothing matched', async () => {
+    // Typing a word and being told nothing matched, then typing the same
+    // word again and getting results, is the same swallowed error the home
+    // page had: a failed query returned as an empty list reads as a claim
+    // about the shops instead of a claim about us.
+    const { useCase } = build({ unreadable: true })
+
+    expect(await search(useCase, 'coca')).toEqual({ status: 'unavailable' })
+  })
+
+  it('logs it at error, because nobody is going to report this', async () => {
+    const { useCase, logger } = build({ unreadable: true })
+    await search(useCase, 'coca')
+
+    const complaints = logger.lines.filter((line) => line.level === 'error')
+    expect(complaints.map((line) => line.message)).toContain('search.unreadable')
+  })
+
+  it('does not report it as a search that found nothing', async () => {
+    // On a dashboard the two are opposite problems: one is a gap in the
+    // catalogue, the other is the database refusing to answer.
+    const { useCase, metrics } = build({ unreadable: true })
+    await search(useCase, 'coca')
+
+    expect(metrics.total('search.execute', ['status', 'ok'])).toBe(0)
+    expect(metrics.total('search.execute', ['status', 'unavailable'])).toBe(1)
+    expect(metrics.total('search.empty')).toBe(0)
+  })
+})
 
 describe('SearchProducts', () => {
   describe('the listing a shopper reads', () => {

@@ -54,7 +54,8 @@ export class InMemoryProductRepository implements ProductRepository {
     private readonly stores: readonly Store[] = [],
   ) {}
 
-  async search(criteria: SearchCriteria): Promise<readonly ProductSearchHit[]> {
+  // Widened to match the port: a repository that cannot read says null.
+  async search(criteria: SearchCriteria): Promise<readonly ProductSearchHit[] | null> {
     const storeIds = this.storeIdsInRegion(criteria.regionId, criteria.storeIds)
 
     const hits = this.products

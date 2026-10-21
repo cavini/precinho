@@ -67,6 +67,12 @@ export type SearchProductsOutput =
   | { status: 'invalid-query' }
   | { status: 'no-stores-selected' }
   | { status: 'rate-limited'; retryAfterSeconds: number }
+  /**
+   * The read failed. Kept apart from an empty `ok` because the screens
+   * say very different things: "não achei nada" is a claim about the
+   * catalogue, and this is a claim about us.
+   */
+  | { status: 'unavailable' }
 
 export type SearchProductsDeps = {
   productRepository: ProductRepository
@@ -138,6 +144,11 @@ export class SearchProducts {
       offset,
     })
     metrics.timing('search.query_ms', clock.now().getTime() - startedAt)
+
+    if (hits === null) {
+      logger.error('search.unreadable', { query: query.normalized, regionId: input.regionId })
+      return this.finish({ status: 'unavailable' })
+    }
 
     const storesById = await this.indexStores(input.regionId)
     const items = hits.map((hit) => toSearchResultItem(hit, storesById))

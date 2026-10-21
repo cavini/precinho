@@ -83,7 +83,7 @@ export class SupabaseProductRepository implements ProductRepository {
    * Complexity: one round trip. The work inside is bounded by the function's
    * own candidate cap, so a broad query cannot turn into a catalogue scan.
    */
-  async search(criteria: SearchCriteria): Promise<readonly ProductSearchHit[]> {
+  async search(criteria: SearchCriteria): Promise<readonly ProductSearchHit[] | null> {
     const { data, error } = await this.client.rpc('search_products', {
       p_tokens: criteria.query.tokens,
       p_region_id: criteria.regionId,
@@ -97,7 +97,9 @@ export class SupabaseProductRepository implements ProductRepository {
         reason: error.message,
         regionId: criteria.regionId,
       })
-      return []
+      // Null, not empty: the caller has to be able to say "I could not
+      // look" rather than "there is nothing".
+      return null
     }
 
     return (data as SearchRow[]).map((row) => this.toHit(row))
