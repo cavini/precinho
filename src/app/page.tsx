@@ -1,4 +1,5 @@
 import { Suspense } from 'react'
+import { RetryButton } from '@/presentation/components/RetryButton'
 import { headers } from 'next/headers'
 import { getWebContainer } from '@/composition/container'
 import { ContextBar } from '@/presentation/components/ContextBar'
@@ -89,11 +90,7 @@ async function FeedSection({
   if (feed.status === 'unavailable') {
     return (
       <p className="rounded-xl border border-rule p-4 text-sm text-ink-soft">
-        Não consegui carregar os preços agora.{' '}
-        <a href="/" className="underline underline-offset-2">
-          Tentar de novo
-        </a>
-        .
+        Não consegui carregar os preços agora. <RetryButton label="Tentar de novo" />
       </p>
     )
   }

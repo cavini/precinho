@@ -70,7 +70,9 @@ export class InMemoryProductRepository implements ProductRepository {
     return hits.slice(criteria.offset, criteria.offset + criteria.limit)
   }
 
-  async feed(criteria: FeedCriteria): Promise<readonly ProductFeedEntry[]> {
+  // Widened to match the port: a repository that cannot read says null,
+  // and this one is the contract in TypeScript.
+  async feed(criteria: FeedCriteria): Promise<readonly ProductFeedEntry[] | null> {
     const storeIds = this.storeIdsInRegion(criteria.regionId, criteria.storeIds)
 
     return (
