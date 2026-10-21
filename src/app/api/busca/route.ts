@@ -15,8 +15,14 @@ import { readPageContext } from '@/presentation/server/shoppingContext'
  */
 export async function GET(request: Request): Promise<NextResponse> {
   const context = await readPageContext()
+
+  // 503 rather than 409: a coverage read that failed is ours to fix and
+  // worth retrying, while a client error tells the caller to stop.
+  if (context.status === 'unavailable') {
+    return NextResponse.json({ error: 'indisponível' }, { status: 503 })
+  }
   if (context.status !== 'ready') {
-    return NextResponse.json({ error: 'sem CEP' }, { status: 409 })
+    return NextResponse.json({ error: 'sem cobertura' }, { status: 409 })
   }
 
   const params = new URL(request.url).searchParams

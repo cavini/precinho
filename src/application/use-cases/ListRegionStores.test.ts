@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { InMemoryStoreRepository } from '../testing/InMemoryRepositories'
+import { InMemoryStoreRepository, UnreadableStoreRepository } from '../testing/InMemoryRepositories'
 import { RecordingLogger } from '../testing/RecordingLogger'
 import { REGION_SP, STORES } from '../testing/fixtures'
 import { ListRegionStores } from './ListRegionStores'
@@ -31,5 +31,19 @@ describe('ListRegionStores', () => {
   it('exposes only what the picker needs', async () => {
     const [store] = await build().execute(REGION_SP.id)
     expect(Object.keys(store).sort()).toEqual(['chain', 'id', 'name', 'slug'])
+  })
+})
+
+describe('ListRegionStores when the read fails', () => {
+  it('returns nothing rather than throwing, because the picker can live without it', async () => {
+    // Deliberate, and the reason is that nothing reaches this any more:
+    // it is a leftover of the postcode picker. If it ever renders again
+    // this should become an unavailable state like the other reads.
+    const useCase = new ListRegionStores({
+      storeRepository: new UnreadableStoreRepository(STORES),
+      logger: new RecordingLogger(),
+    })
+
+    expect(await useCase.execute(REGION_SP.id)).toEqual([])
   })
 })

@@ -16,7 +16,7 @@ export class SupabaseStoreRepository implements StoreRepository {
    *
    * Complexity: O(s) through stores_region_active_idx.
    */
-  async listByRegion(regionId: string): Promise<readonly Store[]> {
+  async listByRegion(regionId: string): Promise<readonly Store[] | null> {
     const { data, error } = await this.client
       .from('stores')
       .select('id, slug, name, chain, region_id')
@@ -26,7 +26,9 @@ export class SupabaseStoreRepository implements StoreRepository {
 
     if (error) {
       this.logger.error('stores.list_failed', { regionId, reason: error.message })
-      return []
+      // Null for the same reason as the regions: a region whose shop list
+      // could not be read is not a region without shops.
+      return null
     }
 
     return (data as StoreRow[]).map(toStore)

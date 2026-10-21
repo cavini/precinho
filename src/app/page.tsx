@@ -1,6 +1,7 @@
 import { Suspense } from 'react'
 import { RetryButton } from '@/presentation/components/RetryButton'
 import { headers } from 'next/headers'
+import { connection } from 'next/server'
 import { getWebContainer } from '@/composition/container'
 import { ContextBar } from '@/presentation/components/ContextBar'
 import { InfiniteFeed } from '@/presentation/components/InfiniteFeed'
@@ -35,6 +36,14 @@ export default function HomePage() {
 
 async function HomeBody() {
   const context = await readPageContext()
+
+  if (context.status === 'unavailable') {
+    return (
+      <p className="rounded-xl border border-rule p-4 text-sm text-ink-soft">
+        Não consegui carregar agora. <RetryButton label="Tentar de novo" />
+      </p>
+    )
+  }
 
   if (context.status === 'no-coverage') {
     return (
@@ -75,6 +84,11 @@ async function FeedSection({
   regionId: string
   storeIds: readonly string[]
 }) {
+  // See the note in busca/page.tsx: without this the partial prerender
+  // cancels the query mid-flight and the cancellation arrives as an
+  // ordinary database error.
+  await connection()
+
   const feed = await getWebContainer().getProductFeed.execute({
     regionId,
     storeIds,

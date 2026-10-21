@@ -7,7 +7,11 @@ import type {
   SearchCriteria,
 } from '../ports/ProductRepository'
 import { FixedClock } from '../testing/FixedClock'
-import { InMemoryProductRepository, InMemoryStoreRepository } from '../testing/InMemoryRepositories'
+import {
+  InMemoryProductRepository,
+  InMemoryStoreRepository,
+  UnreadableStoreRepository,
+} from '../testing/InMemoryRepositories'
 import { RecordingLogger } from '../testing/RecordingLogger'
 import { RecordingMetrics } from '../testing/RecordingMetrics'
 import { AllowingRateLimiter, DenyingRateLimiter } from '../testing/StubRateLimiter'
@@ -96,7 +100,7 @@ class UnreadableProductRepository extends InMemoryProductRepository {
   }
 }
 
-function build(options: { denied?: boolean; unreadable?: boolean } = {}) {
+function build(options: { denied?: boolean; unreadable?: boolean; namelessStores?: boolean } = {}) {
   const repository = new CountingProductRepository(
     options.unreadable
       ? new UnreadableProductRepository(PRODUCTS, OFFERS, STORES)
@@ -107,7 +111,9 @@ function build(options: { denied?: boolean; unreadable?: boolean } = {}) {
 
   const useCase = new SearchProducts({
     productRepository: repository,
-    storeRepository: new InMemoryStoreRepository(STORES),
+    storeRepository: options.namelessStores
+      ? new UnreadableStoreRepository(STORES)
+      : new InMemoryStoreRepository(STORES),
     rateLimiter: options.denied ? new DenyingRateLimiter(20) : new AllowingRateLimiter(),
     logger,
     metrics,
@@ -436,5 +442,17 @@ describe('SearchProducts', () => {
       await search(useCase, 'quinoa')
       expect(metrics.total('search.empty')).toBe(1)
     })
+  })
+})
+
+describe('SearchProducts when the shop list cannot be read', () => {
+  it('still answers, because that list only supplies the shop names', async () => {
+    // The prices come from the search itself; this read is the lookup
+    // that puts a name beside each one. Losing it costs a label, not the
+    // answer, so it must not turn a working search into a failed one.
+    const { useCase } = build({ namelessStores: true })
+
+    const result = await search(useCase, 'coca')
+    expect(result.status).toBe('ok')
   })
 })

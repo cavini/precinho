@@ -16,7 +16,7 @@ import type { StoreRepository } from '../ports/StoreRepository'
 export class InMemoryRegionRepository implements RegionRepository {
   constructor(private readonly regions: readonly Region[] = []) {}
 
-  async listAll(): Promise<readonly Region[]> {
+  async listAll(): Promise<readonly Region[] | null> {
     return this.regions
   }
 
@@ -28,8 +28,25 @@ export class InMemoryRegionRepository implements RegionRepository {
 export class InMemoryStoreRepository implements StoreRepository {
   constructor(private readonly stores: readonly Store[] = []) {}
 
-  async listByRegion(regionId: string): Promise<readonly Store[]> {
+  async listByRegion(regionId: string): Promise<readonly Store[] | null> {
     return this.stores.filter((store) => store.regionId === regionId)
+  }
+}
+
+/**
+ * A repository whose read fails, which is not the same as one with
+ * nothing in it. Kept here because three use cases have to make a
+ * decision about this case and each should be able to state its own.
+ */
+export class UnreadableRegionRepository extends InMemoryRegionRepository {
+  async listAll(): Promise<null> {
+    return null
+  }
+}
+
+export class UnreadableStoreRepository extends InMemoryStoreRepository {
+  async listByRegion(): Promise<null> {
+    return null
   }
 }
 

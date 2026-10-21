@@ -102,7 +102,7 @@ export class ResolveShoppingContext {
     }
 
     const { address } = lookup
-    const regions = await regionRepository.listAll()
+    const regions = (await regionRepository.listAll()) ?? []
     const match = regionSelector.select(regions, address)
 
     if (!match.region || match.kind === 'none') {
@@ -110,7 +110,7 @@ export class ResolveShoppingContext {
       return this.finish({ status: 'no-coverage', city: address.city, uf: address.uf })
     }
 
-    const stores = await storeRepository.listByRegion(match.region.id)
+    const stores = (await storeRepository.listByRegion(match.region.id)) ?? []
 
     // A region can empty out after the fact: a chain gets deactivated, or
     // its robots.txt turns out to forbid us. Matching the city and then

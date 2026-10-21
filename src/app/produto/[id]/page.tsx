@@ -1,6 +1,8 @@
 import { Suspense } from 'react'
+import { RetryButton } from '@/presentation/components/RetryButton'
 import { ProductImage } from '@/presentation/components/ProductImage'
 import { headers } from 'next/headers'
+import { connection } from 'next/server'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getWebContainer } from '@/composition/container'
@@ -30,8 +32,21 @@ export default function ProductPage({ params }: Props) {
 }
 
 async function ProductBody({ params }: Props) {
+  // See the note in busca/page.tsx: without this the partial prerender
+  // cancels the query mid-flight and the cancellation arrives as an
+  // ordinary database error.
+  await connection()
+
   const { id } = await params
   const context = await readPageContext()
+
+  if (context.status === 'unavailable') {
+    return (
+      <p className="rounded-xl border border-rule p-4 text-sm text-ink-soft">
+        Não consegui carregar agora. <RetryButton label="Tentar de novo" />
+      </p>
+    )
+  }
 
   if (context.status === 'no-coverage') {
     return (

@@ -105,7 +105,11 @@ export class GetProductFeed {
       return this.finish({ status: 'unavailable' })
     }
 
-    const stores = await storeRepository.listByRegion(input.regionId)
+    const stores =
+      (await storeRepository.listByRegion(input.regionId)) ??
+      // Only used to put a shop name beside a price. An unreadable
+      // list costs a label, not the answer, so it does not fail the read.
+      []
     const storesById = new Map(stores.map((store) => [store.id, store]))
 
     logger.info('feed.completed', {

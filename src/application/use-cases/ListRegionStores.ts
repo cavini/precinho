@@ -20,7 +20,7 @@ export class ListRegionStores {
 
   /** Complexity: O(s) over the region's stores, sorted for a stable picker. */
   async execute(regionId: string): Promise<readonly ShoppingContextStore[]> {
-    const stores = await this.deps.storeRepository.listByRegion(regionId)
+    const stores = (await this.deps.storeRepository.listByRegion(regionId)) ?? []
 
     return [...stores]
       .sort((a, b) => a.name.localeCompare(b.name))

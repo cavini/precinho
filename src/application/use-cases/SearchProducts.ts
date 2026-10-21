@@ -179,7 +179,11 @@ export class SearchProducts {
 
   /** One pass over the region's stores; O(s) to build, O(1) per lookup. */
   private async indexStores(regionId: string): Promise<Map<string, Store>> {
-    const stores = await this.deps.storeRepository.listByRegion(regionId)
+    const stores =
+      (await this.deps.storeRepository.listByRegion(regionId)) ??
+      // Only used to put a shop name beside a price. An unreadable
+      // list costs a label, not the answer, so it does not fail the read.
+      []
     return new Map(stores.map((store) => [store.id, store]))
   }
 

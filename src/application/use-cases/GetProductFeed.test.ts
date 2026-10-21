@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { plainSpaces } from '@/testing/plainSpaces'
-import { InMemoryProductRepository, InMemoryStoreRepository } from '../testing/InMemoryRepositories'
+import {
+  InMemoryProductRepository,
+  InMemoryStoreRepository,
+  UnreadableStoreRepository,
+} from '../testing/InMemoryRepositories'
 import { RecordingLogger } from '../testing/RecordingLogger'
 import { RecordingMetrics } from '../testing/RecordingMetrics'
 import { AllowingRateLimiter, DenyingRateLimiter } from '../testing/StubRateLimiter'
@@ -40,7 +44,7 @@ class UnreadableProductRepository extends InMemoryProductRepository {
   }
 }
 
-function build(options: { denied?: boolean; unreadable?: boolean } = {}) {
+function build(options: { denied?: boolean; unreadable?: boolean; namelessStores?: boolean } = {}) {
   const logger = new RecordingLogger()
   const metrics = new RecordingMetrics()
 
@@ -48,7 +52,9 @@ function build(options: { denied?: boolean; unreadable?: boolean } = {}) {
     productRepository: options.unreadable
       ? new UnreadableProductRepository(PRODUCTS, OFFERS, STORES)
       : new InMemoryProductRepository(PRODUCTS, OFFERS, STORES),
-    storeRepository: new InMemoryStoreRepository(STORES),
+    storeRepository: options.namelessStores
+      ? new UnreadableStoreRepository(STORES)
+      : new InMemoryStoreRepository(STORES),
     rateLimiter: options.denied ? new DenyingRateLimiter(10) : new AllowingRateLimiter(),
     logger,
     metrics,
@@ -323,3 +329,11 @@ describe('GetProductFeed', () => {
 function i(id: string): number {
   return Number(id.replace('p', ''))
 }
+
+describe('GetProductFeed when the shop list cannot be read', () => {
+  it('still answers, because that list only supplies the shop names', async () => {
+    const { useCase } = build({ namelessStores: true })
+
+    expect((await feed(useCase)).status).toBe('ok')
+  })
+})

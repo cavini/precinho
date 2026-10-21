@@ -1,6 +1,7 @@
 import { cache } from 'react'
 import { cookies } from 'next/headers'
 import type { ShoppingContextStore } from '@/application/use-cases/ResolveShoppingContext'
+import { coverageUnreadable } from '@/application/use-cases/GetCoveredArea'
 import { getWebContainer } from '@/composition/container'
 import { PREFERENCES_COOKIE, parsePreferences } from '../preferences'
 
@@ -17,6 +18,12 @@ export type PageContext =
     }
   /** Nothing is being collected anywhere, so there is nothing to show. */
   | { status: 'no-coverage' }
+  /**
+   * The coverage read did not come back, which is a different sentence
+   * from the one above and has to stay different: one is a fact about the
+   * world, the other is a fact about us.
+   */
+  | { status: 'unavailable' }
 
 /**
  * Reads the shopping context for a server-rendered page.
@@ -36,8 +43,25 @@ export type PageContext =
  *
  * Complexity: one query for the region, one for its stores.
  */
+/**
+ * The covered area, cached.
+ *
+ * Not a per-visitor fact: it is wherever shops are being collected, the
+ * same answer for everybody, and it changes when a region is opened. The
+ * cache is also what keeps it out of the prerender's way. /busca is
+ * partially prerendered, and an uncached query here was being cancelled
+ * mid-flight when the static shell finished, which the repository then
+ * read as "no regions" and the page announced as "nothing is being
+ * tracked". Cached, it is simply part of the shell.
+ */
+async function coveredArea() {
+  'use cache'
+  return getWebContainer().getCoveredArea.execute()
+}
+
 export const readPageContext = cache(async function readPageContext(): Promise<PageContext> {
-  const area = await getWebContainer().getCoveredArea.execute()
+  const area = await coveredArea()
+  if (coverageUnreadable(area)) return { status: 'unavailable' }
   if (!area) return { status: 'no-coverage' }
 
   const cookieStore = await cookies()

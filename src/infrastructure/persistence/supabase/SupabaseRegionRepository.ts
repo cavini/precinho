@@ -17,14 +17,16 @@ export class SupabaseRegionRepository implements RegionRepository {
   ) {}
 
   /** Complexity: O(r), a full read of a tiny table. */
-  async listAll(): Promise<readonly Region[]> {
+  async listAll(): Promise<readonly Region[] | null> {
     const { data, error } = await this.client.from('regions').select(COLUMNS).order('slug')
 
     if (error) {
       this.logger.error('regions.list_failed', { reason: error.message })
-      // An empty list reads downstream as "no coverage", which is the honest
-      // answer when we cannot tell what we cover.
-      return []
+      // Null, not an empty list. An empty list reads downstream as "no
+      // coverage", and the site then tells the visitor that no shop
+      // anywhere is being tracked, which is a claim about the world made
+      // from a query that never answered.
+      return null
     }
 
     return (data as RegionRow[]).map(toRegion)

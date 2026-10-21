@@ -3,7 +3,12 @@ import { RegionSelector } from '@/domain/services/RegionSelector'
 import type { Region } from '@/domain/entities/Region'
 import type { Store } from '@/domain/entities/Store'
 import { FixedClock } from '../testing/FixedClock'
-import { InMemoryRegionRepository, InMemoryStoreRepository } from '../testing/InMemoryRepositories'
+import {
+  InMemoryRegionRepository,
+  InMemoryStoreRepository,
+  UnreadableRegionRepository,
+  UnreadableStoreRepository,
+} from '../testing/InMemoryRepositories'
 import { RecordingLogger } from '../testing/RecordingLogger'
 import { RecordingMetrics } from '../testing/RecordingMetrics'
 import { StubAddressLookup } from '../testing/StubAddressLookup'
@@ -213,5 +218,48 @@ describe('ResolveShoppingContext', () => {
       expect(serialised).not.toContain('01310100')
       expect(serialised).not.toContain('01310-100')
     })
+  })
+})
+
+describe('ResolveShoppingContext when a read fails', () => {
+  /** The harness only varies the regions, so this one is wired by hand. */
+  function withRepositories(
+    regionRepository: InMemoryRegionRepository,
+    storeRepository: InMemoryStoreRepository,
+  ) {
+    return new ResolveShoppingContext({
+      addressLookup: new StubAddressLookup({ '01310100': PAULISTA }),
+      regionRepository,
+      storeRepository,
+      regionSelector: new RegionSelector(),
+      rateLimiter: new AllowingRateLimiter(),
+      logger: new RecordingLogger(),
+      metrics: new RecordingMetrics(),
+      clock: new FixedClock(new Date('2026-10-21T12:00:00Z')),
+    })
+  }
+
+  const ask = (useCase: ResolveShoppingContext) =>
+    useCase.execute({ rawPostalCode: '01310-100', clientKey: 'ip-hash' })
+
+  it('does not resolve a context when the regions cannot be read', async () => {
+    const useCase = withRepositories(
+      new UnreadableRegionRepository([SAO_PAULO]),
+      new InMemoryStoreRepository(STORES),
+    )
+
+    expect((await ask(useCase)).status).not.toBe('ready')
+  })
+
+  it('treats an unreadable shop list the same as a region with no shops', async () => {
+    // Nothing reaches this any more, since the postcode picker is gone.
+    // Stated rather than left implicit, so whoever wires it up again has
+    // to decide rather than inherit.
+    const useCase = withRepositories(
+      new InMemoryRegionRepository([SAO_PAULO]),
+      new UnreadableStoreRepository(STORES),
+    )
+
+    expect((await ask(useCase)).status).not.toBe('ready')
   })
 })
