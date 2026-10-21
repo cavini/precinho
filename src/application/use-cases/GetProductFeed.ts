@@ -45,6 +45,12 @@ export type GetProductFeedOutput =
     }
   | { status: 'no-stores-selected' }
   | { status: 'rate-limited'; retryAfterSeconds: number }
+  /**
+   * The read failed. Kept apart from an empty `ok` because the screens
+   * say very different things: "nothing here worth comparing" is a claim
+   * about the shops, and this is a claim about us.
+   */
+  | { status: 'unavailable' }
 
 export type GetProductFeedDeps = {
   productRepository: ProductRepository
@@ -93,6 +99,11 @@ export class GetProductFeed {
       limit,
       offset,
     })
+
+    if (entries === null) {
+      logger.error('feed.unreadable', { regionId: input.regionId, offset })
+      return this.finish({ status: 'unavailable' })
+    }
 
     const stores = await storeRepository.listByRegion(input.regionId)
     const storesById = new Map(stores.map((store) => [store.id, store]))

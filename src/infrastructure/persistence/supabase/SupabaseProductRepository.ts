@@ -107,7 +107,7 @@ export class SupabaseProductRepository implements ProductRepository {
    * Complexity: one round trip. The ranking and the two-store minimum are
    * applied in the query, so what comes back is already the page.
    */
-  async feed(criteria: FeedCriteria): Promise<readonly ProductFeedEntry[]> {
+  async feed(criteria: FeedCriteria): Promise<readonly ProductFeedEntry[] | null> {
     const { data, error } = await this.client.rpc('product_feed', {
       p_region_id: criteria.regionId,
       p_store_ids: criteria.storeIds,
@@ -120,7 +120,9 @@ export class SupabaseProductRepository implements ProductRepository {
         reason: error.message,
         regionId: criteria.regionId,
       })
-      return []
+      // Null, not an empty list: the caller has to be able to say "I could
+      // not read this" rather than "there is nothing here".
+      return null
     }
 
     return (data as FeedRow[]).flatMap((row) => {

@@ -38,6 +38,12 @@ export async function GET(request: Request): Promise<NextResponse> {
     )
   }
 
+  if (feed.status === 'unavailable') {
+    // Not an empty page: the scroll would take that as the end of the
+    // feed and stop, quietly, as though there were nothing more.
+    return NextResponse.json({ error: 'indisponível' }, { status: 503 })
+  }
+
   if (feed.status !== 'ok') {
     return NextResponse.json({ cards: [], hasMore: false })
   }

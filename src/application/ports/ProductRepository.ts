@@ -72,7 +72,16 @@ export interface ProductRepository {
    * picked stores — a single price is not a comparison — and must leave out
    * out-of-stock offers, as everywhere else.
    */
-  feed(criteria: FeedCriteria): Promise<readonly ProductFeedEntry[]>
+  /**
+   * Null when the read failed.
+   *
+   * Deliberately distinct from an empty list. A failed query returned as
+   * "no results" reaches the screen as "no shop near you sells anything
+   * worth comparing", which is a different and far more damaging claim —
+   * and it is what the site told its first visitor, every time, because
+   * the cold start was slow enough to fail.
+   */
+  feed(criteria: FeedCriteria): Promise<readonly ProductFeedEntry[] | null>
 
   /**
    * Products matching every token of the query, ranked by how well they
