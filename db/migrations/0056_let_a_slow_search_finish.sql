@@ -1,0 +1,23 @@
+-- A slow search finishes instead of failing.
+--
+-- The anon role is what the app connects as, and Supabase ships it with
+-- statement_timeout=3s. Every other role here has 8s.
+--
+-- A search that exceeds it is cancelled, the repository turns that into
+-- null, and the screen says "Não consegui buscar agora" with a retry
+-- button. The retry lands on a warm cache and works, which is exactly the
+-- bug that keeps being reported: searched, nothing, searched again, results.
+--
+-- 0055 cuts what a search reads from 117 MB to 81 MB and is the real fix.
+-- This is the part I am certain about: for a shopper standing in a shop, a
+-- search that takes four seconds is worth having and a search that fails is
+-- not. Nothing anon can run is unbounded — search_products reads a capped
+-- candidate set, feed_for reads a cache table, and a token bucket sits in
+-- front of both — so the risk this trades away is a held connection, not a
+-- runaway query.
+--
+-- 8s rather than something larger because that is what this database
+-- already considers a reasonable ceiling for authenticated, and matching it
+-- means there is one number to reason about rather than two.
+
+alter role anon set statement_timeout = '8s';
