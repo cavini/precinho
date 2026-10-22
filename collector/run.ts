@@ -71,6 +71,8 @@ type StoreConfigRow = {
   storefront_host: string | null
   /** Requests this store has agreed to receive per day; null is no limit. */
   daily_request_budget: number | null
+  /** False where the catalogue prices an item but never says if it is in stock. */
+  reports_stock: boolean
   /** 'categories' walks the shop's own tree; 'terms' sweeps the basket. */
   sweep_mode: 'terms' | 'categories'
   region_token: string | null
@@ -106,7 +108,7 @@ async function main(): Promise<void> {
   const { data, error } = await client
     .from('stores')
     .select(
-      'id, slug, host, platform, sales_channel, path_prefix, store_view, min_interval_ms, storefront_host, daily_request_budget, sweep_mode, region_token, regions(slug, probe_cep)',
+      'id, slug, host, platform, sales_channel, path_prefix, store_view, min_interval_ms, storefront_host, daily_request_budget, reports_stock, sweep_mode, region_token, regions(slug, probe_cep)',
     )
     .eq('active', true)
     .order('slug')
@@ -260,6 +262,7 @@ function buildBrowser(
         pathPrefix: store.path_prefix ?? undefined,
         salesChannel: store.sales_channel ?? undefined,
         regionToken: store.region_token ?? undefined,
+        reportsStock: store.reports_stock,
         minIntervalMs,
       },
       http,
@@ -439,6 +442,7 @@ async function buildGateway(
         pathPrefix: store.path_prefix ?? undefined,
         salesChannel: store.sales_channel ?? undefined,
         regionToken,
+        reportsStock: store.reports_stock,
         minIntervalMs,
       },
       http,

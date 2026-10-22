@@ -493,3 +493,83 @@ describe('VtexCatalogGateway resolving a trading area from a CEP', () => {
     expect(await gateway.resolveRegion(PostalCode.tryParse('14020000')!)).toBeNull()
   })
 })
+
+/**
+ * Carrefour's region-priced responses, recorded 2026-10-21 against
+ * carrefourbrfood.vtexcommercestable.com.br for CEP 12010-000.
+ *
+ * Asking Intelligent Search for a trading area's prices returns a stripped
+ * commercial offer: the regional price is there, and AvailableQuantity,
+ * Installments and PriceValidUntil are not. Same request without regionId
+ * carries all three — and the wrong price.
+ *
+ *   with regionId     Price 5.19  Avail 0      Installments 0   valid until 2050-01-01
+ *   without regionId  Price 4.49  Avail 10000  Installments 14  valid until tomorrow
+ *
+ * 5.19 is what the shop charges. So the choice is a correct price with no
+ * stock figure, or a wrong price with one, and there is no third request
+ * that returns both: hideUnavailableItems=true against the region returns
+ * an empty catalogue, which is the same zero stock read back.
+ *
+ * A store swept this way therefore reports no stock at all, and reading
+ * that silence as "sold out" hid every Carrefour price in the app for two
+ * days. Under a region token the price is the availability signal: an item
+ * the area does not sell comes back at Price 0, which is dropped anyway.
+ */
+describe('a store whose catalogue does not report stock', () => {
+  const regionPriced = (price: number) => [
+    {
+      productId: '15309',
+      productName: 'Arroz Branco Camil Tipo 1 1kg',
+      link: 'https://www.mambo.com.br/arroz-branco-camil-tipo-1-1kg/p',
+      items: [
+        {
+          ean: '7896006711117',
+          sellers: [
+            {
+              commertialOffer: {
+                Price: price,
+                ListPrice: price,
+                AvailableQuantity: 0,
+                Installments: [],
+              },
+            },
+          ],
+        },
+      ],
+    },
+  ]
+
+  it('calls a priced product available, because the price is the only signal left', async () => {
+    const { gateway } = build(
+      { status: 'ok', statusCode: 200, body: regionPriced(5.19) },
+      { reportsStock: false },
+    )
+
+    const result = await gateway.searchTerm('arroz')
+    if (result.status !== 'ok') throw new Error(result.reason)
+    expect(result.products[0].inStock).toBe(true)
+    expect(result.products[0].priceReais).toBe(5.19)
+  })
+
+  it('still drops an unpriced product, which is how the area says it does not sell it', async () => {
+    const { gateway } = build(
+      { status: 'ok', statusCode: 200, body: regionPriced(0) },
+      { reportsStock: false },
+    )
+
+    const result = await gateway.searchTerm('arroz')
+    if (result.status !== 'ok') throw new Error(result.reason)
+    expect(result.products).toEqual([])
+  })
+
+  it('leaves a store that does report stock alone', async () => {
+    // Oba reports 9% of its catalogue out of stock and means it. The
+    // default has to stay "believe the figure".
+    const { gateway } = build({ status: 'ok', statusCode: 200, body: regionPriced(5.19) })
+
+    const result = await gateway.searchTerm('arroz')
+    if (result.status !== 'ok') throw new Error(result.reason)
+    expect(result.products[0].inStock).toBe(false)
+  })
+})

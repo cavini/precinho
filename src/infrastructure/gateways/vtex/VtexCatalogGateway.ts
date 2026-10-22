@@ -48,6 +48,17 @@ export type VtexStoreConfig = {
   /** How many products to ask for per term. */
   pageSize?: number
   /**
+   * Whether this store's catalogue reports stock at all. Default true.
+   *
+   * Carrefour's region-priced responses carry the regional price and drop
+   * AvailableQuantity, Installments and PriceValidUntil, so every item
+   * reads as sold out. Reading that silence as "sold out" hid every
+   * Carrefour price in the app. False here means the price is the
+   * availability signal: a priced item is on sale, and one the area does
+   * not sell comes back at Price 0 and is dropped either way.
+   */
+  reportsStock?: boolean
+  /**
    * Minimum gap between requests to this store. Thirty search terms fired
    * back to back from one address looks like an attack and gets the
    * collector blocked, which costs far more than the time it saves.
@@ -59,7 +70,13 @@ export type VtexStoreConfig = {
   nowMs?: () => number
 }
 
-const DEFAULT_PAGE_SIZE = 24
+/**
+ * The widest window VTEX serves. 24 was leaving most of a term behind:
+ * "esponja" matches 664 products at Carrefour and the sweep kept the first
+ * two dozen, so which ones the app knew about changed with their result
+ * ordering. 50 costs the same single request.
+ */
+const DEFAULT_PAGE_SIZE = 50
 const REQUEST_TIMEOUT_MS = 15_000
 
 /**
@@ -154,7 +171,9 @@ export class VtexCatalogGateway implements StoreCatalogGateway, StoreRegionResol
     }
 
     const products = raws.flatMap((raw) => {
-      const mapped = toCatalogProduct(raw, this.config.storefrontHost, this.config.host)
+      const mapped = toCatalogProduct(raw, this.config.storefrontHost, this.config.host, {
+        reportsStock: this.config.reportsStock ?? true,
+      })
       return mapped ? [mapped] : []
     })
 
@@ -326,6 +345,7 @@ function toCatalogProduct(
   raw: unknown,
   storefrontHost?: string,
   host?: string,
+  options: { reportsStock: boolean } = { reportsStock: true },
 ): CatalogProduct | null {
   if (!isRecord(raw)) return null
 
@@ -360,7 +380,9 @@ function toCatalogProduct(
     priceReais: price,
     // Only a list price above the selling price is a promotion.
     listPriceReais: listPrice !== null && listPrice > price ? listPrice : null,
-    inStock: available > 0,
+    // A store that reports no stock has already said all it can by pricing
+    // the item; see reportsStock on the config.
+    inStock: options.reportsStock ? available > 0 : true,
   }
 }
 

@@ -167,6 +167,15 @@ export const BASIC_BASKET: readonly string[] = [
   'alvejante',
   'lustra moveis',
   'inseticida',
+  // Two terms a shopper standing in a Carrefour searched for and did not
+  // find: a Repelex 200ml, which no term reached because every repellent
+  // in the catalogue is named "repelente", and Brilhante Utile Fresh,
+  // which is a "sanitizante". Measured against the two shops swept by
+  // category, 27% of what they carry is unreachable by any term on this
+  // list, in a tail that starts at "escova" and does not end — so these
+  // two close two gaps, not the gap.
+  'repelente',
+  'sanitizante',
   'pano de chao',
 
   // Higiene
