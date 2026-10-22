@@ -19,7 +19,20 @@ export type CatalogProduct = {
 }
 
 export type CatalogSearchResult =
-  | { status: 'ok'; products: readonly CatalogProduct[] }
+  | {
+      status: 'ok'
+      products: readonly CatalogProduct[]
+      /**
+       * Rows the store actually sent, before any were dropped for being
+       * unpriceable.
+       *
+       * The product count cannot stand in for it. A full page of 200 can
+       * arrive as 180 products, and reading that as "the store had no more"
+       * strands the rest of the aisle. Optional so a gateway that does not
+       * report it keeps working.
+       */
+      received?: number
+    }
   /** The store is down, blocking us, or changed its API. */
   | { status: 'unavailable'; reason: string }
 

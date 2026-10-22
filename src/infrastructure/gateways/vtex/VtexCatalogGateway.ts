@@ -184,7 +184,7 @@ export class VtexCatalogGateway implements StoreCatalogGateway, StoreRegionResol
       usable: products.length,
     })
 
-    return { status: 'ok', products }
+    return { status: 'ok', products, received: raws.length }
   }
 
   /**

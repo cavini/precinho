@@ -46,6 +46,11 @@ export class MagentoCatalogBrowser implements CatalogBrowser {
     this.gateway = new MagentoCatalogGateway(config, http, logger)
   }
 
+  /** Stated so a short page can end a slice without a request to confirm. */
+  get pageSize(): number {
+    return this.config.pageSize ?? DEFAULT_PAGE_SIZE
+  }
+
   get storeId(): string {
     return this.config.storeId
   }

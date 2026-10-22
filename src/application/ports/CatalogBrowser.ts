@@ -49,6 +49,14 @@ export type SweepPlan =
 export interface CatalogBrowser {
   readonly storeId: string
 
+  /**
+   * Rows this browser asks for per page.
+   *
+   * Stated so a short page can be recognised as the end of a slice without
+   * spending a request to confirm it.
+   */
+  readonly pageSize: number
+
   /** Splits the catalogue into slices that each fit under the paging cap. */
   planSweep(): Promise<SweepPlan>
 

@@ -55,6 +55,11 @@ export class VtexCatalogBrowser implements CatalogBrowser {
     return this.config.storeId
   }
 
+  /** Stated so a short page can end a slice without a request to confirm. */
+  get pageSize(): number {
+    return VTEX_PAGE_SIZE
+  }
+
   /**
    * Complexity: O(n) requests for n nodes actually probed, which is the
    * tree's top level plus any branch that overflows — far short of the
