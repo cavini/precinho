@@ -314,7 +314,7 @@ export class VipCommerceCatalogGateway implements StoreCatalogGateway, StoreRegi
       usable: products.length,
     })
 
-    return { status: 'ok', products }
+    return { status: 'ok', products, received: raws.length }
   }
 
   /**

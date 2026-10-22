@@ -48,6 +48,11 @@ export class VipCommerceCatalogBrowser implements CatalogBrowser {
     this.gateway = new VipCommerceCatalogGateway(config, http, logger)
   }
 
+  /** Stated so a short page can end a slice without a request to confirm. */
+  get pageSize(): number {
+    return PAGE_SIZE
+  }
+
   get storeId(): string {
     return this.config.storeId
   }

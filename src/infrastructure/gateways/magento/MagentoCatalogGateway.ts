@@ -171,7 +171,7 @@ export class MagentoCatalogGateway implements StoreCatalogGateway {
       usable: products.length,
     })
 
-    return { status: 'ok', products }
+    return { status: 'ok', products, received: items.length }
   }
 
   /**
