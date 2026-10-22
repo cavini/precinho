@@ -495,29 +495,25 @@ describe('VtexCatalogGateway resolving a trading area from a CEP', () => {
 })
 
 /**
- * Carrefour's region-priced responses, recorded 2026-10-21 against
- * carrefourbrfood.vtexcommercestable.com.br for CEP 12010-000.
+ * A catalogue that prices an item but never says whether it is in stock.
  *
- * Asking Intelligent Search for a trading area's prices returns a stripped
- * commercial offer: the regional price is there, and AvailableQuantity,
- * Installments and PriceValidUntil are not. Same request without regionId
- * carries all three — and the wrong price.
+ * Recorded against carrefourbrfood.vtexcommercestable.com.br. Its responses
+ * carry AvailableQuantity 10000 — VTEX's "unlimited" sentinel — on every
+ * row, so the figure is always above zero and carries no information. The
+ * same is true of Atacadao and Sam's Club.
  *
- *   with regionId     Price 5.19  Avail 0      Installments 0   valid until 2050-01-01
- *   without regionId  Price 4.49  Avail 10000  Installments 14  valid until tomorrow
+ * `reports_stock = false` says that out loud: the price is the only signal,
+ * an item the shop does not sell comes back at Price 0, and the collector
+ * drops those anyway.
  *
- * 5.19 is what the shop charges. So the choice is a correct price with no
- * stock figure, or a wrong price with one, and there is no third request
- * that returns both: hideUnavailableItems=true against the region returns
- * an empty catalogue, which is the same zero stock read back.
- *
- * A store swept this way therefore reports no stock at all, and reading
- * that silence as "sold out" hid every Carrefour price in the app for two
- * days. Under a region token the price is the availability signal: an item
- * the area does not sell comes back at Price 0, which is dropped anyway.
+ * This is not the regionId story that was here before. That one claimed the
+ * region-priced response carried the true local price and had merely been
+ * stripped of its stock figure. It does not — see
+ * docs/carrefour-price-or-stock.md. The Price in a regioned response is
+ * fiction, which is why no regioned response is collected any more.
  */
 describe('a store whose catalogue does not report stock', () => {
-  const regionPriced = (price: number) => [
+  const priced = (price: number) => [
     {
       productId: '15309',
       productName: 'Arroz Branco Camil Tipo 1 1kg',
@@ -542,7 +538,7 @@ describe('a store whose catalogue does not report stock', () => {
 
   it('calls a priced product available, because the price is the only signal left', async () => {
     const { gateway } = build(
-      { status: 'ok', statusCode: 200, body: regionPriced(5.19) },
+      { status: 'ok', statusCode: 200, body: priced(5.19) },
       { reportsStock: false },
     )
 
@@ -554,7 +550,7 @@ describe('a store whose catalogue does not report stock', () => {
 
   it('still drops an unpriced product, which is how the area says it does not sell it', async () => {
     const { gateway } = build(
-      { status: 'ok', statusCode: 200, body: regionPriced(0) },
+      { status: 'ok', statusCode: 200, body: priced(0) },
       { reportsStock: false },
     )
 
@@ -566,10 +562,44 @@ describe('a store whose catalogue does not report stock', () => {
   it('leaves a store that does report stock alone', async () => {
     // Oba reports 9% of its catalogue out of stock and means it. The
     // default has to stay "believe the figure".
-    const { gateway } = build({ status: 'ok', statusCode: 200, body: regionPriced(5.19) })
+    const { gateway } = build({ status: 'ok', statusCode: 200, body: priced(5.19) })
 
     const result = await gateway.searchTerm('arroz')
     if (result.status !== 'ok') throw new Error(result.reason)
     expect(result.products[0].inStock).toBe(false)
+  })
+})
+
+
+/**
+ * No region token means no `regionId` on the request, and for Carrefour that
+ * is the difference between a real price and a fabricated one.
+ *
+ * Measured 2026-10-22 on Lysoform Original 1L, shelf price 19.19 at the
+ * Taubate shop:
+ *
+ *   no regionId                 Price 19.39  Avail 10000  Installments 14
+ *   regionId for Taubate        Price  9.49  Avail 0      Installments 0
+ *   regionId for Sao Paulo      Price  9.49  Avail 0      Installments 0
+ *
+ * Both tokens, same fiction. Locked in by a test because the app quoted
+ * 9.49 for a bottle somebody then paid 19.19 for, and a request that
+ * quietly regains the parameter would do it again.
+ */
+describe('a store that does not use a region token', () => {
+  it('sends no regionId at all', async () => {
+    const { gateway, http } = build(okWithFixture)
+
+    await gateway.searchTerm('lysoform')
+
+    expect(http.lastUrl).not.toContain('regionId')
+  })
+
+  it('still sends one for a store configured with a token', async () => {
+    const { gateway, http } = build(okWithFixture, { regionToken: 'v2.ABC' })
+
+    await gateway.searchTerm('lysoform')
+
+    expect(http.lastUrl).toContain('regionId=v2.ABC')
   })
 })

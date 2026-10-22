@@ -73,6 +73,8 @@ type StoreConfigRow = {
   daily_request_budget: number | null
   /** False where the catalogue prices an item but never says if it is in stock. */
   reports_stock: boolean
+  /** False where passing a region token yields a placeholder, not a price. */
+  uses_region_token: boolean
   /** 'categories' walks the shop's own tree; 'terms' sweeps the basket. */
   sweep_mode: 'terms' | 'categories'
   region_token: string | null
@@ -108,7 +110,7 @@ async function main(): Promise<void> {
   const { data, error } = await client
     .from('stores')
     .select(
-      'id, slug, host, platform, sales_channel, path_prefix, store_view, min_interval_ms, storefront_host, daily_request_budget, reports_stock, sweep_mode, region_token, regions(slug, probe_cep)',
+      'id, slug, host, platform, sales_channel, path_prefix, store_view, min_interval_ms, storefront_host, daily_request_budget, reports_stock, uses_region_token, sweep_mode, region_token, regions(slug, probe_cep)',
     )
     .eq('active', true)
     .order('slug')
@@ -426,9 +428,15 @@ async function buildGateway(
   }
 
   if (store.platform === 'vtex-legacy') {
-    const regionToken = store.region_token ?? (await resolveRegionToken(store, http, logger))
+    // A store whose regioned response is a placeholder is swept without one
+    // on purpose, so there is nothing to resolve and nothing to warn about.
+    // See 0060: Carrefour answers a token with 9.49 for a bottle it sells
+    // at 19.39, whichever region the token names.
+    const regionToken = store.uses_region_token
+      ? (store.region_token ?? (await resolveRegionToken(store, http, logger)))
+      : undefined
 
-    if (!regionToken) {
+    if (!regionToken && store.uses_region_token) {
       // Worth saying out loud: these are default-area prices, not this
       // region's, so they are weaker data than a resolved run.
       logger.warn('collector.no_region_token', { slug: store.slug })

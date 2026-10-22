@@ -1,54 +1,84 @@
-# Carrefour gives a regional price or a stock figure, never both
+# Carrefour's region token returns a placeholder, not a price
 
-Probed 2026-10-21 against `carrefourbrfood.vtexcommercestable.com.br`, CEP
-12010-000 (Taubaté), region token `v2.FD738B5EBA0B624D1D7724CE42CC6CCE`.
+Probed 2026-10-21 and corrected 2026-10-22 against
+`carrefourbrfood.vtexcommercestable.com.br`.
 
-One product, Arroz Branco Camil Tipo 1 1kg (`productId=15309`), four ways:
+**The correction first, because the earlier version of this file had it
+backwards and the app quoted fiction for a day on the strength of it.**
 
-| request                        | Price | ListPrice | AvailableQuantity | Installments |
-| ------------------------------ | ----- | --------- | ----------------- | ------------ |
-| Intelligent Search, no region  | 4.49  | 5.29      | 10000             | 14           |
-| Intelligent Search, `regionId` | 5.19  | 5.19      | **0**             | 0            |
-| legacy catalogue, no region    | 4.49  | 5.29      | 99999             | 14           |
-| legacy catalogue, `regionId`   | 4.49  | 5.29      | 99999             | 14           |
+Lysoform Original 1L, `ean 7897000800548`, bought at the Taubaté shop for
+**R$ 19,19**:
 
-5.19 is what the shop charges at that CEP. 4.49 is the default sales policy,
-which nobody there pays.
+| request                               | Price | Avail | Instalments | PriceValidUntil |
+| ------------------------------------- | ----- | ----- | ----------- | --------------- |
+| Intelligent Search, no region         | 19.39 | 10000 | 14          | 2027-10-22      |
+| Intelligent Search, Taubaté token     | 9.49  | 0     | 0           | 2050-01-01      |
+| Intelligent Search, São Paulo token   | 9.49  | 0     | 0           | 2050-01-01      |
 
-So the regional price arrives in a stripped commercial offer — no stock, no
-instalments, and `PriceValidUntil` set to the sentinel `2050-01-01` — and the
-only response carrying a stock figure carries the wrong price. The legacy
-catalogue endpoint accepts `regionId` and ignores it.
+Both tokens return the same figure and that figure is not a price. No stock,
+no instalments, and a validity sentinel forty years out: it is the skeleton
+the pricing layer returns when it has nothing to say. The unregioned
+response is within 1% of the shelf.
 
-There is no third request. `hideUnavailableItems=true` with `regionId`
-returns an empty catalogue, which is the same zero stock read back. Passing
-`sc=1` or a regional seller as `sc` changes nothing.
+Three more bought the same day, all quoted too cheap by the app:
 
-**What follows from it.** Under a region token the price is the only
-availability signal, so `stores.reports_stock` is false for Carrefour and a
-priced item is taken as on sale. An item the area does not sell comes back at
-`Price: 0` and is dropped anyway — 7 of 24 results for "esponja" were.
+| product                      | app (regioned) | shelf | no region |
+| ---------------------------- | -------------- | ----- | --------- |
+| Comfort refil 900ml          | 14,29          | 22,99 | 19,29     |
+| Cera Tacolac 500ml           | 14,85          | 16,99 | 16,59     |
+| Cif refil 450ml              | 8,69           | 11,49 | 8,09      |
 
-Reading the zero as "sold out" is what hid every Carrefour price in the app
-between 2026-10-19 23:05 and 2026-10-21: 3,682 of 3,684 offers on the last
-run were stored out of stock, and search only considers offers in stock.
+Measured at scale against the median of every other active shop on the same
+product: Carrefour ran **17% low**, with 1,192 of 2,578 comparable products
+more than 20% below and 384 more than 40% below. Every other shop sits
+between −9% and +26%. On a sample of eight of the worst, dropping the token
+moved six back into line — 3,98 → 7,13 against a median of 7,19; 7,59 →
+13,19 against 12,99.
 
-## Why Carrefour cannot be swept by category
+So `stores.uses_region_token` is false for Carrefour and the sweep sends no
+`regionId`. See migration 0060.
 
-Intelligent Search on this account ignores category filters. `fq=C:/path`,
-the category path in the URL, and `selected_facets=category-1:<id>` all
-return `recordsFiltered: 79841` — the whole catalogue — and a washing
-machine as the first result in Mercearia.
+## What this costs
 
-Category browsing therefore only works through the legacy catalogue
-endpoint, which prices the wrong area. `sweep_mode = 'categories'` on a
-Carrefour row would trade this bug for the one in migration 0010.
+Carrefour's stored prices are now its default sales policy rather than
+Taubaté's. That is worse in principle and much better in fact: for the four
+products checked by hand the default policy is what the shop charges, within
+2% on two of them.
 
-What the tree does answer, and it is worth knowing: 50 roots, 4,309 nodes at
-depth 3, 79,943 products, of which roughly 65,000 are in the grocery,
-drugstore, cleaning and hygiene aisles. The term sweep stores about 6,600.
+It also means `AvailableQuantity` comes back as 10000 on every row — VTEX's
+"unlimited" sentinel, the same thing Atacadão and Sam's Club return. So
+`reports_stock` stays false for Carrefour, now because the figure is a
+sentinel rather than because it is absent.
 
-The way out is to enumerate SKUs through the legacy catalogue, which pages
-50 at a time and is cheap, and price them through Intelligent Search or
-`POST /api/checkout/pub/orderForms/simulation`, which takes a batch of SKUs
-and a postcode. Not built.
+**0010 concluded the opposite** — that `regionId` was the honest price and
+the legacy catalogue endpoint the liar — and everything after it was built
+on that, including 0054. The part of 0054 that stands is reading `Avail: 0`
+as "no stock reported" rather than "sold out". The part that was wrong was
+trusting the Price beside it.
+
+## Still true: Carrefour cannot be swept by category
+
+Intelligent Search on this account ignores every category filter.
+`fq=C:/path`, the category path in the URL and
+`selected_facets=category-1:<id>` all return `recordsFiltered: 79841` — the
+whole catalogue — with a washing machine first in Mercearia.
+
+The legacy catalogue endpoint is the only category-filterable one. It also
+ignores `regionId`, which no longer matters now that we send none, so
+`sweep_mode = 'categories'` is worth revisiting for Carrefour: 50 roots,
+4,309 nodes at depth 3, 79,943 products, of which roughly 65,000 are in the
+grocery, drugstore, cleaning and hygiene aisles against about 6,400 the term
+sweep stores. What has to be checked first is whether the legacy endpoint's
+prices match the unregioned Intelligent Search prices now taken as correct.
+
+## Online price is not shelf price
+
+A separate limit, and not fixable by collecting differently. The Cif refil
+above reads `Price 8.09, ListPrice 11.56` unregioned: 8,09 is an online
+promotion and 11,56 the regular price. The shelf charged 11,49. Reading
+`Price` gives the promotional figure, which is right for somebody buying
+online through the link and wrong for somebody standing in the shop.
+
+Every chain here is read from its delivery catalogue, so every price in the
+app is an online price. That is what the footer's instruction to confirm
+before buying is for.
