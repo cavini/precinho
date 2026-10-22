@@ -89,14 +89,40 @@ export class SfccCatalogGateway implements StoreCatalogGateway {
    * first call of a run. O(n) over the products returned.
    */
   async searchTerm(term: string): Promise<CatalogSearchResult> {
+    return this.grid({ q: term }, 0, term)
+  }
+
+  /**
+   * One window of a category, through the same controller and the same
+   * branch session as a keyword search.
+   *
+   * `cgid` takes the LAST segment of a category path — `cgid=commodities`
+   * answers with 1,951 products where the full path answers with none.
+   *
+   * Complexity: one request; O(n) over the products returned.
+   */
+  async searchCategory(cgid: string, start: number): Promise<CatalogSearchResult> {
+    return this.grid({ cgid }, start, cgid)
+  }
+
+  /**
+   * The shared request. Keyword and category differ by one parameter and
+   * return the same payload, so the session, the pacing and the mapping are
+   * stated once.
+   */
+  private async grid(
+    selector: Record<string, string>,
+    start: number,
+    asked: string,
+  ): Promise<CatalogSearchResult> {
     const cookie = await this.openStoreSession()
     if (!cookie) return { status: 'unavailable', reason: 'no-store-session' }
 
     await this.pace()
 
     const params = new URLSearchParams({
-      q: term,
-      start: '0',
+      ...selector,
+      start: String(start),
       sz: String(this.config.pageSize ?? DEFAULT_PAGE_SIZE),
     })
 
@@ -108,7 +134,7 @@ export class SfccCatalogGateway implements StoreCatalogGateway {
     if (response.status !== 'ok') {
       this.logger.warn('sfcc.search_failed', {
         storeId: this.storeId,
-        term,
+        term: asked,
         result: response.status,
         statusCode: 'statusCode' in response ? response.statusCode : null,
       })
@@ -120,7 +146,7 @@ export class SfccCatalogGateway implements StoreCatalogGateway {
     // A term that matches nothing still answers 200 with an empty array, so
     // only a missing or non-array result means the shape changed.
     if (!Array.isArray(rows)) {
-      this.logger.warn('sfcc.unexpected_payload', { storeId: this.storeId, term })
+      this.logger.warn('sfcc.unexpected_payload', { storeId: this.storeId, term: asked })
       return { status: 'unavailable', reason: 'invalid-json' }
     }
 
@@ -131,12 +157,12 @@ export class SfccCatalogGateway implements StoreCatalogGateway {
 
     this.logger.debug('sfcc.search_ok', {
       storeId: this.storeId,
-      term,
+      term: asked,
       received: rows.length,
       usable: products.length,
     })
 
-    return { status: 'ok', products }
+    return { status: 'ok', products, received: rows.length }
   }
 
   /**

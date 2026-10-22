@@ -35,6 +35,7 @@ import { MagentoCatalogBrowser } from '@/infrastructure/gateways/magento/Magento
 import { VtexCatalogBrowser } from '@/infrastructure/gateways/vtex/VtexCatalogBrowser'
 import { GpaCatalogGateway } from '@/infrastructure/gateways/gpa/GpaCatalogGateway'
 import { MagentoCatalogGateway } from '@/infrastructure/gateways/magento/MagentoCatalogGateway'
+import { SfccCatalogBrowser } from '@/infrastructure/gateways/sfcc/SfccCatalogBrowser'
 import { SfccCatalogGateway } from '@/infrastructure/gateways/sfcc/SfccCatalogGateway'
 import { TendaCatalogGateway } from '@/infrastructure/gateways/tenda/TendaCatalogGateway'
 import { VipCommerceCatalogBrowser } from '@/infrastructure/gateways/vipcommerce/VipCommerceCatalogBrowser'
@@ -77,6 +78,11 @@ type StoreConfigRow = {
   uses_region_token: boolean
   /** 'categories' walks the shop's own tree; 'terms' sweeps the basket. */
   sweep_mode: 'terms' | 'categories'
+  /**
+   * Categories to walk, for a platform that publishes no readable tree.
+   * Only Demandware needs it; see 0064.
+   */
+  store_categories: Array<{ cgid: string }>
   region_token: string | null
   regions: { slug: string; probe_cep: string } | null
 }
@@ -110,7 +116,7 @@ async function main(): Promise<void> {
   const { data, error } = await client
     .from('stores')
     .select(
-      'id, slug, host, platform, sales_channel, path_prefix, store_view, min_interval_ms, storefront_host, daily_request_budget, reports_stock, uses_region_token, sweep_mode, region_token, regions(slug, probe_cep)',
+      'id, slug, host, platform, sales_channel, path_prefix, store_view, min_interval_ms, storefront_host, daily_request_budget, reports_stock, uses_region_token, sweep_mode, region_token, regions(slug, probe_cep), store_categories(cgid)',
     )
     .eq('active', true)
     .order('slug')
@@ -275,6 +281,32 @@ function buildBrowser(
   if (store.platform === 'vipcommerce') {
     const config = vipCommerceConfig(store, minIntervalMs, logger)
     return config ? new VipCommerceCatalogBrowser(config, http, logger) : null
+  }
+
+  if (store.platform === 'sfcc') {
+    if (!store.store_view || !store.region_token) {
+      // Same half-configured row the gateway refuses: without the branch
+      // the catalogue quotes whichever one Demandware defaults to.
+      logger.warn('collector.sfcc_row_incomplete', { slug: store.slug })
+      return null
+    }
+
+    // Recovered from our own stored product URLs rather than from their
+    // storefront, which publishes the tree only as navigation HTML.
+    const categories = (store.store_categories ?? []).map((row) => row.cgid)
+
+    return new SfccCatalogBrowser(
+      {
+        storeId: store.id,
+        host: store.host,
+        siteId: store.store_view,
+        sfccStoreId: store.region_token,
+        categories,
+        minIntervalMs,
+      },
+      http,
+      logger,
+    )
   }
 
   return null
