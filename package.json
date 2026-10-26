@@ -13,7 +13,8 @@
     "migrate": "tsx db/migrate.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "reconcile": "tsx scripts/reconcile.ts"
+    "reconcile": "tsx scripts/reconcile.ts",
+    "prune": "tsx scripts/prune-offers.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
