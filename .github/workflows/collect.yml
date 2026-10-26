@@ -66,3 +66,31 @@ jobs:
           # API allows.
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
           LOG_LEVEL: info
+
+      # Last, because it is the step that makes the sweep affordable: one
+      # night adds ~126,000 offers, and 0001 made them append-only with
+      # nothing to take them away again. Eight nights of that spent 99.5%
+      # of the 500 MB the project is allowed, and a project over the limit
+      # goes read-only — which stops the collector, not the site.
+      #
+      # After reconcile rather than before: reconcile rebuilds the feed
+      # ranking from the offers, so it should see the night's full set.
+      #
+      # Runs even when the collection partly failed. A failed sweep is
+      # exactly when the table is least affordable and the prune is safest,
+      # since a store's most recent offer is kept whatever its age.
+      #
+      # No `--vacuum` here, deliberately. Once the table is bounded the
+      # night deletes about as many rows as it inserts, and autovacuum hands
+      # that space back for reuse inside the table — so the allocated size
+      # stays flat without the exclusive lock a rewrite would take every
+      # night. The rewrite is a one-off, for the backlog this policy
+      # inherits.
+      - name: Prune offers
+        if: always()
+        run: npm run prune
+        env:
+          # No HTTP API here: the prune deletes in batches on one session
+          # and reads its own progress between them.
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          LOG_LEVEL: info
