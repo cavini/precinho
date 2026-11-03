@@ -81,6 +81,30 @@ const CHUNK = 300
 const ID_CHUNK = 200
 
 /**
+ * The most rows one merge may fold together.
+ *
+ * Verdicts are pairwise; groups are transitive, and transitivity is where
+ * a pile of individually-plausible answers becomes one wrong product. A
+ * run of 11,686 positives built 8,044 groups, and the rate at which a
+ * group contradicts itself — two brands, or two barcodes, among its own
+ * members — climbs with its size:
+ *
+ *     size 2   4% contradicted      size 5-7   87-91%
+ *     size 3  26%                   size 8+   100%
+ *
+ * A group of 17 held 3 Corações Estrada Real, Café Brasileiro and FORT;
+ * one of 15 held Renata, Sacciali, Dona Benta and Petybon talharim, in
+ * two different thicknesses. Every pair in those chains reads as
+ * defensible on its own.
+ *
+ * Two is not a claim that bigger groups are wrong in principle — the same
+ * product sold by six shops is a legitimate group of six. It is a claim
+ * about these verdicts, which earn trust one link at a time. Raise it when
+ * something checks the chain rather than the pair.
+ */
+const MAX_GROUP = 2
+
+/**
  * How common a word may be and still count as evidence of identity.
  *
  * "Phebo" and "envoltório" appear on a handful of rows; "vinho" and
@@ -602,17 +626,26 @@ async function judgePending(
  * discover that cost 46.8 MB a night.
  */
 async function mergeJudgedSame(client: ReturnType<typeof createWriteClient>): Promise<void> {
-  const { data, error } = await client
-    .from('product_equivalences')
-    .select('left_id, right_id, decided_by')
-    .eq('same', true)
+  // Paged, like every other read here. Without a range PostgREST answers
+  // with its own default ceiling — a thousand rows — and says nothing
+  // about the rest. That went unnoticed for as long as positives were
+  // rare: they are consumed when applied, so the table normally holds
+  // none. A judging run put 11,686 there, and the merge quietly saw the
+  // first 1,000 of them.
+  const positives: Array<{ left_id: string; right_id: string; decided_by: string }> = []
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await client
+      .from('product_equivalences')
+      .select('left_id, right_id, decided_by')
+      .eq('same', true)
+      .order('left_id')
+      .range(from, from + PAGE - 1)
 
-  if (error) throw new Error(error.message)
-  const positives = (data ?? []) as Array<{
-    left_id: string
-    right_id: string
-    decided_by: string
-  }>
+    if (error) throw new Error(error.message)
+    const page = (data ?? []) as Array<{ left_id: string; right_id: string; decided_by: string }>
+    positives.push(...page)
+    if (page.length < PAGE) break
+  }
 
   if (positives.length === 0) {
     console.log('\ngrupos julgados iguais: 0, linhas absorvidas: 0')
@@ -650,10 +683,27 @@ async function mergeJudgedSame(client: ReturnType<typeof createWriteClient>): Pr
     byRoot.set(root, [...(byRoot.get(root) ?? []), row])
   }
 
-  const groups = [...byRoot.values()].filter((group) => group.length > 1)
+  const formed = [...byRoot.values()].filter((group) => group.length > 1)
+
+  // Refused rather than merged. A group that disagrees with itself about
+  // a brand or a barcode is not one product described differently, and
+  // the barcode is the one identifier the shops themselves agree on.
+  const contradicts = (group: readonly Row[]) =>
+    new Set(group.map((row) => row.brand).filter(Boolean)).size > 1 ||
+    new Set(group.map((row) => row.gtin14).filter(Boolean)).size > 1
+
+  const groups = formed.filter((group) => group.length <= MAX_GROUP && !contradicts(group))
+  const held = formed.length - groups.length
   const absorbed = groups.reduce((total, group) => total + group.length - 1, 0)
 
   console.log(`\ngrupos julgados iguais: ${groups.length}, linhas absorvidas: ${absorbed}`)
+  if (held > 0) {
+    // Not deleted: the verdicts stay, so a rule that can read a chain
+    // rather than a pair can still use them.
+    console.log(
+      `retidos: ${held} grupos — maiores que ${MAX_GROUP} linhas, ou discordando de si mesmos`,
+    )
+  }
   if (groups.length === 0) return
 
   const payload = groups.map((group) => {
