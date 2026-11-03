@@ -14,7 +14,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "reconcile": "tsx scripts/reconcile.ts",
-    "prune": "tsx scripts/prune-offers.ts"
+    "prune": "tsx scripts/prune-offers.ts",
+    "prune:products": "tsx scripts/prune-products.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

@@ -53,8 +53,13 @@ type Row = {
   id: string
   name: string
   brand: string | null
-  description: string | null
-  image_url: string | null
+  /**
+   * Both optional because only `bestFirst` reads them, and only the merge
+   * path calls that. The shortlist leaves them unselected: they are 18.1 MB
+   * of the 46.8 MB a catalogue pass costs, and it scores nothing on them.
+   */
+  description?: string | null
+  image_url?: string | null
   gtin14: string | null
   size_amount: number | string | null
   size_unit: string | null
@@ -68,6 +73,9 @@ const BATCH = 25
 
 /** Groups per merge round trip. */
 const CHUNK = 300
+
+/** Ids per `in(...)` lookup, kept short enough to survive a query string. */
+const ID_CHUNK = 200
 
 /**
  * How common a word may be and still count as evidence of identity.
@@ -90,6 +98,11 @@ async function main(): Promise<void> {
   const importPath = importFlag >= 0 ? process.argv[importFlag + 1] : null
   const merging = process.argv.includes('--merge')
   const limit = Number(process.argv[process.argv.indexOf('--limit') + 1]) || Infinity
+  // Bare invocation still means "tell me how many are pending", which is
+  // what it has always meant; --count says it out loud for a caller that
+  // also wants something else done.
+  const counting =
+    process.argv.includes('--count') || (!merging && !judging && !exporting && !importPath)
 
   const client = createWriteClient(readCollectorEnv())
 
@@ -98,6 +111,15 @@ async function main(): Promise<void> {
     const { data } = await client.from('regions').select('id').eq('slug', regionSlug).single()
     onlyRegion = (data as { id: string } | null)?.id ?? null
     if (!onlyRegion) throw new Error(`praça desconhecida: ${regionSlug}`)
+  }
+
+  // Only the shortlist needs the catalogue, and only three modes need the
+  // shortlist. Merging used to pay for it too: 84.8 MB of reads to apply
+  // verdicts that name their own products, on a night with nothing to
+  // apply. Everything below this line is the expensive path.
+  if (!counting && !judging && !exporting && !importPath) {
+    if (merging) await mergeJudgedSame(client)
+    return
   }
 
   const rows = await readProducts(client)
@@ -146,7 +168,7 @@ async function main(): Promise<void> {
 
   if (importPath) await importVerdicts(client, byId, importPath)
   if (judging) await judgePending(client, byId, pending.slice(0, limit))
-  if (merging) await mergeJudgedSame(client, byId)
+  if (merging) await mergeJudgedSame(client)
 
   if (!judging && !merging) console.log('\n(nada gravado — use --judge e depois --merge)')
 }
@@ -156,7 +178,7 @@ async function readProducts(client: ReturnType<typeof createWriteClient>): Promi
   for (let from = 0; ; from += PAGE) {
     const { data, error } = await client
       .from('products')
-      .select('id, name, brand, description, image_url, gtin14, size_amount, size_unit, match_key')
+      .select('id, name, brand, gtin14, size_amount, size_unit, match_key')
       .order('id')
       .range(from, from + PAGE - 1)
 
@@ -168,28 +190,55 @@ async function readProducts(client: ReturnType<typeof createWriteClient>): Promi
   return rows
 }
 
+/**
+ * The products named by a set of ids, and nothing else.
+ *
+ * Chunked because the ids travel in the query string, which has a length
+ * every proxy between here and Postgres is entitled to have an opinion
+ * about.
+ */
+async function readProductsByIds(
+  client: ReturnType<typeof createWriteClient>,
+  ids: readonly string[],
+): Promise<Map<string, Row>> {
+  const byId = new Map<string, Row>()
+
+  for (let from = 0; from < ids.length; from += ID_CHUNK) {
+    const { data, error } = await client
+      .from('products')
+      .select('id, name, brand, description, image_url, gtin14, size_amount, size_unit, match_key')
+      .in('id', ids.slice(from, from + ID_CHUNK))
+
+    if (error) throw new Error(error.message)
+    for (const row of (data ?? []) as Row[]) byId.set(row.id, row)
+  }
+
+  return byId
+}
+
 /** Which regions sell each product, so colliding pairs can be told apart. */
 async function readProductRegions(
   client: ReturnType<typeof createWriteClient>,
 ): Promise<Map<string, Set<string>>> {
   const regions = new Map<string, Set<string>>()
 
+  // From the view (0066), which has already reduced every offer to one row
+  // per (product, region). The question was only ever whether two products
+  // share a region; the 386,662 offers behind that answer were being
+  // carried across the wire to be discarded here.
   for (let from = 0; ; from += PAGE) {
     const { data, error } = await client
-      .from('offers')
-      .select('product_id, stores(region_id)')
+      .from('product_regions')
+      .select('product_id, region_id')
       .range(from, from + PAGE - 1)
 
     if (error) throw new Error(error.message)
-    const page = (data ?? []) as unknown as Array<{
-      product_id: string
-      stores: { region_id: string } | null
-    }>
+    const page = (data ?? []) as Array<{ product_id: string; region_id: string | null }>
 
     for (const row of page) {
-      if (!row.stores) continue
+      if (!row.region_id) continue
       const set = regions.get(row.product_id) ?? new Set<string>()
-      set.add(row.stores.region_id)
+      set.add(row.region_id)
       regions.set(row.product_id, set)
     }
 
@@ -459,11 +508,18 @@ async function judgePending(
   }
 }
 
-/** Applies every positive verdict, joining pairs into groups transitively. */
-async function mergeJudgedSame(
-  client: ReturnType<typeof createWriteClient>,
-  byId: Map<string, Row>,
-): Promise<void> {
+/**
+ * Applies every positive verdict, joining pairs into groups transitively.
+ *
+ * Loads only the products those verdicts name, rather than being handed
+ * the catalogue. Merging answers a question already answered, and on a
+ * normal night answers it about nothing at all: a pair judged the same is
+ * consumed when it is applied — the loser row goes, and the verdict
+ * cascades with it — so `same = true` is empty except in the window
+ * between a judging run and the next merge. Reading 118,912 products to
+ * discover that cost 46.8 MB a night.
+ */
+async function mergeJudgedSame(client: ReturnType<typeof createWriteClient>): Promise<void> {
   const { data, error } = await client
     .from('product_equivalences')
     .select('left_id, right_id, decided_by')
@@ -475,6 +531,15 @@ async function mergeJudgedSame(
     right_id: string
     decided_by: string
   }>
+
+  if (positives.length === 0) {
+    console.log('\ngrupos julgados iguais: 0, linhas absorvidas: 0')
+    return
+  }
+
+  const byId = await readProductsByIds(client, [
+    ...new Set(positives.flatMap((row) => [row.left_id, row.right_id])),
+  ])
 
   const decidedBy = new Map<string, string>()
   for (const row of positives) {
