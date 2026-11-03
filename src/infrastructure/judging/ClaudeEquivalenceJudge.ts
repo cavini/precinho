@@ -40,6 +40,22 @@ Answer only for the pairs given. If you are not sure, answer false — a missed 
 
 Reply with JSON only: {"verdicts":[{"id":"<id>","same":true|false,"reason":"<under 15 words, Portuguese>"}]}`
 
+/**
+ * The instruction as the API wants it, marked to be cached.
+ *
+ * It is ~1,600 tokens and byte-identical on every request, while the pairs
+ * after it change each time — which is exactly the shape prompt caching
+ * wants, since the match is on a prefix. Judging the whole backlog is
+ * 1,618 requests, so without this the same instruction is paid for at full
+ * price 1,618 times.
+ *
+ * Shared by both judges below, so the sync path and the batch path send
+ * the same bytes and can hit the same cache entry.
+ */
+export const CACHED_SYSTEM = [
+  { type: 'text', text: INSTRUCTION, cache_control: { type: 'ephemeral' } },
+]
+
 export type ClaudeJudgeConfig = {
   apiKey: string
   /**
@@ -77,7 +93,7 @@ export class ClaudeEquivalenceJudge implements ProductEquivalenceJudge {
       {
         model: this.name,
         max_tokens: this.config.maxTokens ?? 8_000,
-        system: INSTRUCTION,
+        system: CACHED_SYSTEM,
         messages: [{ role: 'user', content: JSON.stringify({ pairs: questions.map(asked) }) }],
       },
       {
@@ -118,7 +134,7 @@ export class ClaudeEquivalenceJudge implements ProductEquivalenceJudge {
 }
 
 /** Only the fields that bear on identity; ids stay, prices never go. */
-function asked(question: EquivalenceQuestion) {
+export function asked(question: EquivalenceQuestion) {
   return {
     id: question.id,
     a: [question.left.name, question.left.brand, question.left.size].filter(Boolean).join(' | '),
@@ -130,7 +146,7 @@ function asked(question: EquivalenceQuestion) {
  * Pulls the verdicts out of a reply, tolerating the prose a model
  * sometimes wraps JSON in.
  */
-function readVerdicts(body: unknown): EquivalenceVerdict[] | null {
+export function readVerdicts(body: unknown): EquivalenceVerdict[] | null {
   const text = firstText(body)
   if (text === null) return null
 

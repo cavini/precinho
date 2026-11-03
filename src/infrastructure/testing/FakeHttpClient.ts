@@ -2,6 +2,7 @@ import type {
   HttpClient,
   HttpJsonResponse,
   HttpRequestOptions,
+  HttpTextResponse,
 } from '@/application/ports/HttpClient'
 
 /**
@@ -45,6 +46,25 @@ export class FakeHttpClient implements HttpClient {
     options?: HttpRequestOptions,
   ): Promise<HttpJsonResponse> {
     return this.record(url, options, 'POST', body)
+  }
+
+  /**
+   * Replays the same canned routes, handing back whatever body they hold
+   * as text. A route carrying an object is stringified, so a test can
+   * write JSONL as an array of lines rather than as an escaped blob.
+   */
+  async getText(url: string, options?: HttpRequestOptions): Promise<HttpTextResponse> {
+    const response = await this.record(url, options, 'GET')
+    if (response.status !== 'ok') {
+      return response.status === 'invalid-json'
+        ? { status: 'network-error', reason: 'unreadable body' }
+        : response
+    }
+
+    return {
+      ...response,
+      body: typeof response.body === 'string' ? response.body : JSON.stringify(response.body),
+    }
   }
 
   /** The body is kept so a test can assert what was actually asked for. */

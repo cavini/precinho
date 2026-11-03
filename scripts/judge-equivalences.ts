@@ -21,6 +21,8 @@
  * Usage:
  *   npx tsx scripts/judge-equivalences.ts                # how many are pending
  *   npx tsx scripts/judge-equivalences.ts --judge        # ask, and store
+ *   npx tsx scripts/judge-equivalences.ts --judge --batch  # half price, slower
+ *   npx tsx scripts/judge-equivalences.ts --collect <batch-id>  # file a late batch
  *   npx tsx scripts/judge-equivalences.ts --judge --limit 200
  *   npx tsx scripts/judge-equivalences.ts --export --limit 500
  *   npx tsx scripts/judge-equivalences.ts --import verdicts.jsonl
@@ -45,6 +47,7 @@ import { normalizeText } from '@/domain/text/normalizeText'
 import { Quantity } from '@/domain/value-objects/Quantity'
 import { readCollectorEnv } from '@/infrastructure/config/env'
 import { FetchHttpClient } from '@/infrastructure/http/FetchHttpClient'
+import { ClaudeBatchEquivalenceJudge } from '@/infrastructure/judging/ClaudeBatchEquivalenceJudge'
 import { ClaudeEquivalenceJudge } from '@/infrastructure/judging/ClaudeEquivalenceJudge'
 import { StructuredLogger } from '@/infrastructure/observability/StructuredLogger'
 import { createWriteClient } from '@/infrastructure/persistence/supabase/supabaseClient'
@@ -97,6 +100,13 @@ async function main(): Promise<void> {
   const importFlag = process.argv.indexOf('--import')
   const importPath = importFlag >= 0 ? process.argv[importFlag + 1] : null
   const merging = process.argv.includes('--merge')
+  // Half price, asynchronous. Nothing is waiting on a backlog sweep, so
+  // the only thing the latency costs is the terminal staying open.
+  const batching = process.argv.includes('--batch')
+  // The way back from a batch that outlived the process waiting on it.
+  // Results keep for 29 days, so a submission is never money lost.
+  const collectFlag = process.argv.indexOf('--collect')
+  const collectId = collectFlag >= 0 ? process.argv[collectFlag + 1] : null
   const limit = Number(process.argv[process.argv.indexOf('--limit') + 1]) || Infinity
   // Bare invocation still means "tell me how many are pending", which is
   // what it has always meant; --count says it out loud for a caller that
@@ -117,6 +127,15 @@ async function main(): Promise<void> {
   // shortlist. Merging used to pay for it too: 84.8 MB of reads to apply
   // verdicts that name their own products, on a night with nothing to
   // apply. Everything below this line is the expensive path.
+  if (collectId) {
+    // Needs the products the verdicts name, not the shortlist: this is
+    // filing answers, not deciding what to ask.
+    const byId = new Map((await readProducts(client)).map((row) => [row.id, row]))
+    await collectBatch(client, byId, collectId)
+    if (merging) await mergeJudgedSame(client)
+    return
+  }
+
   if (!counting && !judging && !exporting && !importPath) {
     if (merging) await mergeJudgedSame(client)
     return
@@ -167,7 +186,7 @@ async function main(): Promise<void> {
   }
 
   if (importPath) await importVerdicts(client, byId, importPath)
-  if (judging) await judgePending(client, byId, pending.slice(0, limit))
+  if (judging) await judgePending(client, byId, pending.slice(0, limit), batching)
   if (merging) await mergeJudgedSame(client)
 
   if (!judging && !merging) console.log('\n(nada gravado — use --judge e depois --merge)')
@@ -442,10 +461,87 @@ async function importVerdicts(
   )
 }
 
+/**
+ * Files the answers from a batch submitted earlier.
+ *
+ * The submit-and-wait path gives up at 23 hours so it never sits on
+ * requests the API has thrown away — but the batch itself may well have
+ * finished afterwards, and its results stay readable for 29 days. This is
+ * how that run is picked back up instead of paid for twice.
+ */
+async function collectBatch(
+  client: ReturnType<typeof createWriteClient>,
+  byId: Map<string, Row>,
+  id: string,
+): Promise<void> {
+  const logger = new StructuredLogger({ level: 'warn' }).child({ job: 'judge' })
+  const judge = new ClaudeBatchEquivalenceJudge(
+    {
+      apiKey: process.env.ANTHROPIC_API_KEY ?? '',
+      workspaceId: process.env.ANTHROPIC_WORKSPACE_ID,
+    },
+    new FetchHttpClient(logger),
+    logger,
+  )
+
+  const verdicts = await judge.collect(id)
+  const stored = await storeVerdicts(client, byId, verdicts, judge.name)
+
+  console.log(
+    `\nlote ${id}: ${verdicts.length} vereditos lidos, ${stored.same} iguais, ` +
+      `${stored.different} diferentes, ${verdicts.length - stored.same - stored.different} ignorados`,
+  )
+}
+
+/**
+ * Writes verdicts, skipping any naming a row that has since been merged
+ * away — that answer is stale rather than wrong, and pointing it somewhere
+ * else would be inventing one.
+ */
+async function storeVerdicts(
+  client: ReturnType<typeof createWriteClient>,
+  byId: Map<string, Row>,
+  verdicts: readonly { id: string; same: boolean; reason: string }[],
+  decidedBy: string,
+): Promise<{ same: number; different: number }> {
+  let same = 0
+  let different = 0
+
+  const records = verdicts.flatMap((verdict) => {
+    const [leftId, rightId] = verdict.id.split(':')
+    if (!byId.has(leftId) || !byId.has(rightId)) return []
+
+    if (verdict.same) same += 1
+    else different += 1
+
+    return [
+      {
+        left_id: leftId,
+        right_id: rightId,
+        same: verdict.same,
+        reason: verdict.reason,
+        decided_by: decidedBy,
+      },
+    ]
+  })
+
+  // Chunked, because a batch run arrives with every verdict at once and a
+  // single upsert of forty thousand rows is one statement too large.
+  for (let at = 0; at < records.length; at += CHUNK) {
+    const { error } = await client
+      .from('product_equivalences')
+      .upsert(records.slice(at, at + CHUNK), { onConflict: 'left_id,right_id' })
+    if (error) throw new Error(error.message)
+  }
+
+  return { same, different }
+}
+
 async function judgePending(
   client: ReturnType<typeof createWriteClient>,
   byId: Map<string, Row>,
   pending: Array<[Row, Row]>,
+  batching = false,
 ): Promise<void> {
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) {
@@ -455,18 +551,25 @@ async function judgePending(
   }
 
   const logger = new StructuredLogger({ level: 'warn' }).child({ job: 'judge' })
-  const judge = new ClaudeEquivalenceJudge(
-    { apiKey, workspaceId: process.env.ANTHROPIC_WORKSPACE_ID },
-    new FetchHttpClient(logger),
-    logger,
-  )
+  const config = { apiKey, workspaceId: process.env.ANTHROPIC_WORKSPACE_ID }
+  const http = new FetchHttpClient(logger)
+  // Same port either way: one answers in seconds per 25 pairs, the other
+  // takes every pair at once and answers in up to an hour for half the
+  // money. Nothing below this line knows which it got.
+  const judge = batching
+    ? new ClaudeBatchEquivalenceJudge(config, http, logger)
+    : new ClaudeEquivalenceJudge(config, http, logger)
+
+  // The batch wants the whole backlog in one call; the synchronous judge
+  // wants 25 at a time, because that is one request and one failure.
+  const step = batching ? pending.length : BATCH
 
   let same = 0
   let different = 0
   let undecided = 0
 
-  for (let index = 0; index < pending.length; index += BATCH) {
-    const batch = pending.slice(index, index + BATCH)
+  for (let index = 0; index < pending.length; index += step) {
+    const batch = pending.slice(index, index + step)
     const questions: EquivalenceQuestion[] = batch.map(([a, b]) => ({
       id: pairKey(a, b),
       left: { name: a.name, brand: a.brand, size: sizeLabel(a) },
@@ -476,33 +579,12 @@ async function judgePending(
     const verdicts = await judge.judge(questions)
     undecided += questions.length - verdicts.length
 
-    const records = verdicts.flatMap((verdict) => {
-      const [leftId, rightId] = verdict.id.split(':')
-      if (!byId.has(leftId) || !byId.has(rightId)) return []
-
-      if (verdict.same) same += 1
-      else different += 1
-
-      return [
-        {
-          left_id: leftId,
-          right_id: rightId,
-          same: verdict.same,
-          reason: verdict.reason,
-          decided_by: judge.name,
-        },
-      ]
-    })
-
-    if (records.length > 0) {
-      const { error } = await client
-        .from('product_equivalences')
-        .upsert(records, { onConflict: 'left_id,right_id' })
-      if (error) throw new Error(error.message)
-    }
+    const stored = await storeVerdicts(client, byId, verdicts, judge.name)
+    same += stored.same
+    different += stored.different
 
     console.log(
-      `  ${Math.min(index + BATCH, pending.length)}/${pending.length}  ` +
+      `  ${Math.min(index + step, pending.length)}/${pending.length}  ` +
         `iguais=${same} diferentes=${different} sem resposta=${undecided}`,
     )
   }

@@ -43,6 +43,20 @@ export type HttpJsonResponse =
   | { status: 'invalid-json' }
 
 /**
+ * The same outcomes, for a body that was never meant to be JSON.
+ *
+ * No 'invalid-json' arm: there is nothing to parse and so nothing to fail
+ * at. The Message Batches API streams its results as JSONL — one JSON
+ * object per line, which is not a JSON document — and that is the only
+ * thing here that needs it.
+ */
+export type HttpTextResponse =
+  | { status: 'ok'; statusCode: number; body: string; headers: Readonly<Record<string, string>> }
+  | { status: 'http-error'; statusCode: number; body?: string }
+  | { status: 'network-error'; reason: string }
+  | { status: 'timeout' }
+
+/**
  * Outbound HTTP, narrowed to what the gateways need.
  *
  * A port rather than calling fetch directly, for two reasons: timeouts and
@@ -64,4 +78,7 @@ export interface HttpClient {
    * on somebody else's system.
    */
   postJson(url: string, body: unknown, options?: HttpRequestOptions): Promise<HttpJsonResponse>
+
+  /** For a body that is not JSON. Retried like getJson, being a GET. */
+  getText(url: string, options?: HttpRequestOptions): Promise<HttpTextResponse>
 }

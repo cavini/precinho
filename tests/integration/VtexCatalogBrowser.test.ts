@@ -35,6 +35,9 @@ const MAMBO_TREE = [
 function fakeStore(counts: Record<string, number>, page: FakeResponse) {
   const http = {
     requests: [] as Array<{ url: string }>,
+    async getText() {
+      throw new Error('not used by this test')
+    },
     async getJson(url: string) {
       this.requests.push({ url })
 
