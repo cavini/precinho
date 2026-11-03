@@ -27,6 +27,7 @@
  *   npx tsx scripts/judge-equivalences.ts --export --limit 500
  *   npx tsx scripts/judge-equivalences.ts --import verdicts.jsonl
  *   npx tsx scripts/judge-equivalences.ts --merge        # apply what was judged same
+ *   npx tsx scripts/judge-equivalences.ts --merge --dry-run  # say what it would do
  *
  * Needs ANTHROPIC_API_KEY in .env.local for --judge, plus
  * ANTHROPIC_WORKSPACE_ID when the key belongs to an organisation rather
@@ -81,28 +82,27 @@ const CHUNK = 300
 const ID_CHUNK = 200
 
 /**
- * The most rows one merge may fold together.
+ * A group is only as good as the links inside it.
  *
  * Verdicts are pairwise; groups are transitive, and transitivity is where
  * a pile of individually-plausible answers becomes one wrong product. A
- * run of 11,686 positives built 8,044 groups, and the rate at which a
- * group contradicts itself — two brands, or two barcodes, among its own
- * members — climbs with its size:
+ * group of 17 held 3 Corações Estrada Real, Café Brasileiro and FORT; one
+ * of 15 held Renata, Sacciali, Dona Benta and Petybon talharim, in two
+ * thicknesses. Every link in those chains reads as defensible alone.
  *
- *     size 2   4% contradicted      size 5-7   87-91%
- *     size 3  26%                   size 8+   100%
+ * Capping the size was the first answer and the wrong one: the same
+ * product in six shops is a legitimate group of six, and a number cannot
+ * tell that apart from a chain of mistakes.
  *
- * A group of 17 held 3 Corações Estrada Real, Café Brasileiro and FORT;
- * one of 15 held Renata, Sacciali, Dona Benta and Petybon talharim, in
- * two different thicknesses. Every pair in those chains reads as
- * defensible on its own.
+ * The negatives can. They are the half of the judging that lasts — a pair
+ * ruled different is never asked about again — and nothing had been
+ * reading them. A group that contains a pair somebody judged *different*
+ * is contradicted by evidence we already paid for, whatever its size.
  *
- * Two is not a claim that bigger groups are wrong in principle — the same
- * product sold by six shops is a legitimate group of six. It is a claim
- * about these verdicts, which earn trust one link at a time. Raise it when
- * something checks the chain rather than the pair.
+ * On 7,460 groups it rejects every group of seven or more, the 17 and the
+ * 15 among them, while letting through 648 groups of three to six that a
+ * cap of two would have refused. The largest to survive is six.
  */
-const MAX_GROUP = 2
 
 /**
  * How common a word may be and still count as evidence of identity.
@@ -127,6 +127,10 @@ async function main(): Promise<void> {
   // Half price, asynchronous. Nothing is waiting on a backlog sweep, so
   // the only thing the latency costs is the terminal staying open.
   const batching = process.argv.includes('--batch')
+  // Says what a merge would do without doing it. The guards below decide
+  // which groups are trustworthy, and that is worth being able to read
+  // before it is worth being applied.
+  const dryRun = process.argv.includes('--dry-run')
   // The way back from a batch that outlived the process waiting on it.
   // Results keep for 29 days, so a submission is never money lost.
   const collectFlag = process.argv.indexOf('--collect')
@@ -156,12 +160,12 @@ async function main(): Promise<void> {
     // filing answers, not deciding what to ask.
     const byId = new Map((await readProducts(client)).map((row) => [row.id, row]))
     await collectBatch(client, byId, collectId)
-    if (merging) await mergeJudgedSame(client)
+    if (merging) await mergeJudgedSame(client, dryRun)
     return
   }
 
   if (!counting && !judging && !exporting && !importPath) {
-    if (merging) await mergeJudgedSame(client)
+    if (merging) await mergeJudgedSame(client, dryRun)
     return
   }
 
@@ -211,7 +215,7 @@ async function main(): Promise<void> {
 
   if (importPath) await importVerdicts(client, byId, importPath)
   if (judging) await judgePending(client, byId, pending.slice(0, limit), batching)
-  if (merging) await mergeJudgedSame(client)
+  if (merging) await mergeJudgedSame(client, dryRun)
 
   if (!judging && !merging) console.log('\n(nada gravado — use --judge e depois --merge)')
 }
@@ -625,7 +629,10 @@ async function judgePending(
  * between a judging run and the next merge. Reading 118,912 products to
  * discover that cost 46.8 MB a night.
  */
-async function mergeJudgedSame(client: ReturnType<typeof createWriteClient>): Promise<void> {
+async function mergeJudgedSame(
+  client: ReturnType<typeof createWriteClient>,
+  dryRun = false,
+): Promise<void> {
   // Paged, like every other read here. Without a range PostgREST answers
   // with its own default ceiling — a thousand rows — and says nothing
   // about the rest. That went unnoticed for as long as positives were
@@ -651,6 +658,10 @@ async function mergeJudgedSame(client: ReturnType<typeof createWriteClient>): Pr
     console.log('\ngrupos julgados iguais: 0, linhas absorvidas: 0')
     return
   }
+
+  // The pairs somebody ruled apart, which is what keeps a chain honest.
+  const decided = await readDecisions(client)
+  const different = new Set([...decided].filter(([, same]) => !same).map(([key]) => key))
 
   const byId = await readProductsByIds(client, [
     ...new Set(positives.flatMap((row) => [row.left_id, row.right_id])),
@@ -692,7 +703,19 @@ async function mergeJudgedSame(client: ReturnType<typeof createWriteClient>): Pr
     new Set(group.map((row) => row.brand).filter(Boolean)).size > 1 ||
     new Set(group.map((row) => row.gtin14).filter(Boolean)).size > 1
 
-  const groups = formed.filter((group) => group.length <= MAX_GROUP && !contradicts(group))
+  // And refused when any pair inside it was judged different. The chain
+  // put them together; a verdict says they do not belong together, and
+  // the verdict looked at them directly.
+  const refuted = (group: readonly Row[]) => {
+    for (let i = 0; i < group.length; i += 1) {
+      for (let j = i + 1; j < group.length; j += 1) {
+        if (different.has(pairKey(group[i], group[j]))) return true
+      }
+    }
+    return false
+  }
+
+  const groups = formed.filter((group) => !contradicts(group) && !refuted(group))
   const held = formed.length - groups.length
   const absorbed = groups.reduce((total, group) => total + group.length - 1, 0)
 
@@ -700,11 +723,14 @@ async function mergeJudgedSame(client: ReturnType<typeof createWriteClient>): Pr
   if (held > 0) {
     // Not deleted: the verdicts stay, so a rule that can read a chain
     // rather than a pair can still use them.
-    console.log(
-      `retidos: ${held} grupos — maiores que ${MAX_GROUP} linhas, ou discordando de si mesmos`,
-    )
+    console.log(`retidos: ${held} grupos — contêm um par julgado diferente, ou discordam de si`)
   }
   if (groups.length === 0) return
+
+  if (dryRun) {
+    console.log('--dry-run: nada aplicado')
+    return
+  }
 
   const payload = groups.map((group) => {
     const [survivor, ...losers] = [...group].sort(bestFirst)
