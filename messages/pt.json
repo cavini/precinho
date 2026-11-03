@@ -1,0 +1,67 @@
+{
+  "Metadata": {
+    "title": "Precinho — os melhores preços em {region}",
+    "description": "Compare o preço dos produtos de mercado nas redes de {region}, com link direto pra loja.",
+    "genericDescription": "Comparador de preços de mercado."
+  },
+  "Header": {
+    "language": "Idioma"
+  },
+  "Footer": {
+    "disclaimer": "Preços coletados dos sites das próprias redes. Confirme no site da loja antes de comprar."
+  },
+  "Common": {
+    "unavailable": "Não consegui carregar agora.",
+    "retry": "Tentar de novo",
+    "retrying": "Tentando…",
+    "noCoverage": "Nenhum mercado está sendo acompanhado no momento.",
+    "noStoresSelected": "Marque pelo menos um mercado ali em cima pra eu comparar.",
+    "rateLimited": "Muitas consultas em pouco tempo. Tente de novo em {seconds}s.",
+    "loadMoreFailed": "Não consegui carregar mais. Tentar de novo"
+  },
+  "ContextBar": {
+    "pricesFrom": "Preços dos mercados de <place>{region}</place>",
+    "compareAt": "Comparar em",
+    "selectAll": "marcar todos",
+    "pickAtLeastOne": "Escolha pelo menos um mercado."
+  },
+  "Search": {
+    "label": "Buscar produto",
+    "placeholder": "arroz, leite condensado, coca 2L…",
+    "submit": "Buscar",
+    "submitting": "Buscando",
+    "loading": "Buscando",
+    "back": "Voltar",
+    "unavailable": "Não consegui buscar agora.",
+    "tooShort": "Escreva pelo menos duas letras pra eu ter o que procurar.",
+    "rateLimited": "Muitas buscas em pouco tempo. Tente de novo em {seconds}s.",
+    "noResults": "Não achei nada para <term>{query}</term> nos mercados marcados. Tente um termo mais simples, tipo <term>{example}</term>.",
+    "example": "arroz",
+    "outOfStock": "sem estoque nos mercados marcados",
+    "canSave": "dá pra economizar {amount} ({percent}%)"
+  },
+  "Feed": {
+    "heading": "Ofertas em {region}",
+    "subheading": "Onde dá pra economizar agora",
+    "loading": "Carregando ofertas",
+    "empty": "Ainda não tenho nenhum produto nos mercados marcados que apareça em mais de um deles. Marque mais mercados ali em cima, ou busque um produto direto.",
+    "nothingToCompare": "Marque pelo menos um mercado ali em cima pra eu ter o que comparar.",
+    "unavailable": "Não consegui carregar os preços agora.",
+    "saveUpTo": "economize até {amount}",
+    "atTheCheapest": "{unitPrice} no mais barato",
+    "exhausted": "Acabaram as comparações por aqui."
+  },
+  "Product": {
+    "loading": "Carregando produto",
+    "spread": "Entre o mais barato e o mais caro dos mercados marcados dá {amount} ({percent}%).",
+    "barcode": "Código de barras {ean}",
+    "noOffers": "Nenhum dos mercados marcados tem preço pra esse produto agora.",
+    "newSearch": "Nova busca",
+    "cheapest": "mais barato",
+    "outOfStock": "sem estoque",
+    "promotion": "promoção da loja: {amount} off",
+    "viewAtStore": "ver na loja",
+    "collectedAt": "coletado em {when}",
+    "stale": "preço de {when} — pode ter mudado"
+  }
+}

@@ -2,12 +2,13 @@ import { Suspense } from 'react'
 import { RetryButton } from '@/presentation/components/RetryButton'
 import { headers } from 'next/headers'
 import { connection } from 'next/server'
-import Link from 'next/link'
+import { Link } from '@/i18n/navigation'
 import { getWebContainer } from '@/composition/container'
 import { ContextBar } from '@/presentation/components/ContextBar'
 import { InfiniteResults } from '@/presentation/components/InfiniteResults'
 import { SearchForm } from '@/presentation/components/SearchForm'
 import { ContextBarSkeleton, ResultListSkeleton } from '@/presentation/components/Skeletons'
+import { getTranslations } from 'next-intl/server'
 import { clientKeyFromHeaders } from '@/presentation/clientKey'
 import { readPageContext } from '@/presentation/server/shoppingContext'
 
@@ -32,12 +33,14 @@ export default function SearchPage({ searchParams }: Props) {
 
 async function SearchBody({ searchParams }: Props) {
   const { q = '' } = await searchParams
+  const common = await getTranslations('Common')
+  const t = await getTranslations('Search')
   const context = await readPageContext()
 
   if (context.status === 'unavailable') {
     return (
       <p className="rounded-xl border border-rule p-4 text-sm text-ink-soft">
-        Não consegui carregar agora. <RetryButton label="Tentar de novo" />
+        {common('unavailable')} <RetryButton label={common('retry')} />
       </p>
     )
   }
@@ -45,7 +48,7 @@ async function SearchBody({ searchParams }: Props) {
   if (context.status === 'no-coverage') {
     return (
       <p className="rounded-xl border border-rule p-4 text-sm text-ink-soft">
-        Nenhum mercado está sendo acompanhado no momento.
+        {common('noCoverage')}
       </p>
     )
   }
@@ -67,7 +70,7 @@ async function SearchBody({ searchParams }: Props) {
 
       <p className="text-sm text-ink-soft">
         <Link href="/" className="underline underline-offset-2">
-          Voltar
+          {t('back')}
         </Link>
       </p>
     </>
@@ -93,6 +96,9 @@ async function Results({
   // which is exactly how it was reported.
   await connection()
 
+  const common = await getTranslations('Common')
+  const t = await getTranslations('Search')
+
   const result = await getWebContainer().searchProducts.execute({
     rawQuery: query,
     regionId,
@@ -109,19 +115,16 @@ async function Results({
   if (result.status === 'unavailable') {
     return (
       <p className="rounded-xl border border-rule p-4 text-sm text-ink-soft">
-        Não consegui buscar agora. <RetryButton label="Tentar de novo" />
+        {t('unavailable')} <RetryButton label={common('retry')} />
       </p>
     )
   }
 
   return (
     <p className="rounded-xl border border-rule p-4 text-sm text-ink-soft">
-      {result.status === 'invalid-query' &&
-        'Escreva pelo menos duas letras pra eu ter o que procurar.'}
-      {result.status === 'no-stores-selected' &&
-        'Marque pelo menos um mercado ali em cima pra eu comparar.'}
-      {result.status === 'rate-limited' &&
-        `Muitas buscas em pouco tempo. Tente de novo em ${result.retryAfterSeconds}s.`}
+      {result.status === 'invalid-query' && t('tooShort')}
+      {result.status === 'no-stores-selected' && common('noStoresSelected')}
+      {result.status === 'rate-limited' && t('rateLimited', { seconds: result.retryAfterSeconds })}
     </p>
   )
 }

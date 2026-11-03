@@ -19,15 +19,15 @@ export async function GET(request: Request): Promise<NextResponse> {
   // 503 rather than 409: a coverage read that failed is ours to fix and
   // worth retrying, while a client error tells the caller to stop.
   if (context.status === 'unavailable') {
-    return NextResponse.json({ error: 'indisponível' }, { status: 503 })
+    return NextResponse.json({ error: 'unavailable' }, { status: 503 })
   }
   if (context.status !== 'ready') {
-    return NextResponse.json({ error: 'sem cobertura' }, { status: 409 })
+    return NextResponse.json({ error: 'no coverage' }, { status: 409 })
   }
 
   const requested = Number(new URL(request.url).searchParams.get('offset'))
   if (!Number.isFinite(requested) || requested < 0 || requested > MAX_OFFSET) {
-    return NextResponse.json({ error: 'offset inválido' }, { status: 400 })
+    return NextResponse.json({ error: 'invalid offset' }, { status: 400 })
   }
 
   const feed = await getWebContainer().getProductFeed.execute({
@@ -39,7 +39,7 @@ export async function GET(request: Request): Promise<NextResponse> {
 
   if (feed.status === 'rate-limited') {
     return NextResponse.json(
-      { error: 'muitas requisições' },
+      { error: 'too many requests' },
       { status: 429, headers: { 'Retry-After': String(feed.retryAfterSeconds) } },
     )
   }
@@ -47,7 +47,7 @@ export async function GET(request: Request): Promise<NextResponse> {
   if (feed.status === 'unavailable') {
     // Not an empty page: the scroll would take that as the end of the
     // feed and stop, quietly, as though there were nothing more.
-    return NextResponse.json({ error: 'indisponível' }, { status: 503 })
+    return NextResponse.json({ error: 'unavailable' }, { status: 503 })
   }
 
   if (feed.status !== 'ok') {

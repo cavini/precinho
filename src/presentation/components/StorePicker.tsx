@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import type { ShoppingContextStore } from '@/application/use-cases/ResolveShoppingContext'
+import { useTranslations } from 'next-intl'
 import { writePreferencesCookie } from '../preferencesCookie'
 
 type Props = {
@@ -29,6 +30,7 @@ type Props = {
  */
 export function StorePicker({ stores, picked }: Props) {
   const router = useRouter()
+  const t = useTranslations('ContextBar')
   const [selected, setSelected] = useState<readonly string[]>(picked)
 
   function apply(storeIds: readonly string[]) {
@@ -45,7 +47,7 @@ export function StorePicker({ stores, picked }: Props) {
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <span className="text-xs uppercase tracking-wide text-ink-faint">Comparar em</span>
+      <span className="text-xs uppercase tracking-wide text-ink-faint">{t('compareAt')}</span>
 
       {stores.map((store) => {
         const on = selected.includes(store.id)
@@ -72,13 +74,11 @@ export function StorePicker({ stores, picked }: Props) {
           onClick={() => apply(stores.map((store) => store.id))}
           className="text-xs text-ink-soft underline underline-offset-2 hover:text-ink"
         >
-          marcar todos
+          {t('selectAll')}
         </button>
       )}
 
-      {selected.length === 0 && (
-        <span className="text-sm text-warn">Escolha pelo menos um mercado.</span>
-      )}
+      {selected.length === 0 && <span className="text-sm text-warn">{t('pickAtLeastOne')}</span>}
     </div>
   )
 }

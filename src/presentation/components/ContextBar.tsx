@@ -1,6 +1,7 @@
 'use client'
 
 import type { ShoppingContextStore } from '@/application/use-cases/ResolveShoppingContext'
+import { useTranslations } from 'next-intl'
 import { StorePicker } from './StorePicker'
 
 type Props = {
@@ -19,10 +20,18 @@ type Props = {
  * is not for them, without typing a postcode to find out.
  */
 export function ContextBar({ regionName, stores, picked }: Props) {
+  const t = useTranslations('ContextBar')
+
   return (
     <div className="flex flex-col gap-3 border-b border-rule pb-4">
       <p className="text-sm text-ink-soft">
-        Preços dos mercados de <span className="font-medium text-ink">{regionName}</span>
+        {/* The sentence comes from the message file and the emphasis
+            from here: each language puts the place where its own grammar
+            wants it, and no class name has to live in a translation. */}
+        {t.rich('pricesFrom', {
+          region: regionName,
+          place: (chunks) => <span className="font-medium text-ink">{chunks}</span>,
+        })}
       </p>
 
       <StorePicker stores={stores} picked={picked} />

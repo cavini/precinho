@@ -19,10 +19,10 @@ export async function GET(request: Request): Promise<NextResponse> {
   // 503 rather than 409: a coverage read that failed is ours to fix and
   // worth retrying, while a client error tells the caller to stop.
   if (context.status === 'unavailable') {
-    return NextResponse.json({ error: 'indisponível' }, { status: 503 })
+    return NextResponse.json({ error: 'unavailable' }, { status: 503 })
   }
   if (context.status !== 'ready') {
-    return NextResponse.json({ error: 'sem cobertura' }, { status: 409 })
+    return NextResponse.json({ error: 'no coverage' }, { status: 409 })
   }
 
   const params = new URL(request.url).searchParams
@@ -30,7 +30,7 @@ export async function GET(request: Request): Promise<NextResponse> {
   const requested = Number(params.get('offset'))
 
   if (!Number.isFinite(requested) || requested < 0 || requested > SearchProducts.MAX_OFFSET) {
-    return NextResponse.json({ error: 'offset inválido' }, { status: 400 })
+    return NextResponse.json({ error: 'invalid offset' }, { status: 400 })
   }
 
   const result = await getWebContainer().searchProducts.execute({
@@ -43,7 +43,7 @@ export async function GET(request: Request): Promise<NextResponse> {
 
   if (result.status === 'rate-limited') {
     return NextResponse.json(
-      { error: 'muitas buscas' },
+      { error: 'too many searches' },
       { status: 429, headers: { 'Retry-After': String(result.retryAfterSeconds) } },
     )
   }
@@ -51,7 +51,7 @@ export async function GET(request: Request): Promise<NextResponse> {
   if (result.status === 'unavailable') {
     // Not an empty page: the scroll would read that as the end of the
     // results and stop, quietly, as though there were nothing more.
-    return NextResponse.json({ error: 'indisponível' }, { status: 503 })
+    return NextResponse.json({ error: 'unavailable' }, { status: 503 })
   }
 
   if (result.status !== 'ok') {

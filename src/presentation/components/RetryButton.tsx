@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 
 /**
  * Asks the server for this page again.
@@ -10,9 +11,13 @@ import { useState } from 'react'
  * from its cache, so the reader would press "try again" and be shown the
  * same failure. router.refresh() re-runs the server render, which is the
  * thing that failed and the thing worth retrying.
+ *
+ * The label is the caller's, because what failed is theirs to name; only
+ * the word it turns into while it works comes from here.
  */
 export function RetryButton({ label }: { label: string }) {
   const router = useRouter()
+  const t = useTranslations('Common')
   const [retrying, setRetrying] = useState(false)
 
   return (
@@ -28,7 +33,7 @@ export function RetryButton({ label }: { label: string }) {
       }}
       className="underline underline-offset-2 disabled:opacity-50"
     >
-      {retrying ? 'Tentando…' : label}
+      {retrying ? t('retrying') : label}
     </button>
   )
 }

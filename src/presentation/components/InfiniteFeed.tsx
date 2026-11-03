@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { FeedCard } from '@/application/use-cases/GetProductFeed'
+import { useTranslations } from 'next-intl'
 import { ProductFeed } from './ProductFeed'
 import { FeedSkeleton } from './Skeletons'
 
@@ -25,6 +26,8 @@ type Props = {
  * usually there before the reader reaches the gap.
  */
 export function InfiniteFeed({ initialCards, initialHasMore }: Props) {
+  const t = useTranslations('Feed')
+  const common = useTranslations('Common')
   const [cards, setCards] = useState<readonly FeedCard[]>(initialCards)
   const [hasMore, setHasMore] = useState(initialHasMore)
   const [failed, setFailed] = useState(false)
@@ -92,12 +95,12 @@ export function InfiniteFeed({ initialCards, initialHasMore }: Props) {
           onClick={() => void loadMore()}
           className="self-center rounded-lg border border-rule-strong px-4 py-2 text-sm text-ink-soft hover:border-ink hover:text-ink"
         >
-          Não consegui carregar mais. Tentar de novo
+          {common('loadMoreFailed')}
         </button>
       )}
 
       {!hasMore && cards.length > 0 && (
-        <p className="py-2 text-center text-xs text-ink-faint">Acabaram as comparações por aqui.</p>
+        <p className="py-2 text-center text-xs text-ink-faint">{t('exhausted')}</p>
       )}
     </div>
   )

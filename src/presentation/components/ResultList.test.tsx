@@ -1,7 +1,9 @@
 // @vitest-environment happy-dom
 import { render, screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import type { Locale } from 'next-intl'
 import type { SearchResultItem } from '@/application/use-cases/SearchProducts'
+import { inLanguage } from '@/testing/intl'
 import { ResultList } from './ResultList'
 
 function anItem(overrides: Partial<SearchResultItem> = {}): SearchResultItem {
@@ -42,10 +44,15 @@ function anItem(overrides: Partial<SearchResultItem> = {}): SearchResultItem {
   }
 }
 
+/** Every render goes through a provider, because the list translates. */
+function renderList(ui: React.ReactElement, language: Locale = 'pt') {
+  return render(inLanguage(ui, language))
+}
+
 describe('ResultList', () => {
   it('shows every store that has the product, not just the cheapest', () => {
     // The listing used to show one price, which compares nothing.
-    render(<ResultList query="arroz" items={[anItem()]} />)
+    renderList(<ResultList query="arroz" items={[anItem()]} />)
 
     expect(screen.getByText("Sam's Club")).toBeInTheDocument()
     expect(screen.getByText('Atacadão')).toBeInTheDocument()
@@ -69,7 +76,7 @@ describe('ResultList', () => {
       spread: null,
     })
 
-    render(<ResultList query="sabonete" items={[single]} />)
+    renderList(<ResultList query="sabonete" items={[single]} />)
 
     expect(screen.getByText('Pão de Açúcar')).toBeInTheDocument()
   })
@@ -77,7 +84,7 @@ describe('ResultList', () => {
   it('never nests a store link inside the product link', () => {
     // An <a> inside an <a> is invalid HTML, and invalid nesting is one of
     // the things React reports as a hydration mismatch.
-    const { container } = render(<ResultList query="arroz" items={[anItem()]} />)
+    const { container } = renderList(<ResultList query="arroz" items={[anItem()]} />)
 
     for (const anchor of container.querySelectorAll('a')) {
       expect(within(anchor).queryAllByRole('link')).toHaveLength(0)
@@ -85,7 +92,7 @@ describe('ResultList', () => {
   })
 
   it('sends a shopper to the shop, not to our own page, from a price', () => {
-    render(<ResultList query="arroz" items={[anItem()]} />)
+    renderList(<ResultList query="arroz" items={[anItem()]} />)
 
     const store = screen.getByRole('link', { name: 'Atacadão' })
     expect(store).toHaveAttribute('href', 'https://example.test/atacadao/arroz')
@@ -94,15 +101,33 @@ describe('ResultList', () => {
 
   it('says so plainly when no marked shop has it', () => {
     const none = anItem({ cheapest: null, offers: [], availableStoreCount: 0, spread: null })
-    render(<ResultList query="arroz" items={[none]} />)
+    renderList(<ResultList query="arroz" items={[none]} />)
 
     expect(screen.getByText(/sem estoque nos mercados marcados/i)).toBeInTheDocument()
   })
 
   it('explains an empty result instead of showing a blank page', () => {
-    render(<ResultList query="xyzabc" items={[]} />)
+    renderList(<ResultList query="xyzabc" items={[]} />)
 
     expect(screen.getByText(/não achei nada/i)).toBeInTheDocument()
     expect(screen.getByText('xyzabc')).toBeInTheDocument()
+  })
+
+  it('speaks whichever language the page is in', () => {
+    // The listing is rendered inside the infinite scroll, on the far side
+    // of the client boundary, so this is the whole path from the cookie
+    // the page read to a sentence in the browser.
+    renderList(<ResultList query="xyzabc" items={[]} />, 'en')
+
+    expect(screen.getByText(/couldn't find anything/i)).toBeInTheDocument()
+    expect(screen.getByText('xyzabc')).toBeInTheDocument()
+  })
+
+  it('keeps the query out of the translation', () => {
+    // Whatever was typed is the shopper's, not ours: it is shown back
+    // untouched in either language.
+    renderList(<ResultList query="arroz" items={[]} />, 'en')
+
+    expect(screen.getByText('arroz')).toBeInTheDocument()
   })
 })
