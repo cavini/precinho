@@ -174,6 +174,14 @@ describe('ProductNameParser', () => {
       )
     })
 
+    it('does not read a brand that ends in a number as a count', () => {
+      // "Porta 6" is the wine. Read as six bottles it became 4,5 litres,
+      // which is why the container words are required in the plural.
+      expect(parser.extractSize('Vinho Tinto Português Porta 6 Garrafa - 750ml')).toEqual(
+        Quantity.of(0.75, 'L'),
+      )
+    })
+
     it('still refuses a count that is really a size', () => {
       expect(parser.extractSize('Caixa 1000g')).toEqual(Quantity.of(1, 'kg'))
     })

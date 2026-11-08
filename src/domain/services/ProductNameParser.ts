@@ -63,9 +63,15 @@ const PACK_COUNT = new RegExp(
  * on — only the counted thing behind. Anchored on that noun rather than
  * on a bare number, so "Arroz Tipo 1 Pacote 5kg" stays one kilo bag and
  * not five.
+ *
+ * The container words are required in the plural, because in the singular
+ * they are how a catalogue describes the packaging rather than count it:
+ * "Vinho Porta 6 Garrafa 750ml" is one bottle of a wine whose brand ends
+ * in a number, and it was being read as 4,5 litres. "un" and "unid" are
+ * exempt — they are never a description, only ever a tally.
  */
 const TRAILING_COUNT = new RegExp(
-  String.raw`\b(\d{1,2})\s*(?:latas?|unidades?|unid|un|garrafas?|saches?|sachets?|potes?|pacotes?|tabletes?|barras?)\b`,
+  String.raw`\b(\d{1,2})\s*(?:latas|unidades|unid|un|garrafas|saches|sachets|potes|pacotes|tabletes|barras)\b`,
   'iu',
 )
 
