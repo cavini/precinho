@@ -111,6 +111,32 @@ describe('ComparablePrices', () => {
     })
   })
 
+  describe('a price far below the middle', () => {
+    it('refuses the single can sold under the pack it is not', () => {
+      // The bug as reported: a Red Bull 4-pack priced by Sam's Club and
+      // Carrefour, with Oba's single can attached through the pack's
+      // barcode. Nothing above the middle to refuse, so the page called
+      // 9,99 the cheapest and advertised a package difference as a saving.
+      expect(asReais(policy.keepComparable(reais(9.99, 35.96, 39.98)))).toEqual([35.96, 39.98])
+    })
+
+    it('keeps a wholesale club undercutting a supermarket', () => {
+      // Atacadão and Tenda genuinely halve a supermarket price. Refusing
+      // that is refusing the thing the site exists to show — which is why
+      // the floor sits at three and not at the ceiling's 1.75.
+      expect(asReais(policy.keepComparable(reais(5.99, 10.49, 11.29)))).toEqual([
+        5.99, 10.49, 11.29,
+      ])
+    })
+
+    it('still keeps the cheapest when there is no middle to judge by', () => {
+      // Two prices and nothing to arbitrate. The can at 8,99 against the
+      // four-pack at 31,56 is kept, because it is almost always the unit
+      // and it is a price somebody can pay.
+      expect(asReais(policy.keepComparable(reais(8.99, 31.56)))).toEqual([8.99])
+    })
+  })
+
   describe('edges', () => {
     it('handles no prices', () => {
       expect(policy.keepComparable([])).toEqual([])

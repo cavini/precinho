@@ -35,11 +35,24 @@ for (const line of merged.split('\n')) if (line.includes('grupos')) console.log(
 // two prices and the feed is ranked on exactly that.
 execFileSync('npx', ['tsx', 'scripts/refresh-feed.ts'], { stdio: 'inherit' })
 
-const pending = run([])
-for (const line of pending.split('\n')) {
-  if (line.includes('candidatos') || line.includes('pendentes') || line.includes('praça')) {
-    console.log(line.trim())
+// Weekly, not nightly. Counting what is pending means building the
+// shortlist, which means reading the catalogue — 84.8 MB, measured. The
+// number it prints is a thing to watch, not to act on, and watching it
+// every night cost more egress in a month than the whole allowance.
+// Mondays, so it lands at the start of a week rather than never.
+//
+// `npm run reconcile -- --count` forces it, for when the answer is wanted
+// today.
+const forced = process.argv.includes('--count')
+if (forced || new Date().getUTCDay() === 1) {
+  const pending = run(['--count'])
+  for (const line of pending.split('\n')) {
+    if (line.includes('candidatos') || line.includes('pendentes') || line.includes('praça')) {
+      console.log(line.trim())
+    }
   }
+} else {
+  console.log('\ncontagem de pendentes: segundas-feiras (ou --count para agora)')
 }
 
 console.log(

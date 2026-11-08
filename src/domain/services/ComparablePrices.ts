@@ -34,6 +34,30 @@ export const MAX_PRICE_RATIO = 3
  */
 export const MAX_MEDIAN_RATIO = 1.75
 
+/**
+ * How far *below* the middle a price may sit before it stops being a
+ * bargain and starts being a different package.
+ *
+ * The ceiling above assumes the cheapest row is the honest one — true
+ * while an expensive outlier is a multipack sharing a unit's barcode. It
+ * stops being true when the product itself is the pack: a Red Bull
+ * 4-pack priced by two shops at 35,96 and 39,98 also carried an Oba offer
+ * at 9,99, because Oba publishes the pack's barcode on a single-can page.
+ * Nothing above the middle to refuse, so the page called 9,99 the
+ * cheapest and advertised a saving that was a package difference.
+ *
+ * Three, not 1.75, and the asymmetry is the point. An expensive outlier
+ * is nearly always a pack; a cheap one is usually a wholesale club doing
+ * its job. Measured over 34,015 prices on products carried by three or
+ * more shops: a floor at 1.75 refuses 290, and the mildest are plainly
+ * real — Baton 90g at 5,99 in Atacadão against a 10,49 median, Huggies
+ * shampoo at 12,99 against 22,78. At three it refuses 19, and they read
+ * as one list: Twix "Unidades de 15g" at 1,69 against 20,73, Trident
+ * "Caixa com 21x8g" at 6,98 against 44,94, the Red Bull. Pack against
+ * unit, every one.
+ */
+export const MIN_MEDIAN_RATIO = 3
+
 /** Below this, there is no middle — only two ends and no way to tell. */
 const ENOUGH_FOR_A_MIDDLE = 3
 
@@ -57,9 +81,13 @@ export class ComparablePrices {
   /**
    * Returns the prices worth comparing, in the order given.
    *
-   * Anchored on the cheapest rather than the median or the mean: those move
-   * when half the rows are packs, and the cheapest is almost always the
-   * single unit, which is what a shopper is pricing.
+   * Anchored on the median once there are three prices, because with a
+   * middle to judge by it is the only anchor that does not move when the
+   * bad row is at one end: against the cheapest, a real spread and a
+   * mismatch widen the same side and cannot be told apart.
+   *
+   * Below three there is no middle, and the cheapest is kept — it is
+   * almost always the single unit, and a real price somebody can pay.
    *
    * Complexity: O(n), two passes and no sort.
    */
@@ -67,8 +95,10 @@ export class ComparablePrices {
     if (prices.length < 2) return prices
 
     if (prices.length >= ENOUGH_FOR_A_MIDDLE) {
-      const ceiling = median(prices) * MAX_MEDIAN_RATIO
-      return prices.filter((price) => price.cents <= ceiling)
+      const middle = median(prices)
+      const ceiling = middle * MAX_MEDIAN_RATIO
+      const floor = middle / MIN_MEDIAN_RATIO
+      return prices.filter((price) => price.cents <= ceiling && price.cents >= floor)
     }
 
     // Two prices and nothing to arbitrate. The cheapest is kept rather

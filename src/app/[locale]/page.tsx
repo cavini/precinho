@@ -7,6 +7,7 @@ import { ContextBar } from '@/presentation/components/ContextBar'
 import { InfiniteFeed } from '@/presentation/components/InfiniteFeed'
 import { SearchForm } from '@/presentation/components/SearchForm'
 import { ContextBarSkeleton, FeedSkeleton } from '@/presentation/components/Skeletons'
+import { getTranslations } from 'next-intl/server'
 import { clientKeyFromHeaders } from '@/presentation/clientKey'
 import { readPageContext } from '@/presentation/server/shoppingContext'
 
@@ -35,12 +36,16 @@ export default function HomePage() {
 }
 
 async function HomeBody() {
+  // Both read the same request's cookies, which is what makes this body
+  // the dynamic half of the page; the language costs nothing extra here.
+  const common = await getTranslations('Common')
+  const t = await getTranslations('Feed')
   const context = await readPageContext()
 
   if (context.status === 'unavailable') {
     return (
       <p className="rounded-xl border border-rule p-4 text-sm text-ink-soft">
-        Não consegui carregar agora. <RetryButton label="Tentar de novo" />
+        {common('unavailable')} <RetryButton label={common('retry')} />
       </p>
     )
   }
@@ -48,7 +53,7 @@ async function HomeBody() {
   if (context.status === 'no-coverage') {
     return (
       <p className="rounded-xl border border-rule p-4 text-sm text-ink-soft">
-        Nenhum mercado está sendo acompanhado no momento.
+        {common('noCoverage')}
       </p>
     )
   }
@@ -62,7 +67,9 @@ async function HomeBody() {
       />
 
       <section className="flex flex-col gap-3">
-        <h1 className="text-2xl font-semibold tracking-tight">Ofertas em {context.regionName}</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">
+          {t('heading', { region: context.regionName })}
+        </h1>
         <SearchForm autoFocus />
       </section>
 
@@ -84,10 +91,15 @@ async function FeedSection({
   regionId: string
   storeIds: readonly string[]
 }) {
-  // See the note in busca/page.tsx: without this the partial prerender
+  // See the note in search/page.tsx: without this the partial prerender
   // cancels the query mid-flight and the cancellation arrives as an
   // ordinary database error.
   await connection()
+
+  // Resolved again rather than passed down: next-intl caches the
+  // request's config, so this is the same answer the body got.
+  const common = await getTranslations('Common')
+  const t = await getTranslations('Feed')
 
   const feed = await getWebContainer().getProductFeed.execute({
     regionId,
@@ -98,7 +110,7 @@ async function FeedSection({
   if (feed.status === 'no-stores-selected') {
     return (
       <p className="rounded-xl border border-rule p-4 text-sm text-ink-soft">
-        Marque pelo menos um mercado ali em cima pra eu ter o que comparar.
+        {t('nothingToCompare')}
       </p>
     )
   }
@@ -106,7 +118,7 @@ async function FeedSection({
   if (feed.status === 'unavailable') {
     return (
       <p className="rounded-xl border border-rule p-4 text-sm text-ink-soft">
-        Não consegui carregar os preços agora. <RetryButton label="Tentar de novo" />
+        {t('unavailable')} <RetryButton label={common('retry')} />
       </p>
     )
   }
@@ -114,7 +126,7 @@ async function FeedSection({
   if (feed.status === 'rate-limited') {
     return (
       <p className="rounded-xl border border-rule p-4 text-sm text-ink-soft">
-        Muitas consultas em pouco tempo. Tente de novo em {feed.retryAfterSeconds}s.
+        {common('rateLimited', { seconds: feed.retryAfterSeconds })}
       </p>
     )
   }

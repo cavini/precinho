@@ -1,4 +1,5 @@
-import Link from 'next/link'
+import { Link } from '@/i18n/navigation'
+import { useTranslations } from 'next-intl'
 import { ProductImage } from './ProductImage'
 import type { SearchResultItem } from '@/application/use-cases/SearchProducts'
 
@@ -18,11 +19,16 @@ export function ResultList({
   query: string
   items: readonly SearchResultItem[]
 }) {
+  const t = useTranslations('Search')
+
   if (items.length === 0) {
     return (
       <p className="rounded-xl border border-rule p-4 text-sm text-ink-soft">
-        Não achei nada para <span className="font-medium">{query}</span> nos mercados marcados.
-        Tente um termo mais simples, tipo <span className="font-medium">arroz</span>.
+        {t.rich('noResults', {
+          query,
+          example: t('example'),
+          term: (chunks) => <span className="font-medium">{chunks}</span>,
+        })}
       </p>
     )
   }
@@ -31,7 +37,10 @@ export function ResultList({
     <ul className="flex flex-col divide-y divide-rule">
       {items.map((item) => (
         <li key={item.productId} className="py-4">
-          <Link href={`/produto/${item.productId}`} className="group flex items-start gap-4">
+          <Link
+            href={{ pathname: '/product/[id]', params: { id: item.productId } }}
+            className="group flex items-start gap-4"
+          >
             <ProductImage src={item.imageUrl} className="h-20 w-20 shrink-0 rounded-lg" />
 
             <div className="flex min-w-0 flex-1 flex-col gap-1">
@@ -49,13 +58,14 @@ export function ResultList({
                 </p>
               )}
 
-              {!item.cheapest && (
-                <span className="text-sm text-ink-faint">sem estoque nos mercados marcados</span>
-              )}
+              {!item.cheapest && <span className="text-sm text-ink-faint">{t('outOfStock')}</span>}
 
               {item.spread && (
                 <span className="text-xs text-accent">
-                  dá pra economizar {item.spread.amountLabel} ({Math.round(item.spread.percent)}%)
+                  {t('canSave', {
+                    amount: item.spread.amountLabel,
+                    percent: Math.round(item.spread.percent),
+                  })}
                 </span>
               )}
             </div>

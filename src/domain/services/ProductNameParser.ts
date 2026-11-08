@@ -34,18 +34,44 @@ const MEASURE_UNIT = KNOWN_UNIT_SPELLINGS.filter((spelling) =>
 ).join('|')
 
 /**
- * A pack written in words: "Pack 6 Galões 1,27l Cada", "Caixa 12 Latas
- * 350ml", "Fardo 12 Unidades 269ml".
+ * A pack written in words, with the count after the noun: "Pack 6 Galões
+ * 1,27l Cada", "Caixa 12 Latas 350ml", "Fardo 12 Unidades 269ml".
  *
  * Wholesale clubs sell these alongside everyone else's single unit, and
  * reading the per-item size as the package size makes the two look
  * comparable when they are not.
  *
+ * The connector is optional because catalogues write it both ways, and
+ * leaving it out is what let "Pack de 4 latas Red Bull 250ml" through as
+ * a single can — which then attached to the real pack through a shared
+ * barcode and advertised 9,99 against 35,96 as a saving.
+ *
  * The count is capped at two digits and must not be followed by a unit,
  * which is what keeps "Caixa 1000g" from being read as a thousand boxes.
  */
 const PACK_COUNT = new RegExp(
-  String.raw`\b(?:pack|fardo|caixa|cx|engradado|c\/)\s*(\d{1,2})\b(?!\s*(?:${MEASURE_UNIT})${NOT_INSIDE_A_WORD})`,
+  String.raw`\b(?:pack|fardo|caixa|cx|engradado|c\/|leve)\s*(?:de|com)?\s*(\d{1,2})\b(?!\s*(?:${MEASURE_UNIT})${NOT_INSIDE_A_WORD})`,
+  'iu',
+)
+
+/**
+ * The same pack, written the other way round: the count last, carried by
+ * the word for what is being counted. "Red Bull 250ml - 4 Latas", "Chá
+ * Leão Caixa com 15 Sachês - 15g", "Queijo Gouda 6 Unidades 120g".
+ *
+ * Needs its own pattern because there is no pack noun in front to anchor
+ * on — only the counted thing behind. Anchored on that noun rather than
+ * on a bare number, so "Arroz Tipo 1 Pacote 5kg" stays one kilo bag and
+ * not five.
+ *
+ * The container words are required in the plural, because in the singular
+ * they are how a catalogue describes the packaging rather than count it:
+ * "Vinho Porta 6 Garrafa 750ml" is one bottle of a wine whose brand ends
+ * in a number, and it was being read as 4,5 litres. "un" and "unid" are
+ * exempt — they are never a description, only ever a tally.
+ */
+const TRAILING_COUNT = new RegExp(
+  String.raw`\b(\d{1,2})\s*(?:latas|unidades|unid|un|garrafas|saches|sachets|potes|pacotes|tabletes|barras)\b`,
   'iu',
 )
 
@@ -88,6 +114,13 @@ export class ProductNameParser {
     const sizes = [...text.matchAll(SINGLE_SIZE)]
     if (sizes.length > 0) {
       const [, size, unit] = sizes[sizes.length - 1]
+      const single = Quantity.fromMeasurement(toNumber(size), unit)
+
+      // A size already counted in units is the count. "Sorvete Picolé Uva
+      // 4 Unidades" is four of them, and multiplying by the pack it just
+      // matched would make it sixteen.
+      if (single === null || single.unit === 'un') return single
+
       return Quantity.fromMeasurement(toNumber(size) * packCount(text), unit)
     }
 
@@ -142,10 +175,12 @@ export class ProductNameParser {
  * Complexity: O(n) over the name.
  */
 function packCount(text: string): number {
-  const match = text.match(PACK_COUNT)
+  // The pack noun first, because "Caixa com 15 Sachês - 15g" names the
+  // package before it names what is in it; only then the other order.
+  const match = text.match(PACK_COUNT) ?? text.match(TRAILING_COUNT)
   if (!match) return 1
 
-  // Always an integer: the pattern matches one or two digits.
+  // Always an integer: both patterns match one or two digits.
   const count = Number(match[1])
   return count < MIN_PACK || count > MAX_PACK ? 1 : count
 }

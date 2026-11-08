@@ -1,3 +1,5 @@
+import { useTranslations } from 'next-intl'
+
 /**
  * Loading placeholders.
  *
@@ -9,10 +11,28 @@
  * `animate-pulse` only; no spinners. These sit behind Suspense boundaries
  * that usually resolve in well under a second, and a spinner at that
  * duration reads as slower than a quiet shimmer.
+ *
+ * These are rendered from both sides of the client boundary — the pages
+ * render them on the server, the infinite scrolls render them in the
+ * browser — which used to mean the busy label had to be handed in as a
+ * prop. `useTranslations` works on both sides, so now they just ask. The
+ * locale comes from the route, so even the outermost fallback, which
+ * belongs to the prerendered shell, knows which language it is in.
  */
 
 function Bar({ className = '' }: { className?: string }) {
   return <span className={`block rounded bg-rule ${className}`} aria-hidden="true" />
+}
+
+/**
+ * The language switch in the header.
+ *
+ * Sized to what replaces it rather than to nothing, because this one sits
+ * on the same line as the site's name: a fallback of zero width would let
+ * the brand slide as the real control arrives.
+ */
+export function LanguageSkeleton() {
+  return <Bar className="h-3 w-28 animate-pulse" />
 }
 
 /** The CEP line and store chips at the top of every page. */
@@ -59,8 +79,10 @@ function CardSkeleton() {
 }
 
 export function FeedSkeleton({ cards = 6 }: { cards?: number }) {
+  const t = useTranslations('Feed')
+
   return (
-    <section className="flex flex-col gap-4" aria-busy="true" aria-label="Carregando ofertas">
+    <section className="flex flex-col gap-4" aria-busy="true" aria-label={t('loading')}>
       <Bar className="h-3 w-48 animate-pulse" />
       <ul className="grid animate-pulse grid-cols-1 gap-4 sm:grid-cols-2">
         {Array.from({ length: cards }, (_, index) => (
@@ -73,11 +95,13 @@ export function FeedSkeleton({ cards = 6 }: { cards?: number }) {
 
 /** The search listing: one row per product, price on the right. */
 export function ResultListSkeleton({ rows = 6 }: { rows?: number }) {
+  const t = useTranslations('Search')
+
   return (
     <ul
       className="flex animate-pulse flex-col divide-y divide-rule"
       aria-busy="true"
-      aria-label="Buscando"
+      aria-label={t('loading')}
     >
       {Array.from({ length: rows }, (_, index) => (
         <li key={index} className="flex items-start gap-4 py-4">
@@ -100,12 +124,10 @@ export function ResultListSkeleton({ rows = 6 }: { rows?: number }) {
 
 /** The product page: photo beside the name, then the price table. */
 export function ProductDetailSkeleton() {
+  const t = useTranslations('Product')
+
   return (
-    <div
-      className="flex animate-pulse flex-col gap-6"
-      aria-busy="true"
-      aria-label="Carregando produto"
-    >
+    <div className="flex animate-pulse flex-col gap-6" aria-busy="true" aria-label={t('loading')}>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
         <Bar className="h-44 w-44 shrink-0 self-center rounded-xl sm:self-start" />
         <div className="flex min-w-0 flex-1 flex-col gap-2">

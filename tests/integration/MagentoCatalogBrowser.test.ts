@@ -39,6 +39,9 @@ const sent = (url: string) => decodeURIComponent(url).replace(/\+/g, ' ')
 function fakeStore(tree: unknown, pages: unknown[][] = [[]], budget?: RequestBudget) {
   const http = {
     requests: [] as string[],
+    async getText() {
+      throw new Error('not used by this test')
+    },
     async getJson(url: string) {
       this.requests.push(url)
 
@@ -178,6 +181,9 @@ describe('MagentoCatalogBrowser planning a sweep', () => {
 
   it('is unavailable when the tree will not load', async () => {
     const http = {
+      async getText() {
+        throw new Error('not used by this test')
+      },
       async getJson() {
         return { status: 'http-error' as const, statusCode: 503 }
       },
@@ -196,6 +202,9 @@ describe('MagentoCatalogBrowser planning a sweep', () => {
 
   it('is unavailable when GraphQL answers with errors', async () => {
     const http = {
+      async getText() {
+        throw new Error('not used by this test')
+      },
       async getJson() {
         return {
           status: 'ok' as const,

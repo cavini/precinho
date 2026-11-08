@@ -2,6 +2,7 @@ import type {
   HttpClient,
   HttpJsonResponse,
   HttpRequestOptions,
+  HttpTextResponse,
 } from '@/application/ports/HttpClient'
 import type { Logger } from '@/application/ports/Logger'
 
@@ -57,6 +58,24 @@ export class FetchHttpClient implements HttpClient {
   }
 
   /**
+   * The body as it arrived, unparsed.
+   *
+   * Goes through the same retry and timeout path as getJson — the only
+   * difference is the last step, so a caller reading JSONL is not also
+   * reimplementing backoff.
+   *
+   * Complexity: one request, plus retries.
+   */
+  async getText(url: string, options: HttpRequestOptions = {}): Promise<HttpTextResponse> {
+    const response = await this.send(url, options, undefined, this.maxRetries, 'text')
+    // 'invalid-json' cannot occur on the text path; narrowing here keeps
+    // that promise in the type rather than in a comment.
+    return response.status === 'invalid-json'
+      ? { status: 'network-error', reason: 'unreadable body' }
+      : (response as HttpTextResponse)
+  }
+
+  /**
    * Sent once, never retried. Repeating a POST blindly can duplicate a side
    * effect on somebody else's system, and no catalogue read is worth that.
    *
@@ -75,6 +94,7 @@ export class FetchHttpClient implements HttpClient {
     options: HttpRequestOptions,
     body: string | undefined,
     maxRetries: number,
+    parse: 'json' | 'text' = 'json',
   ): Promise<HttpJsonResponse> {
     let lastResponse: HttpJsonResponse = { status: 'network-error', reason: 'not attempted' }
 
@@ -83,7 +103,7 @@ export class FetchHttpClient implements HttpClient {
         await this.sleep(this.retryBaseMs * 2 ** (attempt - 1))
       }
 
-      lastResponse = await this.attempt(url, options, body)
+      lastResponse = await this.attempt(url, options, body, parse)
       if (!isWorthRetrying(lastResponse)) return lastResponse
 
       this.logger.debug('http.retrying', {
@@ -104,7 +124,8 @@ export class FetchHttpClient implements HttpClient {
   private async attempt(
     url: string,
     options: HttpRequestOptions,
-    body?: string,
+    body: string | undefined,
+    parse: 'json' | 'text' = 'json',
   ): Promise<HttpJsonResponse> {
     const timeoutMs = options.timeoutMs ?? this.defaultTimeoutMs
     const controller = new AbortController()
@@ -127,6 +148,15 @@ export class FetchHttpClient implements HttpClient {
           status: 'http-error',
           statusCode: response.status,
           body: await readReason(response),
+        }
+      }
+
+      if (parse === 'text') {
+        return {
+          status: 'ok',
+          statusCode: response.status,
+          body: await response.text(),
+          headers: toHeaderMap(response.headers),
         }
       }
 

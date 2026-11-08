@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { SearchResultItem } from '@/application/use-cases/SearchProducts'
+import { useTranslations } from 'next-intl'
 import { ResultList } from './ResultList'
 import { ResultListSkeleton } from './Skeletons'
 
@@ -23,6 +24,7 @@ type Props = {
  * Complexity: one request per page, each bounded by the use case's limit.
  */
 export function InfiniteResults({ query, initialItems, initialHasMore }: Props) {
+  const common = useTranslations('Common')
   const [items, setItems] = useState<readonly SearchResultItem[]>(initialItems)
   const [hasMore, setHasMore] = useState(initialHasMore)
   const [failed, setFailed] = useState(false)
@@ -39,7 +41,7 @@ export function InfiniteResults({ query, initialItems, initialHasMore }: Props) 
 
     try {
       const response = await fetch(
-        `/api/busca?q=${encodeURIComponent(query)}&offset=${items.length}`,
+        `/api/search?q=${encodeURIComponent(query)}&offset=${items.length}`,
       )
       if (!response.ok) {
         setFailed(true)
@@ -91,7 +93,7 @@ export function InfiniteResults({ query, initialItems, initialHasMore }: Props) 
           onClick={() => void loadMore()}
           className="self-center rounded-full border border-rule px-4 py-2 text-sm text-ink-soft hover:text-ink"
         >
-          Não consegui carregar mais. Tentar de novo
+          {common('loadMoreFailed')}
         </button>
       )}
     </div>

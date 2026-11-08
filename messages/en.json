@@ -1,0 +1,67 @@
+{
+  "Metadata": {
+    "title": "Precinho — the best prices in {region}",
+    "description": "Compare grocery prices across the chains in {region}, with a direct link to each store.",
+    "genericDescription": "Grocery price comparison."
+  },
+  "Header": {
+    "language": "Language"
+  },
+  "Footer": {
+    "disclaimer": "Prices collected from the chains' own websites. Check the store's site before you buy."
+  },
+  "Common": {
+    "unavailable": "I couldn't load this right now.",
+    "retry": "Try again",
+    "retrying": "Trying…",
+    "noCoverage": "No supermarket is being tracked right now.",
+    "noStoresSelected": "Select at least one supermarket up there so I can compare.",
+    "rateLimited": "Too many requests in too short a time. Try again in {seconds}s.",
+    "loadMoreFailed": "I couldn't load any more. Try again"
+  },
+  "ContextBar": {
+    "pricesFrom": "Prices from the supermarkets in <place>{region}</place>",
+    "compareAt": "Compare at",
+    "selectAll": "select all",
+    "pickAtLeastOne": "Select at least one supermarket."
+  },
+  "Search": {
+    "label": "Search for a product",
+    "placeholder": "rice, condensed milk, coke 2L…",
+    "submit": "Search",
+    "submitting": "Searching",
+    "loading": "Searching",
+    "back": "Back",
+    "unavailable": "I couldn't search right now.",
+    "tooShort": "Type at least two letters so I have something to look for.",
+    "rateLimited": "Too many searches in too short a time. Try again in {seconds}s.",
+    "noResults": "I couldn't find anything for <term>{query}</term> at the selected supermarkets. Try something simpler, like <term>{example}</term>.",
+    "example": "rice",
+    "outOfStock": "out of stock at the selected supermarkets",
+    "canSave": "you can save {amount} ({percent}%)"
+  },
+  "Feed": {
+    "heading": "Deals in {region}",
+    "subheading": "Where you can save right now",
+    "loading": "Loading deals",
+    "empty": "I don't have a product in the selected supermarkets yet that shows up in more than one of them. Select more supermarkets up there, or search for a product directly.",
+    "nothingToCompare": "Select at least one supermarket up there so I have something to compare.",
+    "unavailable": "I couldn't load the prices right now.",
+    "saveUpTo": "save up to {amount}",
+    "atTheCheapest": "{unitPrice} at the cheapest",
+    "exhausted": "That's every comparison I have."
+  },
+  "Product": {
+    "loading": "Loading product",
+    "spread": "Between the cheapest and the most expensive of the selected supermarkets there is {amount} ({percent}%).",
+    "barcode": "Barcode {ean}",
+    "noOffers": "None of the selected supermarkets has a price for this product right now.",
+    "newSearch": "New search",
+    "cheapest": "cheapest",
+    "outOfStock": "out of stock",
+    "promotion": "store promotion: {amount} off",
+    "viewAtStore": "view at store",
+    "collectedAt": "collected {when}",
+    "stale": "price from {when} — may have changed"
+  }
+}

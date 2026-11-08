@@ -21,10 +21,13 @@
  * Usage:
  *   npx tsx scripts/judge-equivalences.ts                # how many are pending
  *   npx tsx scripts/judge-equivalences.ts --judge        # ask, and store
+ *   npx tsx scripts/judge-equivalences.ts --judge --batch  # half price, slower
+ *   npx tsx scripts/judge-equivalences.ts --collect <batch-id>  # file a late batch
  *   npx tsx scripts/judge-equivalences.ts --judge --limit 200
  *   npx tsx scripts/judge-equivalences.ts --export --limit 500
  *   npx tsx scripts/judge-equivalences.ts --import verdicts.jsonl
  *   npx tsx scripts/judge-equivalences.ts --merge        # apply what was judged same
+ *   npx tsx scripts/judge-equivalences.ts --merge --dry-run  # say what it would do
  *
  * Needs ANTHROPIC_API_KEY in .env.local for --judge, plus
  * ANTHROPIC_WORKSPACE_ID when the key belongs to an organisation rather
@@ -45,6 +48,7 @@ import { normalizeText } from '@/domain/text/normalizeText'
 import { Quantity } from '@/domain/value-objects/Quantity'
 import { readCollectorEnv } from '@/infrastructure/config/env'
 import { FetchHttpClient } from '@/infrastructure/http/FetchHttpClient'
+import { ClaudeBatchEquivalenceJudge } from '@/infrastructure/judging/ClaudeBatchEquivalenceJudge'
 import { ClaudeEquivalenceJudge } from '@/infrastructure/judging/ClaudeEquivalenceJudge'
 import { StructuredLogger } from '@/infrastructure/observability/StructuredLogger'
 import { createWriteClient } from '@/infrastructure/persistence/supabase/supabaseClient'
@@ -53,8 +57,13 @@ type Row = {
   id: string
   name: string
   brand: string | null
-  description: string | null
-  image_url: string | null
+  /**
+   * Both optional because only `bestFirst` reads them, and only the merge
+   * path calls that. The shortlist leaves them unselected: they are 18.1 MB
+   * of the 46.8 MB a catalogue pass costs, and it scores nothing on them.
+   */
+  description?: string | null
+  image_url?: string | null
   gtin14: string | null
   size_amount: number | string | null
   size_unit: string | null
@@ -68,6 +77,32 @@ const BATCH = 25
 
 /** Groups per merge round trip. */
 const CHUNK = 300
+
+/** Ids per `in(...)` lookup, kept short enough to survive a query string. */
+const ID_CHUNK = 200
+
+/**
+ * A group is only as good as the links inside it.
+ *
+ * Verdicts are pairwise; groups are transitive, and transitivity is where
+ * a pile of individually-plausible answers becomes one wrong product. A
+ * group of 17 held 3 Corações Estrada Real, Café Brasileiro and FORT; one
+ * of 15 held Renata, Sacciali, Dona Benta and Petybon talharim, in two
+ * thicknesses. Every link in those chains reads as defensible alone.
+ *
+ * Capping the size was the first answer and the wrong one: the same
+ * product in six shops is a legitimate group of six, and a number cannot
+ * tell that apart from a chain of mistakes.
+ *
+ * The negatives can. They are the half of the judging that lasts — a pair
+ * ruled different is never asked about again — and nothing had been
+ * reading them. A group that contains a pair somebody judged *different*
+ * is contradicted by evidence we already paid for, whatever its size.
+ *
+ * On 7,460 groups it rejects every group of seven or more, the 17 and the
+ * 15 among them, while letting through 648 groups of three to six that a
+ * cap of two would have refused. The largest to survive is six.
+ */
 
 /**
  * How common a word may be and still count as evidence of identity.
@@ -89,7 +124,23 @@ async function main(): Promise<void> {
   const importFlag = process.argv.indexOf('--import')
   const importPath = importFlag >= 0 ? process.argv[importFlag + 1] : null
   const merging = process.argv.includes('--merge')
+  // Half price, asynchronous. Nothing is waiting on a backlog sweep, so
+  // the only thing the latency costs is the terminal staying open.
+  const batching = process.argv.includes('--batch')
+  // Says what a merge would do without doing it. The guards below decide
+  // which groups are trustworthy, and that is worth being able to read
+  // before it is worth being applied.
+  const dryRun = process.argv.includes('--dry-run')
+  // The way back from a batch that outlived the process waiting on it.
+  // Results keep for 29 days, so a submission is never money lost.
+  const collectFlag = process.argv.indexOf('--collect')
+  const collectId = collectFlag >= 0 ? process.argv[collectFlag + 1] : null
   const limit = Number(process.argv[process.argv.indexOf('--limit') + 1]) || Infinity
+  // Bare invocation still means "tell me how many are pending", which is
+  // what it has always meant; --count says it out loud for a caller that
+  // also wants something else done.
+  const counting =
+    process.argv.includes('--count') || (!merging && !judging && !exporting && !importPath)
 
   const client = createWriteClient(readCollectorEnv())
 
@@ -98,6 +149,24 @@ async function main(): Promise<void> {
     const { data } = await client.from('regions').select('id').eq('slug', regionSlug).single()
     onlyRegion = (data as { id: string } | null)?.id ?? null
     if (!onlyRegion) throw new Error(`praça desconhecida: ${regionSlug}`)
+  }
+
+  // Only the shortlist needs the catalogue, and only three modes need the
+  // shortlist. Merging used to pay for it too: 84.8 MB of reads to apply
+  // verdicts that name their own products, on a night with nothing to
+  // apply. Everything below this line is the expensive path.
+  if (collectId) {
+    // Needs the products the verdicts name, not the shortlist: this is
+    // filing answers, not deciding what to ask.
+    const byId = new Map((await readProducts(client)).map((row) => [row.id, row]))
+    await collectBatch(client, byId, collectId)
+    if (merging) await mergeJudgedSame(client, dryRun)
+    return
+  }
+
+  if (!counting && !judging && !exporting && !importPath) {
+    if (merging) await mergeJudgedSame(client, dryRun)
+    return
   }
 
   const rows = await readProducts(client)
@@ -145,8 +214,8 @@ async function main(): Promise<void> {
   }
 
   if (importPath) await importVerdicts(client, byId, importPath)
-  if (judging) await judgePending(client, byId, pending.slice(0, limit))
-  if (merging) await mergeJudgedSame(client, byId)
+  if (judging) await judgePending(client, byId, pending.slice(0, limit), batching)
+  if (merging) await mergeJudgedSame(client, dryRun)
 
   if (!judging && !merging) console.log('\n(nada gravado — use --judge e depois --merge)')
 }
@@ -156,7 +225,7 @@ async function readProducts(client: ReturnType<typeof createWriteClient>): Promi
   for (let from = 0; ; from += PAGE) {
     const { data, error } = await client
       .from('products')
-      .select('id, name, brand, description, image_url, gtin14, size_amount, size_unit, match_key')
+      .select('id, name, brand, gtin14, size_amount, size_unit, match_key')
       .order('id')
       .range(from, from + PAGE - 1)
 
@@ -168,28 +237,55 @@ async function readProducts(client: ReturnType<typeof createWriteClient>): Promi
   return rows
 }
 
+/**
+ * The products named by a set of ids, and nothing else.
+ *
+ * Chunked because the ids travel in the query string, which has a length
+ * every proxy between here and Postgres is entitled to have an opinion
+ * about.
+ */
+async function readProductsByIds(
+  client: ReturnType<typeof createWriteClient>,
+  ids: readonly string[],
+): Promise<Map<string, Row>> {
+  const byId = new Map<string, Row>()
+
+  for (let from = 0; from < ids.length; from += ID_CHUNK) {
+    const { data, error } = await client
+      .from('products')
+      .select('id, name, brand, description, image_url, gtin14, size_amount, size_unit, match_key')
+      .in('id', ids.slice(from, from + ID_CHUNK))
+
+    if (error) throw new Error(error.message)
+    for (const row of (data ?? []) as Row[]) byId.set(row.id, row)
+  }
+
+  return byId
+}
+
 /** Which regions sell each product, so colliding pairs can be told apart. */
 async function readProductRegions(
   client: ReturnType<typeof createWriteClient>,
 ): Promise<Map<string, Set<string>>> {
   const regions = new Map<string, Set<string>>()
 
+  // From the view (0066), which has already reduced every offer to one row
+  // per (product, region). The question was only ever whether two products
+  // share a region; the 386,662 offers behind that answer were being
+  // carried across the wire to be discarded here.
   for (let from = 0; ; from += PAGE) {
     const { data, error } = await client
-      .from('offers')
-      .select('product_id, stores(region_id)')
+      .from('product_regions')
+      .select('product_id, region_id')
       .range(from, from + PAGE - 1)
 
     if (error) throw new Error(error.message)
-    const page = (data ?? []) as unknown as Array<{
-      product_id: string
-      stores: { region_id: string } | null
-    }>
+    const page = (data ?? []) as Array<{ product_id: string; region_id: string | null }>
 
     for (const row of page) {
-      if (!row.stores) continue
+      if (!row.region_id) continue
       const set = regions.get(row.product_id) ?? new Set<string>()
-      set.add(row.stores.region_id)
+      set.add(row.region_id)
       regions.set(row.product_id, set)
     }
 
@@ -393,10 +489,87 @@ async function importVerdicts(
   )
 }
 
+/**
+ * Files the answers from a batch submitted earlier.
+ *
+ * The submit-and-wait path gives up at 23 hours so it never sits on
+ * requests the API has thrown away — but the batch itself may well have
+ * finished afterwards, and its results stay readable for 29 days. This is
+ * how that run is picked back up instead of paid for twice.
+ */
+async function collectBatch(
+  client: ReturnType<typeof createWriteClient>,
+  byId: Map<string, Row>,
+  id: string,
+): Promise<void> {
+  const logger = new StructuredLogger({ level: 'warn' }).child({ job: 'judge' })
+  const judge = new ClaudeBatchEquivalenceJudge(
+    {
+      apiKey: process.env.ANTHROPIC_API_KEY ?? '',
+      workspaceId: process.env.ANTHROPIC_WORKSPACE_ID,
+    },
+    new FetchHttpClient(logger),
+    logger,
+  )
+
+  const verdicts = await judge.collect(id)
+  const stored = await storeVerdicts(client, byId, verdicts, judge.name)
+
+  console.log(
+    `\nlote ${id}: ${verdicts.length} vereditos lidos, ${stored.same} iguais, ` +
+      `${stored.different} diferentes, ${verdicts.length - stored.same - stored.different} ignorados`,
+  )
+}
+
+/**
+ * Writes verdicts, skipping any naming a row that has since been merged
+ * away — that answer is stale rather than wrong, and pointing it somewhere
+ * else would be inventing one.
+ */
+async function storeVerdicts(
+  client: ReturnType<typeof createWriteClient>,
+  byId: Map<string, Row>,
+  verdicts: readonly { id: string; same: boolean; reason: string }[],
+  decidedBy: string,
+): Promise<{ same: number; different: number }> {
+  let same = 0
+  let different = 0
+
+  const records = verdicts.flatMap((verdict) => {
+    const [leftId, rightId] = verdict.id.split(':')
+    if (!byId.has(leftId) || !byId.has(rightId)) return []
+
+    if (verdict.same) same += 1
+    else different += 1
+
+    return [
+      {
+        left_id: leftId,
+        right_id: rightId,
+        same: verdict.same,
+        reason: verdict.reason,
+        decided_by: decidedBy,
+      },
+    ]
+  })
+
+  // Chunked, because a batch run arrives with every verdict at once and a
+  // single upsert of forty thousand rows is one statement too large.
+  for (let at = 0; at < records.length; at += CHUNK) {
+    const { error } = await client
+      .from('product_equivalences')
+      .upsert(records.slice(at, at + CHUNK), { onConflict: 'left_id,right_id' })
+    if (error) throw new Error(error.message)
+  }
+
+  return { same, different }
+}
+
 async function judgePending(
   client: ReturnType<typeof createWriteClient>,
   byId: Map<string, Row>,
   pending: Array<[Row, Row]>,
+  batching = false,
 ): Promise<void> {
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) {
@@ -406,18 +579,25 @@ async function judgePending(
   }
 
   const logger = new StructuredLogger({ level: 'warn' }).child({ job: 'judge' })
-  const judge = new ClaudeEquivalenceJudge(
-    { apiKey, workspaceId: process.env.ANTHROPIC_WORKSPACE_ID },
-    new FetchHttpClient(logger),
-    logger,
-  )
+  const config = { apiKey, workspaceId: process.env.ANTHROPIC_WORKSPACE_ID }
+  const http = new FetchHttpClient(logger)
+  // Same port either way: one answers in seconds per 25 pairs, the other
+  // takes every pair at once and answers in up to an hour for half the
+  // money. Nothing below this line knows which it got.
+  const judge = batching
+    ? new ClaudeBatchEquivalenceJudge(config, http, logger)
+    : new ClaudeEquivalenceJudge(config, http, logger)
+
+  // The batch wants the whole backlog in one call; the synchronous judge
+  // wants 25 at a time, because that is one request and one failure.
+  const step = batching ? pending.length : BATCH
 
   let same = 0
   let different = 0
   let undecided = 0
 
-  for (let index = 0; index < pending.length; index += BATCH) {
-    const batch = pending.slice(index, index + BATCH)
+  for (let index = 0; index < pending.length; index += step) {
+    const batch = pending.slice(index, index + step)
     const questions: EquivalenceQuestion[] = batch.map(([a, b]) => ({
       id: pairKey(a, b),
       left: { name: a.name, brand: a.brand, size: sizeLabel(a) },
@@ -427,54 +607,65 @@ async function judgePending(
     const verdicts = await judge.judge(questions)
     undecided += questions.length - verdicts.length
 
-    const records = verdicts.flatMap((verdict) => {
-      const [leftId, rightId] = verdict.id.split(':')
-      if (!byId.has(leftId) || !byId.has(rightId)) return []
-
-      if (verdict.same) same += 1
-      else different += 1
-
-      return [
-        {
-          left_id: leftId,
-          right_id: rightId,
-          same: verdict.same,
-          reason: verdict.reason,
-          decided_by: judge.name,
-        },
-      ]
-    })
-
-    if (records.length > 0) {
-      const { error } = await client
-        .from('product_equivalences')
-        .upsert(records, { onConflict: 'left_id,right_id' })
-      if (error) throw new Error(error.message)
-    }
+    const stored = await storeVerdicts(client, byId, verdicts, judge.name)
+    same += stored.same
+    different += stored.different
 
     console.log(
-      `  ${Math.min(index + BATCH, pending.length)}/${pending.length}  ` +
+      `  ${Math.min(index + step, pending.length)}/${pending.length}  ` +
         `iguais=${same} diferentes=${different} sem resposta=${undecided}`,
     )
   }
 }
 
-/** Applies every positive verdict, joining pairs into groups transitively. */
+/**
+ * Applies every positive verdict, joining pairs into groups transitively.
+ *
+ * Loads only the products those verdicts name, rather than being handed
+ * the catalogue. Merging answers a question already answered, and on a
+ * normal night answers it about nothing at all: a pair judged the same is
+ * consumed when it is applied — the loser row goes, and the verdict
+ * cascades with it — so `same = true` is empty except in the window
+ * between a judging run and the next merge. Reading 118,912 products to
+ * discover that cost 46.8 MB a night.
+ */
 async function mergeJudgedSame(
   client: ReturnType<typeof createWriteClient>,
-  byId: Map<string, Row>,
+  dryRun = false,
 ): Promise<void> {
-  const { data, error } = await client
-    .from('product_equivalences')
-    .select('left_id, right_id, decided_by')
-    .eq('same', true)
+  // Paged, like every other read here. Without a range PostgREST answers
+  // with its own default ceiling — a thousand rows — and says nothing
+  // about the rest. That went unnoticed for as long as positives were
+  // rare: they are consumed when applied, so the table normally holds
+  // none. A judging run put 11,686 there, and the merge quietly saw the
+  // first 1,000 of them.
+  const positives: Array<{ left_id: string; right_id: string; decided_by: string }> = []
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await client
+      .from('product_equivalences')
+      .select('left_id, right_id, decided_by')
+      .eq('same', true)
+      .order('left_id')
+      .range(from, from + PAGE - 1)
 
-  if (error) throw new Error(error.message)
-  const positives = (data ?? []) as Array<{
-    left_id: string
-    right_id: string
-    decided_by: string
-  }>
+    if (error) throw new Error(error.message)
+    const page = (data ?? []) as Array<{ left_id: string; right_id: string; decided_by: string }>
+    positives.push(...page)
+    if (page.length < PAGE) break
+  }
+
+  if (positives.length === 0) {
+    console.log('\ngrupos julgados iguais: 0, linhas absorvidas: 0')
+    return
+  }
+
+  // The pairs somebody ruled apart, which is what keeps a chain honest.
+  const decided = await readDecisions(client)
+  const different = new Set([...decided].filter(([, same]) => !same).map(([key]) => key))
+
+  const byId = await readProductsByIds(client, [
+    ...new Set(positives.flatMap((row) => [row.left_id, row.right_id])),
+  ])
 
   const decidedBy = new Map<string, string>()
   for (const row of positives) {
@@ -503,11 +694,43 @@ async function mergeJudgedSame(
     byRoot.set(root, [...(byRoot.get(root) ?? []), row])
   }
 
-  const groups = [...byRoot.values()].filter((group) => group.length > 1)
+  const formed = [...byRoot.values()].filter((group) => group.length > 1)
+
+  // Refused rather than merged. A group that disagrees with itself about
+  // a brand or a barcode is not one product described differently, and
+  // the barcode is the one identifier the shops themselves agree on.
+  const contradicts = (group: readonly Row[]) =>
+    new Set(group.map((row) => row.brand).filter(Boolean)).size > 1 ||
+    new Set(group.map((row) => row.gtin14).filter(Boolean)).size > 1
+
+  // And refused when any pair inside it was judged different. The chain
+  // put them together; a verdict says they do not belong together, and
+  // the verdict looked at them directly.
+  const refuted = (group: readonly Row[]) => {
+    for (let i = 0; i < group.length; i += 1) {
+      for (let j = i + 1; j < group.length; j += 1) {
+        if (different.has(pairKey(group[i], group[j]))) return true
+      }
+    }
+    return false
+  }
+
+  const groups = formed.filter((group) => !contradicts(group) && !refuted(group))
+  const held = formed.length - groups.length
   const absorbed = groups.reduce((total, group) => total + group.length - 1, 0)
 
   console.log(`\ngrupos julgados iguais: ${groups.length}, linhas absorvidas: ${absorbed}`)
+  if (held > 0) {
+    // Not deleted: the verdicts stay, so a rule that can read a chain
+    // rather than a pair can still use them.
+    console.log(`retidos: ${held} grupos — contêm um par julgado diferente, ou discordam de si`)
+  }
   if (groups.length === 0) return
+
+  if (dryRun) {
+    console.log('--dry-run: nada aplicado')
+    return
+  }
 
   const payload = groups.map((group) => {
     const [survivor, ...losers] = [...group].sort(bestFirst)

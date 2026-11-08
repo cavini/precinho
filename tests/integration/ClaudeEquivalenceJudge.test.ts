@@ -28,6 +28,9 @@ function replying(text: string) {
   const sent: Array<{ url: string; body: unknown; headers: Record<string, string> }> = []
 
   const http = {
+    async getText() {
+      throw new Error('not used by this test')
+    },
     async getJson() {
       throw new Error('not used')
     },
@@ -100,6 +103,9 @@ describe('ClaudeEquivalenceJudge', () => {
 
   it('decides nothing when the API refuses', async () => {
     const http = {
+      async getText() {
+        throw new Error('not used by this test')
+      },
       async getJson() {
         throw new Error('not used')
       },
@@ -135,6 +141,9 @@ describe('ClaudeEquivalenceJudge', () => {
     // answers 400 saying so rather than guessing which one.
     const sent: Array<{ headers: Record<string, string> }> = []
     const http = {
+      async getText() {
+        throw new Error('not used by this test')
+      },
       async getJson() {
         throw new Error('not used')
       },

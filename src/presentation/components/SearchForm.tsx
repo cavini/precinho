@@ -1,8 +1,10 @@
 'use client'
 
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { useState, useTransition } from 'react'
 import { SearchQuery } from '@/domain/value-objects/SearchQuery'
+import { useTranslations } from 'next-intl'
+import { useRouter } from '@/i18n/navigation'
 import { emptySearchBox, reconcileSearchBox } from '../searchBox'
 
 /**
@@ -25,6 +27,7 @@ import { emptySearchBox, reconcileSearchBox } from '../searchBox'
  */
 export function SearchForm({ autoFocus = false }: { autoFocus?: boolean }) {
   const router = useRouter()
+  const t = useTranslations('Search')
   const params = useSearchParams()
   // The navigation is a server render — the results are fetched before
   // the new page arrives — so a plain flag would clear itself long
@@ -52,7 +55,7 @@ export function SearchForm({ autoFocus = false }: { autoFocus?: boolean }) {
     // the transition pending until the new route has rendered — and the
     // await only makes that observable to a caller holding a promise.
     startSearching(async () => {
-      await router.push(`/busca?q=${encodeURIComponent(value)}`)
+      await router.push({ pathname: '/search', query: { q: value } })
     })
   }
 
@@ -63,8 +66,8 @@ export function SearchForm({ autoFocus = false }: { autoFocus?: boolean }) {
         onChange={(event) => setBox({ ...reconciled, typed: event.target.value })}
         maxLength={SearchQuery.MAX_LENGTH}
         autoFocus={autoFocus}
-        placeholder="arroz, leite condensado, coca 2L…"
-        aria-label="Buscar produto"
+        placeholder={t('placeholder')}
+        aria-label={t('label')}
         className="flex-1 rounded-xl border border-rule-strong bg-surface px-4 py-3 text-ink
  outline-none focus:border-ink"
       />
@@ -75,7 +78,7 @@ export function SearchForm({ autoFocus = false }: { autoFocus?: boolean }) {
         className="flex items-center gap-2 rounded-xl bg-ink px-5 py-3 font-medium text-surface disabled:opacity-40"
       >
         {searching && <Spinner />}
-        {searching ? 'Buscando' : 'Buscar'}
+        {searching ? t('submitting') : t('submit')}
       </button>
     </form>
   )

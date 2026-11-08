@@ -3,12 +3,13 @@ import { RetryButton } from '@/presentation/components/RetryButton'
 import { ProductImage } from '@/presentation/components/ProductImage'
 import { headers } from 'next/headers'
 import { connection } from 'next/server'
-import Link from 'next/link'
+import { Link } from '@/i18n/navigation'
 import { notFound } from 'next/navigation'
 import { getWebContainer } from '@/composition/container'
 import { ContextBar } from '@/presentation/components/ContextBar'
 import { OfferTable } from '@/presentation/components/OfferTable'
 import { ContextBarSkeleton, ProductDetailSkeleton } from '@/presentation/components/Skeletons'
+import { getTranslations } from 'next-intl/server'
 import { clientKeyFromHeaders } from '@/presentation/clientKey'
 import { readPageContext } from '@/presentation/server/shoppingContext'
 
@@ -32,18 +33,20 @@ export default function ProductPage({ params }: Props) {
 }
 
 async function ProductBody({ params }: Props) {
-  // See the note in busca/page.tsx: without this the partial prerender
+  // See the note in search/page.tsx: without this the partial prerender
   // cancels the query mid-flight and the cancellation arrives as an
   // ordinary database error.
   await connection()
 
   const { id } = await params
+  const common = await getTranslations('Common')
+  const t = await getTranslations('Product')
   const context = await readPageContext()
 
   if (context.status === 'unavailable') {
     return (
       <p className="rounded-xl border border-rule p-4 text-sm text-ink-soft">
-        Não consegui carregar agora. <RetryButton label="Tentar de novo" />
+        {common('unavailable')} <RetryButton label={common('retry')} />
       </p>
     )
   }
@@ -51,7 +54,7 @@ async function ProductBody({ params }: Props) {
   if (context.status === 'no-coverage') {
     return (
       <p className="rounded-xl border border-rule p-4 text-sm text-ink-soft">
-        Nenhum mercado está sendo acompanhado no momento.
+        {common('noCoverage')}
       </p>
     )
   }
@@ -90,13 +93,17 @@ async function ProductBody({ params }: Props) {
 
               {result.spread && (
                 <p className="text-sm text-accent">
-                  Entre o mais barato e o mais caro dos mercados marcados dá{' '}
-                  {result.spread.amountLabel} ({Math.round(result.spread.percent)}%).
+                  {t('spread', {
+                    amount: result.spread.amountLabel,
+                    percent: Math.round(result.spread.percent),
+                  })}
                 </p>
               )}
 
               {result.product.ean && (
-                <p className="mt-1 text-xs text-ink-faint">Código de barras {result.product.ean}</p>
+                <p className="mt-1 text-xs text-ink-faint">
+                  {t('barcode', { ean: result.product.ean })}
+                </p>
               )}
             </div>
           </section>
@@ -105,18 +112,16 @@ async function ProductBody({ params }: Props) {
         </>
       ) : (
         <p className="rounded-xl border border-rule p-4 text-sm text-ink-soft">
-          {result.status === 'no-offers' &&
-            'Nenhum dos mercados marcados tem preço pra esse produto agora.'}
-          {result.status === 'no-stores-selected' &&
-            'Marque pelo menos um mercado ali em cima pra eu comparar.'}
+          {result.status === 'no-offers' && t('noOffers')}
+          {result.status === 'no-stores-selected' && common('noStoresSelected')}
           {result.status === 'rate-limited' &&
-            `Muitas consultas em pouco tempo. Tente de novo em ${result.retryAfterSeconds}s.`}
+            common('rateLimited', { seconds: result.retryAfterSeconds })}
         </p>
       )}
 
       <p className="text-sm text-ink-soft">
         <Link href="/" className="underline underline-offset-2">
-          Nova busca
+          {t('newSearch')}
         </Link>
       </p>
     </>
