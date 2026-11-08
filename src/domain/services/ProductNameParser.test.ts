@@ -136,4 +136,46 @@ describe('ProductNameParser', () => {
       expect(parser.normalizeBrand('   ')).toBeNull()
     })
   })
+
+  describe('a pack whose count is not glued to the pack word', () => {
+    it('reads "Pack de 4 latas ... 250ml" as a litre', () => {
+      // The bug as reported. Left as 250ml it shared a size bucket with
+      // the single can, and the single can shared its barcode, so the
+      // product page offered 9,99 against 35,96 as a saving.
+      expect(parser.extractSize('Pack de 4 latas Red Bull Energético Energy Drink 250ml')).toEqual(
+        Quantity.of(1, 'L'),
+      )
+    })
+
+    it('reads the count when it comes after the size', () => {
+      expect(parser.extractSize('Energético Red Bull Energy Drink 250ml - 4 Latas')).toEqual(
+        Quantity.of(1, 'L'),
+      )
+    })
+
+    it('reads "Caixa com 15 Sachês - 15g"', () => {
+      expect(parser.extractSize('Chá Capim Cidreira Chá Leão Caixa com 15 Sachês - 15g')).toEqual(
+        Quantity.of(0.225, 'kg'),
+      )
+    })
+
+    it('does not read a count already carried by the unit', () => {
+      // "4 Unidades" is four of them. Multiplying by the pack it just
+      // matched would make it sixteen.
+      expect(parser.extractSize('Sorvete Kascão Picolé Uva 4 Unidades')).toEqual(
+        Quantity.of(4, 'un'),
+      )
+    })
+
+    it('leaves a lone package word alone', () => {
+      // "Tipo 1 Pacote" is a grade and a bag, not one of anything.
+      expect(parser.extractSize('Arroz Parboilizado Camil Pacote - 1kg')).toEqual(
+        Quantity.of(1, 'kg'),
+      )
+    })
+
+    it('still refuses a count that is really a size', () => {
+      expect(parser.extractSize('Caixa 1000g')).toEqual(Quantity.of(1, 'kg'))
+    })
+  })
 })
